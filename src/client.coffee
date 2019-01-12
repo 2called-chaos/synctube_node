@@ -1,7 +1,6 @@
 window.SyncTubeClient = class SyncTubeClient
-  WS_IP: "127.0.0.1"
-  WS_PORT: 1337
-  REFRESH_INTERVAL: 2000
+  WS_IP: "blitzfunke.bmonkeys.net"
+  WS_PORT: 80
 
   debug: (msg...) ->
     return unless @opts.debug
@@ -19,6 +18,8 @@ window.SyncTubeClient = class SyncTubeClient
   constructor: (@opts = {}) ->
     # options
     @opts.debug ?= false
+    @opts.wsIp ?= @WS_IP
+    @opts.wsPort ?= @WS_PORT
     @opts.maxWidth ?= 12
     @opts.content ?= $("#content")
     @opts.view ?= $("#view")
@@ -27,6 +28,11 @@ window.SyncTubeClient = class SyncTubeClient
     @opts.queue ?= $("#queue")
     @opts.playlist ?= $("#playlist")
     @opts.clients ?= $("#clients")
+
+    # synced settings (controlled by server)
+    @opts.synced ?= {}
+    @opts.synced.maxDrift ?= 60 # superseded by server instructions
+    @opts.synced.packetInterval ?= 10000 # superseded by server instructions
 
     # DOM
     @content = $(@opts.content)
@@ -39,6 +45,8 @@ window.SyncTubeClient = class SyncTubeClient
 
     # Client data
     @name = null
+    @index = null
+    @drift = 0
 
   getHashParams: ->
     result = {}
@@ -74,7 +82,7 @@ window.SyncTubeClient = class SyncTubeClient
       return
 
     # open connection
-    address = "ws://#{@WS_IP}:#{@WS_PORT}"
+    address = "ws://#{@WS_IP}:#{@WS_PORT}/cable"
     @debug "Opening connection to #{address}"
     @connection = new WebSocket(address)
 
@@ -96,13 +104,17 @@ window.SyncTubeClient = class SyncTubeClient
       return true unless event.keyCode == 13
       return unless msg = @input.val()
 
-      if m = msg.match(/\/(?:mw|maxwidth|width)(?:\s([0-9]+))?/i)
+      if m = msg.match(/^\/(?:mw|maxwidth|width)(?:\s([0-9]+))?$/i)
         i = parseInt(m[1])
         if m[1] && i >= 1 && i <= 12
           @adjustMaxWidth(@opts.maxWidth = i)
           @input.val("")
         else
           @content.append """<p>Usage: /maxwidth [1-12]</p>"""
+        return
+      else if m = msg.match(/^\/(?:s|sync|resync)$/i)
+        @force_resync = true
+        @input.val("")
         return
 
       @connection.send(msg)
@@ -118,7 +130,7 @@ window.SyncTubeClient = class SyncTubeClient
 
       switch json.type
         when "code"
-          @debug "received CODE", json.data
+          #@debug "received CODE", json.data
           if @["CMD_#{json.data.type}"]?
             @["CMD_#{json.data.type}"](json.data)
           else
@@ -168,6 +180,11 @@ window.SyncTubeClient = class SyncTubeClient
     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag)
 
   loadVideo: (ytid, cue = false) ->
+    if m = ytid.match(/([A-Za-z0-9_\-]{11})/)
+      ytid = m[1]
+    else
+      throw "unknown ID"
+
     @loadYTAPI =>
       if @player
         if cue
@@ -184,8 +201,19 @@ window.SyncTubeClient = class SyncTubeClient
             onReady: (ev) =>
               @player.playVideo() unless cue
               @broadcastState(ev)
-              @broadcastStateInterval = setInterval((=> @broadcastState(data: if @player?.getPlayerState()? then @player?.getPlayerState() else 2)), @REFRESH_INTERVAL)
+              @lastPlayerState = if @player?.getPlayerState()? then @player?.getPlayerState() else 2
+              @broadcastStateInterval = setInterval((=> @broadcastState(data: @lastPlayerState)), @opts.synced.packetInterval)
             onStateChange: (ev) =>
+              newState = @player.getPlayerState()
+              if @lastPlayerState? && ([-1, 2].indexOf(@lastPlayerState) > -1 && [1, 3].indexOf(newState) > -1)
+                console.log "send resume"
+                @connection.send("/resume")
+              else if @lastPlayerState? && ([1, 3].indexOf(@lastPlayerState) > -1 && [2].indexOf(newState) > -1)
+                console.log "send pause"
+                @connection.send("/pause")
+              console.log "state", "was", @lastPlayerState, "is", newState
+
+              @lastPlayerState = newState
               @broadcastState(ev)
 
   secondsToTime: (cur, max) ->
@@ -218,7 +246,7 @@ window.SyncTubeClient = class SyncTubeClient
     sf = sf[sf.length - 1]
 
     r = ""
-    r += "0#{sh}:".slice(if mh >= 10 then -3 else -2) if mh?
+    r += "0#{sh || 0}:".slice(if mh >= 10 then -3 else -2) if mh?
     r += "0#{sm || 0}:".slice(if mm >= 10 || mh? then -3 else -2) if mh? || mm?
     r += "0#{ss}".slice(-2)
     r += ".#{sf}"
@@ -229,7 +257,7 @@ window.SyncTubeClient = class SyncTubeClient
     r += ".#{mf}" unless mf == "0"
     r
 
-  broadcastState: (ev) ->
+  broadcastState: (ev = @player?.getPlayerState()) ->
     state = switch ev?.data
       when -1 then "unstarted"
       when 0 then "ended"
@@ -245,18 +273,21 @@ window.SyncTubeClient = class SyncTubeClient
       seek: @player?.getCurrentTime()
       playtime: @player?.getDuration()
       loaded_fraction: player.getVideoLoadedFraction()
-      url: player.getVideoUrl()
+      url: player.getVideoUrl()?.match(/([A-Za-z0-9_\-]{11})/)?[0]
 
     if packet.seek? && packet.playtime?
       packet.timestamp = @secondsToTime(packet.seek, packet.playtime)
 
     @connection.send("!packet:" + JSON.stringify(packet))
-    console.log packet
 
   # ========
   # = CMDS =
   # ========
-
+  CMD_server_settings: (data) ->
+    for k, v of data
+      continue if k == "type"
+      @debug "Accepting server controlled setting", k, "was", @opts.synced[k], "new", v
+      @opts.synced[k] = v
 
   CMD_load_video: (data) ->
     @loadVideo data.ytid, data.cue
@@ -265,11 +296,42 @@ window.SyncTubeClient = class SyncTubeClient
 
   CMD_unsubscribe: -> clearInterval(@broadcastStateInterval)
 
+  CMD_desired: (data) ->
+    unless @player
+      @loadVideo(data.url, true)
+      return
+
+    current_ytid = player.getVideoUrl()?.match(/([A-Za-z0-9_\-]{11})/)?[0]
+    if current_ytid != data.url
+      @debug "Switching video from", current_ytid, "to", data.url
+      @loadVideo(data.url)
+      return
+
+    if Math.abs(@drift * 1000) > @opts.synced.maxDrift || @force_resync || data.force
+      @force_resync = false
+      @debug "Seek to correct drift", @drift
+      @player.seekTo(data.seek, true)
+      return
+
+    if @player.getPlayerState() == 1 && data.state != "play"
+      @debug "pausing playback, state:", @player.getPlayerState()
+      @player.pauseVideo()
+      @player.seekTo(data.seek, true)
+      return
+
+    if @player.getPlayerState() != 1 && data.state == "play"
+      @debug "starting playback, state:", @player.getPlayerState()
+      @player.playVideo()
+      return
+
   CMD_video_action: (data) ->
-    console.log "<<<<<<<<<<<<<<<<<<<", data
     switch data.action
       when "resume" then @player.playVideo()
       when "pause" then @player.pauseVideo()
+      when "sync" then @force_resync = true
+      when "destroy"
+        @player.destroy()
+        @player = null
       when "seek"
         @player.seekTo(data.to, true)
         if data.paused
@@ -282,6 +344,9 @@ window.SyncTubeClient = class SyncTubeClient
       window.location.reload()
     else if data.location
       window.location.href = data.location
+
+  CMD_session_index: (data) ->
+    @index = data.index
 
   CMD_require_username: (data) ->
     @enableInput()
@@ -312,7 +377,7 @@ window.SyncTubeClient = class SyncTubeClient
       el = $ """
         <div data-client-index="#{data.index}">
           <div class="first">
-            <span data-attr="admin-ctn"><i title="ADMIN"></i></span>
+            <span data-attr="admin-ctn"><i></i></span>
             <span data-attr="name"></span>
           </div>
           <div class="second">
@@ -328,9 +393,11 @@ window.SyncTubeClient = class SyncTubeClient
     el.find("[data-attr=progress-bar-buffered]").css(width: "#{(data.state.loaded_fraction || 0) * 100}%")
     el.find("[data-attr=progress-bar-position]").css(left: "#{if data.state.seek <= 0 then 0 else (data.state.seek / data.state.playtime * 100)}%")
     el.find("[data-attr=icon-ctn] i").attr("class", "fa fa-#{data.icon} #{data.icon_class}") if data.icon
-    el.find("[data-attr=admin-ctn] i").attr("class", "fa fa-shield text-info") if data.control
+    el.find("[data-attr=admin-ctn] i").attr("class", "fa fa-shield text-info").attr("title", "ADMIN") if data.control
+    el.find("[data-attr=admin-ctn] i").attr("class", "fa fa-shield text-danger").attr("title", "HOST") if data.isHost
     el.find("[data-attr=drift-ctn] i").attr("class", "fa fa-#{if data.drift then if data.drift > 0 then "backward" else "forward" else "circle-o-notch"} text-warning")
     el.find("[data-attr=drift]").html(el.find("[data-attr=drift]").html().replace("-", ""))
+    @drift = parseFloat(data.drift) if @index? && data.index == @index
 
   CMD_subscriber_list: (data) ->
     @clients.html("")

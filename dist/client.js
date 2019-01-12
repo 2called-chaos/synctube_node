@@ -3,6 +3,8 @@
   var SyncTubeClient;
 
   window.SyncTubeClient = SyncTubeClient = (function() {
+    var ref;
+
     class SyncTubeClient {
       debug(...msg) {
         if (!this.opts.debug) {
@@ -23,36 +25,53 @@
       }
 
       constructor(opts = {}) {
-        var base, base1, base2, base3, base4, base5, base6, base7, base8;
+        var base, base1, base10, base11, base12, base13, base2, base3, base4, base5, base6, base7, base8, base9;
         this.opts = opts;
         // options
         if ((base = this.opts).debug == null) {
           base.debug = false;
         }
-        if ((base1 = this.opts).maxWidth == null) {
-          base1.maxWidth = 12;
+        if ((base1 = this.opts).wsIp == null) {
+          base1.wsIp = this.WS_IP;
         }
-        if ((base2 = this.opts).content == null) {
-          base2.content = $("#content");
+        if ((base2 = this.opts).wsPort == null) {
+          base2.wsPort = this.WS_PORT;
         }
-        if ((base3 = this.opts).view == null) {
-          base3.view = $("#view");
+        if ((base3 = this.opts).maxWidth == null) {
+          base3.maxWidth = 12;
         }
-        if ((base4 = this.opts).input == null) {
-          base4.input = $("#input");
+        if ((base4 = this.opts).content == null) {
+          base4.content = $("#content");
         }
-        if ((base5 = this.opts).status == null) {
-          base5.status = $("#status");
+        if ((base5 = this.opts).view == null) {
+          base5.view = $("#view");
         }
-        if ((base6 = this.opts).queue == null) {
-          base6.queue = $("#queue");
+        if ((base6 = this.opts).input == null) {
+          base6.input = $("#input");
         }
-        if ((base7 = this.opts).playlist == null) {
-          base7.playlist = $("#playlist");
+        if ((base7 = this.opts).status == null) {
+          base7.status = $("#status");
         }
-        if ((base8 = this.opts).clients == null) {
-          base8.clients = $("#clients");
+        if ((base8 = this.opts).queue == null) {
+          base8.queue = $("#queue");
         }
+        if ((base9 = this.opts).playlist == null) {
+          base9.playlist = $("#playlist");
+        }
+        if ((base10 = this.opts).clients == null) {
+          base10.clients = $("#clients");
+        }
+        // synced settings (controlled by server)
+        if ((base11 = this.opts).synced == null) {
+          base11.synced = {};
+        }
+        if ((base12 = this.opts.synced).maxDrift == null) {
+          base12.maxDrift = 60; // superseded by server instructions
+        }
+        if ((base13 = this.opts.synced).packetInterval == null) {
+          base13.packetInterval = 10000; // superseded by server instructions
+        }
+        
         // DOM
         this.content = $(this.opts.content);
         this.view = $(this.opts.view);
@@ -63,6 +82,8 @@
         this.clients = $(this.opts.clients);
         // Client data
         this.name = null;
+        this.index = null;
+        this.drift = 0;
       }
 
       getHashParams() {
@@ -109,7 +130,7 @@
           return;
         }
         // open connection
-        address = `ws://${this.WS_IP}:${this.WS_PORT}`;
+        address = `ws://${this.WS_IP}:${this.WS_PORT}/cable`;
         this.debug(`Opening connection to ${address}`);
         this.connection = new WebSocket(address);
         this.connection.onopen = () => {
@@ -142,7 +163,7 @@
           if (!(msg = this.input.val())) {
             return;
           }
-          if (m = msg.match(/\/(?:mw|maxwidth|width)(?:\s([0-9]+))?/i)) {
+          if (m = msg.match(/^\/(?:mw|maxwidth|width)(?:\s([0-9]+))?$/i)) {
             i = parseInt(m[1]);
             if (m[1] && i >= 1 && i <= 12) {
               this.adjustMaxWidth(this.opts.maxWidth = i);
@@ -150,6 +171,10 @@
             } else {
               this.content.append("<p>Usage: /maxwidth [1-12]</p>");
             }
+            return;
+          } else if (m = msg.match(/^\/(?:s|sync|resync)$/i)) {
+            this.force_resync = true;
+            this.input.val("");
             return;
           }
           this.connection.send(msg);
@@ -169,7 +194,7 @@
           }
           switch (json.type) {
             case "code":
-              this.debug("received CODE", json.data);
+              //@debug "received CODE", json.data
               if (this[`CMD_${json.data.type}`] != null) {
                 return this[`CMD_${json.data.type}`](json.data);
               } else {
@@ -228,6 +253,12 @@
       }
 
       loadVideo(ytid, cue = false) {
+        var m;
+        if (m = ytid.match(/([A-Za-z0-9_\-]{11})/)) {
+          ytid = m[1];
+        } else {
+          throw "unknown ID";
+        }
         return this.loadYTAPI(() => {
           if (this.player) {
             if (cue) {
@@ -243,18 +274,30 @@
               width: '100%',
               events: {
                 onReady: (ev) => {
+                  var ref, ref1;
                   if (!cue) {
                     this.player.playVideo();
                   }
                   this.broadcastState(ev);
+                  this.lastPlayerState = ((ref = this.player) != null ? ref.getPlayerState() : void 0) != null ? (ref1 = this.player) != null ? ref1.getPlayerState() : void 0 : 2;
                   return this.broadcastStateInterval = setInterval((() => {
-                    var ref, ref1;
                     return this.broadcastState({
-                      data: ((ref = this.player) != null ? ref.getPlayerState() : void 0) != null ? (ref1 = this.player) != null ? ref1.getPlayerState() : void 0 : 2
+                      data: this.lastPlayerState
                     });
-                  }), this.REFRESH_INTERVAL);
+                  }), this.opts.synced.packetInterval);
                 },
                 onStateChange: (ev) => {
+                  var newState;
+                  newState = this.player.getPlayerState();
+                  if ((this.lastPlayerState != null) && ([-1, 2].indexOf(this.lastPlayerState) > -1 && [1, 3].indexOf(newState) > -1)) {
+                    console.log("send resume");
+                    this.connection.send("/resume");
+                  } else if ((this.lastPlayerState != null) && ([1, 3].indexOf(this.lastPlayerState) > -1 && [2].indexOf(newState) > -1)) {
+                    console.log("send pause");
+                    this.connection.send("/pause");
+                  }
+                  console.log("state", "was", this.lastPlayerState, "is", newState);
+                  this.lastPlayerState = newState;
                   return this.broadcastState(ev);
                 }
               }
@@ -297,7 +340,7 @@
         sf = sf[sf.length - 1];
         r = "";
         if (mh != null) {
-          r += `0${sh}:`.slice(mh >= 10 ? -3 : -2);
+          r += `0${sh || 0}:`.slice(mh >= 10 ? -3 : -2);
         }
         if ((mh != null) || (mm != null)) {
           r += `0${sm || 0}:`.slice(mm >= 10 || (mh != null) ? -3 : -2);
@@ -318,8 +361,8 @@
         return r;
       }
 
-      broadcastState(ev) {
-        var packet, ref, ref1, state;
+      broadcastState(ev = (ref = this.player) != null ? ref.getPlayerState() : void 0) {
+        var packet, ref1, ref2, ref3, ref4, state;
         state = (function() {
           switch (ev != null ? ev.data : void 0) {
             case -1:
@@ -341,21 +384,34 @@
         packet = {
           state: state,
           istate: ev != null ? ev.data : void 0,
-          seek: (ref = this.player) != null ? ref.getCurrentTime() : void 0,
-          playtime: (ref1 = this.player) != null ? ref1.getDuration() : void 0,
+          seek: (ref1 = this.player) != null ? ref1.getCurrentTime() : void 0,
+          playtime: (ref2 = this.player) != null ? ref2.getDuration() : void 0,
           loaded_fraction: player.getVideoLoadedFraction(),
-          url: player.getVideoUrl()
+          url: (ref3 = player.getVideoUrl()) != null ? (ref4 = ref3.match(/([A-Za-z0-9_\-]{11})/)) != null ? ref4[0] : void 0 : void 0
         };
         if ((packet.seek != null) && (packet.playtime != null)) {
           packet.timestamp = this.secondsToTime(packet.seek, packet.playtime);
         }
-        this.connection.send("!packet:" + JSON.stringify(packet));
-        return console.log(packet);
+        return this.connection.send("!packet:" + JSON.stringify(packet));
       }
 
       // ========
       // = CMDS =
       // ========
+      CMD_server_settings(data) {
+        var k, results, v;
+        results = [];
+        for (k in data) {
+          v = data[k];
+          if (k === "type") {
+            continue;
+          }
+          this.debug("Accepting server controlled setting", k, "was", this.opts.synced[k], "new", v);
+          results.push(this.opts.synced[k] = v);
+        }
+        return results;
+      }
+
       CMD_load_video(data) {
         return this.loadVideo(data.ytid, data.cue);
       }
@@ -368,13 +424,47 @@
         return clearInterval(this.broadcastStateInterval);
       }
 
+      CMD_desired(data) {
+        var current_ytid, ref1, ref2;
+        if (!this.player) {
+          this.loadVideo(data.url, true);
+          return;
+        }
+        current_ytid = (ref1 = player.getVideoUrl()) != null ? (ref2 = ref1.match(/([A-Za-z0-9_\-]{11})/)) != null ? ref2[0] : void 0 : void 0;
+        if (current_ytid !== data.url) {
+          this.debug("Switching video from", current_ytid, "to", data.url);
+          this.loadVideo(data.url);
+          return;
+        }
+        if (Math.abs(this.drift * 1000) > this.opts.synced.maxDrift || this.force_resync || data.force) {
+          this.force_resync = false;
+          this.debug("Seek to correct drift", this.drift);
+          this.player.seekTo(data.seek, true);
+          return;
+        }
+        if (this.player.getPlayerState() === 1 && data.state !== "play") {
+          this.debug("pausing playback, state:", this.player.getPlayerState());
+          this.player.pauseVideo();
+          this.player.seekTo(data.seek, true);
+          return;
+        }
+        if (this.player.getPlayerState() !== 1 && data.state === "play") {
+          this.debug("starting playback, state:", this.player.getPlayerState());
+          this.player.playVideo();
+        }
+      }
+
       CMD_video_action(data) {
-        console.log("<<<<<<<<<<<<<<<<<<<", data);
         switch (data.action) {
           case "resume":
             return this.player.playVideo();
           case "pause":
             return this.player.pauseVideo();
+          case "sync":
+            return this.force_resync = true;
+          case "destroy":
+            this.player.destroy();
+            return this.player = null;
           case "seek":
             this.player.seekTo(data.to, true);
             if (data.paused) {
@@ -391,6 +481,10 @@
         } else if (data.location) {
           return window.location.href = data.location;
         }
+      }
+
+      CMD_session_index(data) {
+        return this.index = data.index;
       }
 
       CMD_require_username(data) {
@@ -426,23 +520,23 @@
       }
 
       CMD_update_single_subscriber(resp) {
-        var data, el, k, ref, v;
+        var data, el, k, ref1, v;
         data = (resp != null ? resp.data : void 0) || {};
         if (data.index == null) {
           return;
         }
         el = this.clients.find(`[data-client-index=${data.index}]`);
         if (!el.length) {
-          el = $(`<div data-client-index="${data.index}">\n  <div class="first">\n    <span data-attr="admin-ctn"><i title="ADMIN"></i></span>\n    <span data-attr="name"></span>\n  </div>\n  <div class="second">\n    <span data-attr="icon-ctn"><i><span data-attr="progress"></span> <span data-attr="timestamp"></span></i></span>\n    <span data-attr="drift-ctn" style="float:right"><i><span data-attr="drift"></span></i></span>\n    <div data-attr="progress-bar"><div data-attr="progress-bar-buffered"></div><div data-attr="progress-bar-position"></div></div>\n  </div>\n</div>`);
+          el = $(`<div data-client-index="${data.index}">\n  <div class="first">\n    <span data-attr="admin-ctn"><i></i></span>\n    <span data-attr="name"></span>\n  </div>\n  <div class="second">\n    <span data-attr="icon-ctn"><i><span data-attr="progress"></span> <span data-attr="timestamp"></span></i></span>\n    <span data-attr="drift-ctn" style="float:right"><i><span data-attr="drift"></span></i></span>\n    <div data-attr="progress-bar"><div data-attr="progress-bar-buffered"></div><div data-attr="progress-bar-position"></div></div>\n  </div>\n</div>`);
           this.clients.append(el);
         }
         for (k in data) {
           v = data[k];
           el.find(`[data-attr=${k}]`).html(v);
         }
-        ref = data.state;
-        for (k in ref) {
-          v = ref[k];
+        ref1 = data.state;
+        for (k in ref1) {
+          v = ref1[k];
           el.find(`[data-attr=${k}]`).html(v);
         }
         el.find("[data-attr=progress-bar-buffered]").css({
@@ -455,19 +549,25 @@
           el.find("[data-attr=icon-ctn] i").attr("class", `fa fa-${data.icon} ${data.icon_class}`);
         }
         if (data.control) {
-          el.find("[data-attr=admin-ctn] i").attr("class", "fa fa-shield text-info");
+          el.find("[data-attr=admin-ctn] i").attr("class", "fa fa-shield text-info").attr("title", "ADMIN");
+        }
+        if (data.isHost) {
+          el.find("[data-attr=admin-ctn] i").attr("class", "fa fa-shield text-danger").attr("title", "HOST");
         }
         el.find("[data-attr=drift-ctn] i").attr("class", `fa fa-${(data.drift ? data.drift > 0 ? "backward" : "forward" : "circle-o-notch")} text-warning`);
-        return el.find("[data-attr=drift]").html(el.find("[data-attr=drift]").html().replace("-", ""));
+        el.find("[data-attr=drift]").html(el.find("[data-attr=drift]").html().replace("-", ""));
+        if ((this.index != null) && data.index === this.index) {
+          return this.drift = parseFloat(data.drift);
+        }
       }
 
       CMD_subscriber_list(data) {
-        var j, len, ref, results, sub;
+        var j, len, ref1, results, sub;
         this.clients.html("");
-        ref = data.subscribers;
+        ref1 = data.subscribers;
         results = [];
-        for (j = 0, len = ref.length; j < len; j++) {
-          sub = ref[j];
+        for (j = 0, len = ref1.length; j < len; j++) {
+          sub = ref1[j];
           results.push(this.CMD_update_single_subscriber({
             data: sub
           }));
@@ -477,11 +577,9 @@
 
     };
 
-    SyncTubeClient.prototype.WS_IP = "127.0.0.1";
+    SyncTubeClient.prototype.WS_IP = "blitzfunke.bmonkeys.net";
 
-    SyncTubeClient.prototype.WS_PORT = 1337;
-
-    SyncTubeClient.prototype.REFRESH_INTERVAL = 2000;
+    SyncTubeClient.prototype.WS_PORT = 80;
 
     return SyncTubeClient;
 

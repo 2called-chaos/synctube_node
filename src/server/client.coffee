@@ -1,4 +1,5 @@
 COLORS = require("../colors.js")
+UTIL = require("./util.js")
 
 exports.Class = class SyncTubeServerClient
   debug: (a...) -> @server.debug("[##{@index}]", a...)
@@ -33,7 +34,7 @@ exports.Class = class SyncTubeServerClient
       @debug "Received message from #{@ip}: #{msg}"
 
       if @name
-        @server.handleMessage(this, message, msg) || @control?.handleMessage(this, message, msg) || @subscribed?.handleMessage(this, message, msg)
+        @server.handleMessage(this, message, msg) || @control?.handleMessage(this, message, msg, true) || @subscribed?.handleMessage(this, message, msg)
       else
         @setUsername(msg)
 
@@ -52,6 +53,7 @@ exports.Class = class SyncTubeServerClient
     was_index = @index
     @index = @server.clients.indexOf(this)
     @sendCode "session_index", index: @index
+    @subscribed? && @sendCode("subscriber_list", channel: @subscribed.name, subscribers: @subscribed.getSubscriberList(this))
     @debug "Reindexed client session from #{was_index} to #{@index}"
     return this
 
@@ -77,7 +79,7 @@ exports.Class = class SyncTubeServerClient
     true
 
   setUsername: (name) ->
-    @name = @server.htmlEntities(name)
+    @name = UTIL.htmlEntities(name)
     if @server.PROTECTED_NAMES.indexOf(@name.toLowerCase()) > -1
       @name = null
       @sendSystemMessage "This name is not allowed!", COLORS.red

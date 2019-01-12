@@ -1,4 +1,5 @@
 COLORS = require("../colors.js")
+UTIL = require("./util.js")
 
 exports.Class = class SyncTubeServerChannel
   debug: (a...) -> @server.debug("[#{@name}]", a...)
@@ -16,97 +17,6 @@ exports.Class = class SyncTubeServerChannel
     @playlist_index = 0
     @desired = { url: @server.DEFAULT_VIDEO, seek: 0, seek_update: new Date, state: if @server.DEFAULT_AUTOPLAY then "play" else "pause" }
 
-  handleMessage: (client, message, msg) ->
-    return @CHSCMD_seek(client, m[1]) if m = msg.match(/^\/(?:seek)(?:\s([0-9\-+]+))?$/i)
-    return @CHSCMD_pause(client) if m = msg.match(/^\/(?:p|pause)$/i)
-    return @CHSCMD_resume(client) if m = msg.match(/^\/(?:r|resume)$/i)
-    return @CHSCMD_toggle(client) if m = msg.match(/^\/(?:t|toggle)$/i)
-    return @CHSCMD_ready(client) if m = msg.match(/^\/(?:ready|rdy)$/i)
-    return @CHSCMD_play(client, m[1]) if m = msg.match(/^\/play\s(.+)$/i)
-    return @CHSCMD_host(client, m[1]) if m = msg.match(/^\/host(?:\s(.+))?$/i)
-    @broadcast(client, msg, null, (if @control.indexOf(client) > -1 then COLORS.red else null))
-    return client.ack()
-
-  CHSCMD_pause: (client) ->
-    @desired.state = "pause"
-    @broadcastCode(false, "desired", @desired)
-    return client.ack()
-
-  CHSCMD_resume: (client) ->
-    @desired.state = "play"
-    @broadcastCode(false, "desired", @desired)
-    return client.ack()
-
-  CHSCMD_toggle: (client) ->
-    @desired.state = if @desired.state == "play" then "pause" else "play"
-    @broadcastCode(false, "desired", @desired)
-    return client.ack()
-
-  CHSCMD_seek: (client, to) ->
-    if to.charAt(0) == "-"
-      to = @desired.seek - parseFloat(to.slice(1))
-    else if to.charAt(0) == "+"
-      to = @desired.seek + parseFloat(to.slice(1))
-    else if to
-      to = to
-    else
-      client.sendSystemMessage("Number required (absolute or +/-)")
-      return client.ack()
-
-    @desired.seek = parseFloat(to)
-    @broadcastCode(false, "video_action", action: "sync")
-    @broadcastCode(false, "desired", Object.assign({}, @desired, { force: true }))
-    return client.ack()
-
-  CHSCMD_ready: (client) ->
-    @ready.push(client)
-    if @ready.length == @subscribers.length
-      clearTimeout(@ready_timeout)
-      @desired.state = "play"
-      @broadcastCode(false, "video_action", action: "play")
-    return client.ack()
-
-  CHSCMD_play: (client, url) ->
-    if m = url.match(/([A-Za-z0-9_\-]{11})/)
-      @liveVideo(m[1])
-    else
-      client.sendSystemMessage("I don't recognize this URL/YTID format, sorry")
-
-    return client.ack()
-
-  CHSCMD_host: (client, who) ->
-    if who
-      found = null
-
-      for sub in @subscribers
-        if sub.name.match(new RegExp(who, "i"))
-          found = sub
-          break
-
-      if found
-        who = found
-      else
-        client.sendSystemMessage("Couldn't find the target in channel")
-        return client.ack()
-    else
-      who = client
-
-    if who == @control[@host]
-      client.sendSystemMessage("Target is already host")
-    else if @control.indexOf(who) > -1
-      @debug "Switching host to #", who.index
-      wasHostI = @host
-      wasHost = @control[wasHostI]
-      newHostI = @control.indexOf(who)
-      newHost = @control[newHostI]
-      @control[wasHostI] = newHost
-      @control[newHostI] = wasHost
-      @updateSubscriberList(client)
-    else
-      client.sendSystemMessage("Target is not in control and thereby can't be host")
-    #@broadcastCode(false, "desired", @desired)
-    return client.ack()
-
   broadcast: (client, message, color, client_color, sendToAuthor = true) ->
     for c in @subscribers
       continue if c == client && !sendToAuthor
@@ -120,17 +30,6 @@ exports.Class = class SyncTubeServerChannel
   updateSubscriberList: (client) ->
     @broadcastCode(client, "subscriber_list", channel: @name, subscribers: @getSubscriberList(client))
 
-  liveVideo: (url, state = "pause") ->
-    @desired = { url: url, seek: 0, state: state }
-    @ready = []
-    @broadcastCode(false, "desired", @desired)
-
-    # start after grace period
-    @ready_timeout = setTimeout((=>
-      @desired.state = "play"
-      @broadcastCode(false, "video_action", action: "play")
-    ), 2000)
-
   getSubscriberList: (client) ->
     list = []
     list.push(@getSubscriberData(client, c, i)) for c, i in @subscribers
@@ -139,7 +38,7 @@ exports.Class = class SyncTubeServerChannel
   getSubscriberData: (client, sub, index) ->
     data =
       index: sub.index
-      name: sub.name
+      name: sub.name || sub.old_name
       control: @control.indexOf(sub) > -1
       isHost: @control[@host] == sub
       isyou: client == sub
@@ -166,6 +65,16 @@ exports.Class = class SyncTubeServerChannel
       else                  data.icon = "cog"; data.icon_class = "text-danger"
 
     data
+
+  liveVideo: (url, state = "pause") ->
+    @desired = { url: url, seek: 0, state: state }
+    @ready = []
+    @broadcastCode(false, "desired", @desired)
+
+    # start after grace period
+    @ready_timeout = UTIL.delay 2000, =>
+      @desired.state = "play"
+      @broadcastCode(false, "video_action", action: "play")
 
   pauseVideo: (client, sendMessage = true) ->
     return unless @control.indexOf(client) > -1
@@ -196,6 +105,7 @@ exports.Class = class SyncTubeServerChannel
 
   subscribe: (client, sendMessage = true) ->
     return if @subscribers.indexOf(client) > -1
+    client.subscribed?.unsubscribe?(client)
     @subscribers.push(client)
     client.subscribed = this
     client.state = {}
@@ -204,10 +114,11 @@ exports.Class = class SyncTubeServerChannel
     client.sendCode("desired", @desired)
     @broadcast(client, "<i>joined the party!</i>", COLORS.green, COLORS.muted, false)
     @updateSubscriberList(client)
-    @debug "subscribed client ##{client.index}(#{client.ip}) to channel #{@name}"
+    @debug "subscribed client ##{client.index}(#{client.ip})"
 
   unsubscribe: (client, sendMessage = true, reason = null) ->
     return if @subscribers.indexOf(client) == -1
+    client.control.revokeControl(client) if client.control == this
     @subscribers.splice(@subscribers.indexOf(client), 1)
     client.subscribed = null
     client.state = {}
@@ -215,7 +126,7 @@ exports.Class = class SyncTubeServerChannel
     client.sendCode("unsubscribe", channel: @name)
     @broadcast(client, "<i>left the party :(</i>", COLORS.red, COLORS.muted, false)
     @updateSubscriberList(client)
-    @debug "unsubscribed client ##{client.index}(#{client.ip}) from channel #{@name}"
+    @debug "unsubscribed client ##{client.index}(#{client.ip})"
 
   destroy: (client, sendMessage = true) ->
     @debug "channel deleted by #{client.name}[#{client.ip}] (#{@subscribers.length} subscribers)"
@@ -225,3 +136,148 @@ exports.Class = class SyncTubeServerChannel
       @revokeControl(c, true, "channel deleted by #{client.name}[#{client.ip}]")
 
     delete @server.channels[@name]
+
+  # ====================
+  # = Channel commands =
+  # ====================
+  handleMessage: (client, message, msg) ->
+    return @CHSCMD_seek(client, m[1]) if m = msg.match(/^\/(?:seek)(?:\s([0-9\-+]+))?$/i)
+    return @CHSCMD_pause(client) if m = msg.match(/^\/(?:p|pause)$/i)
+    return @CHSCMD_resume(client) if m = msg.match(/^\/(?:r|resume)$/i)
+    return @CHSCMD_toggle(client) if m = msg.match(/^\/(?:t|toggle)$/i)
+    return @CHSCMD_ready(client) if m = msg.match(/^\/(?:ready|rdy)$/i)
+    return @CHSCMD_retry(client) if m = msg.match(/^\/retry$/i)
+    return @CHSCMD_play(client, m[1]) if m = msg.match(/^\/play\s(.+)$/i)
+    return @CHSCMD_host(client, m[1]) if m = msg.match(/^\/host(?:\s(.+))?$/i)
+    return @CHSCMD_grantControl(client, m[1]) if m = msg.match(/^\/grant(?:\s(.+))?$/i)
+    return @CHSCMD_revokeControl(client, m[1]) if m = msg.match(/^\/revoke(?:\s(.+))?$/i)
+    return @CHSCMD_leave(client) if m = msg.match(/^\/leave$/i)
+    @broadcast(client, msg, null, (if @control[@host] == client then COLORS.red else if @control.indexOf(client) > -1 then COLORS.info else null))
+    return client.ack()
+
+  permissionDenied: (client, context) ->
+    msg = "You don't have the required permissions to perform this action"
+    msg += " (#{context})" if context
+    client.sendSystemMessage(msg)
+    return client.ack()
+
+  findClient: (client, who) ->
+    return client unless who
+
+    for sub in @subscribers
+      return sub if sub.name.match(new RegExp(who, "i"))
+
+    client.sendSystemMessage("Couldn't find the target in channel")
+    client.ack()
+    return false
+
+  CHSCMD_retry: (client) ->
+    return unless ch = client.subscribed
+    ch.revokeControl(client)
+    ch.unsubscribe(client)
+    ch.subscribe(client)
+    return client.ack()
+
+  CHSCMD_pause: (client) ->
+    return @permissionDenied(client, "pause") unless @control.indexOf(client) > -1
+    @desired.state = "pause"
+    @broadcastCode(false, "desired", @desired)
+    return client.ack()
+
+  CHSCMD_resume: (client) ->
+    return @permissionDenied(client, "resume") unless @control.indexOf(client) > -1
+    @desired.state = "play"
+    @broadcastCode(false, "desired", @desired)
+    return client.ack()
+
+  CHSCMD_toggle: (client) ->
+    return @permissionDenied(client, "toggle") unless @control.indexOf(client) > -1
+    @desired.state = if @desired.state == "play" then "pause" else "play"
+    @broadcastCode(false, "desired", @desired)
+    return client.ack()
+
+  CHSCMD_seek: (client, to) ->
+    return @permissionDenied(client, "seek") unless @control.indexOf(client) > -1
+    if to.charAt(0) == "-"
+      to = @desired.seek - parseFloat(to.slice(1))
+    else if to.charAt(0) == "+"
+      to = @desired.seek + parseFloat(to.slice(1))
+    else if to
+      to = to
+    else
+      client.sendSystemMessage("Number required (absolute or +/-)")
+      return client.ack()
+
+    @desired.seek = parseFloat(to)
+    @broadcastCode(false, "video_action", action: "sync")
+    @broadcastCode(false, "desired", Object.assign({}, @desired, { force: true }))
+    return client.ack()
+
+  CHSCMD_ready: (client) ->
+    @ready.push(client)
+    if @ready.length == @subscribers.length
+      clearTimeout(@ready_timeout)
+      @desired.state = "play"
+      @broadcastCode(false, "video_action", action: "play")
+    return client.ack()
+
+  CHSCMD_play: (client, url) ->
+    return @permissionDenied(client, "play") unless @control.indexOf(client) > -1
+    if m = url.match(/([A-Za-z0-9_\-]{11})/)
+      @liveVideo(m[1])
+    else
+      client.sendSystemMessage("I don't recognize this URL/YTID format, sorry")
+
+    return client.ack()
+
+  CHSCMD_leave: (client) ->
+    if ch = client.subscribed
+      ch.unsubscribe(client)
+    else
+      client.sendSystemMessage("You are not in any channel!")
+
+    return client.ack()
+
+  CHSCMD_host: (client, who) ->
+    return @permissionDenied(client, "host") unless @control.indexOf(client) > -1
+    return false unless who = @findClient(client, who)
+
+    if who == @control[@host]
+      client.sendSystemMessage("Target is already host")
+    else if @control.indexOf(who) > -1
+      @debug "Switching host to #", who.index
+      wasHostI = @host
+      wasHost = @control[wasHostI]
+      newHostI = @control.indexOf(who)
+      newHost = @control[newHostI]
+      @control[wasHostI] = newHost
+      @control[newHostI] = wasHost
+      @updateSubscriberList(client)
+    else
+      client.sendSystemMessage("Target is not in control and thereby can't be host")
+    #@broadcastCode(false, "desired", @desired)
+    return client.ack()
+
+  CHSCMD_grantControl: (client, who) ->
+    return @permissionDenied(client, "grantControl") unless @control.indexOf(client) > -1
+    return false unless who = @findClient(client, who)
+
+    if @control.indexOf(who) > -1
+      client.sendSystemMessage("Target is already in control")
+    else
+      @grantControl(who)
+      client.sendSystemMessage("Target is now in control!", COLORS.green)
+
+    return client.ack()
+
+  CHSCMD_revokeControl: (client, who) ->
+    return @permissionDenied(client, "revokeControl") unless @control.indexOf(client) > -1
+    return false unless who = @findClient(client, who)
+
+    if @control.indexOf(who) > -1
+      @revokeControl(who)
+      client.sendSystemMessage("Target is no longer in control!", COLORS.green)
+    else
+      client.sendSystemMessage("Target was not in control")
+
+    return client.ack()

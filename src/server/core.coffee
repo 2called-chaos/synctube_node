@@ -1,44 +1,25 @@
 # requires
 http = require('http');
-fs = require('fs');
 webSocketServer = require('websocket').server;
 {spawn} = require( 'child_process' )
 
 # colors
 COLORS = require("../colors.js")
+UTIL = require("./util.js")
 Channel = require("./channel.js").Class
 Client = require("./client.js").Class
+HttpRequest = require("./http_request.js").Class
 
 exports.Class = class SyncTubeServer
-  SERVE_STATIC: [
-    "/"
-    "/favicon.ico"
-    "/dist/client.js"
-  ]
-
+  # Clients can't use these names
   PROTECTED_NAMES: [
     "admin"
     "system"
   ]
 
+  # Default video to cue in new channels
   DEFAULT_VIDEO: "6Dh-RL__uN4"
   DEFAULT_AUTOPLAY: false
-
-  debug: (msg...) ->
-    return unless @opts.debug
-    msg.unshift new Date
-    msg.unshift "[ST]"
-    console.debug.apply(@, msg)
-
-  warn: (msg...) ->
-    msg.unshift new Date
-    msg.unshift "[ST]"
-    console.warn.apply(@, msg)
-
-  error: (msg...) ->
-    msg.unshift new Date
-    msg.unshift "[ST]"
-    console.error.apply(@, msg)
 
   constructor: (@opts = {}) ->
     # set process title
@@ -49,6 +30,7 @@ exports.Class = class SyncTubeServer
     @opts.port           ?= 1337 # Don't forget to change in client as well
     @opts.packetInterval ?= 2000 # (CL) interval in ms for CLIENTS to send packet updates to the server
     @opts.maxDrift       ?= 5000 # (CL) max ms (1000ms = 1s) for CLIENTS before force seeking to correct drift to host
+    @opts.answerHttp     ?= true # If set to false no static assets will be served, all requests result in a 400: Bad request
 
     @clients = []
     @channels = {}
@@ -65,48 +47,49 @@ exports.Class = class SyncTubeServer
     @ws = new webSocketServer httpServer: @http
     @ws.on "request", (request) => @handleWSRequest(request)
 
-  htmlEntities: (str) ->
-    String(str)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-
-  delay: (ms, func) -> setTimeout(func, ms)
-
   eachClient: (method, args...) -> c[method]?(args...) for c in @clients
 
   handleHTTPRequest: (request, response) ->
-    if @SERVE_STATIC.indexOf(request.url) > -1
-      file = request.url
-      file = "/index.html" if file == "/"
-      file = ".#{file}"
-      type = "text/html"
-      type = "application/javascript" if file.slice(-3) == ".js"
-      if fs.existsSync(file)
-        @debug "200: served #{file} (#{type}) IP: #{request.connection.remoteAddress}"
-        response.writeHead(200, 'Content-Type': 'text/html')
-        response.end(fs.readFileSync(file))
-      else
-        @warn "404: Not Found (#{request.url}) IP: #{request.connection.remoteAddress}"
-        response.writeHead(404, 'Content-Type': 'text/plain')
-        response.end("Error 404: Not Found")
+    req = new HttpRequest(this)
+    if @opts.answerHttp
+      req.accept(request, response)
     else
-      @warn "400: Bad Request (#{request.url}) IP: #{request.connection.remoteAddress}"
-      response.writeHead(400, 'Content-Type': 'text/plain')
-      response.end("Error 400: Bad Request")
+      req.reject(request, response)
 
   handleWSRequest: (request) ->
     client = new Client(this)
     client.accept(request).listen()
 
+  # ===========
+  # = Logging =
+  # ===========
+  debug: (msg...) ->
+    return unless @opts.debug
+    msg.unshift new Date
+    msg.unshift "[ST]"
+    console.debug.apply(@, msg)
+
+  warn: (msg...) ->
+    msg.unshift new Date
+    msg.unshift "[ST]"
+    console.warn.apply(@, msg)
+
+  error: (msg...) ->
+    msg.unshift new Date
+    msg.unshift "[ST]"
+    console.error.apply(@, msg)
+
+  # ===================
+  # = Server commands =
+  # ===================
   handleMessage: (client, message, msg) ->
     return @SCMD_packet(client, m[1]) if m = msg.match(/^!packet:(.+)$/i)
-    return @SCMD_invoke(client, m[1], m[2]) if m = msg.match(/^\/invoke\s([^\s]+)(?:\s(.+))?$/i)
-    return @SCMD_rename(client) if msg.match(/^\/rename$/i)
-    return @SCMD_restart(client) if m = msg.match(/^\/restart$/i)
-    return @SCMD_retry(client) if m = msg.match(/^\/retry$/i)
-    return @SCMD_control(client, m[1], m[2]) if m = msg.match(/^\/control(?:\s([^\s]+)(?:\s(.+))?)?$/i)
     return @SCMD_join(client, m[1]) if m = msg.match(/^\/join\s([^\s]+)$/i)
-    return @SCMD_leave(client) if m = msg.match(/^\/leave$/i)
+    return @SCMD_control(client, m[1], m[2]) if m = msg.match(/^\/control(?:\s([^\s]+)(?:\s(.+))?)?$/i)
+    return @SCMD_rename(client) if msg.match(/^\/rename$/i)
+    return @SCMD_restart(client) if msg.match(/^\/restart$/i)
+    return @SCMD_invoke(client, m[1], m[2]) if m = msg.match(/^\/invoke\s([^\s]+)(?:\s(.+))?$/i)
+    return @SCMD_dump(client, m[1], m[2]) if m = msg.match(/^\/dump\s([^\s]+)(?:\s(.+))?$/i)
     return false
 
   SCMD_packet: (client, jdata) ->
@@ -120,6 +103,8 @@ exports.Class = class SyncTubeServer
     ch = client.subscribed
     if ch && (!client.state || (JSON.stringify(client.state) != jdata))
       json.time = new Date
+      json.timestamp = UTIL.videoTimestamp(json.seek, json.playtime) if json.seek? && json.playtime?
+
       client.state = json
       ch.broadcastCode(client, "update_single_subscriber", channel: ch.name, data: ch.getSubscriberData(client, client, client.index))
       if client == ch.control[ch.host] && ch.desired.url == json.url
@@ -131,35 +116,17 @@ exports.Class = class SyncTubeServer
       client.sendCode("desired", ch.desired) if ch
     return true
 
-  SCMD_invoke: (client, which, args) ->
-    args ||= "{}"
-    client.sendCode(which, JSON.parse(args))
-    client.ack()
-    return true
+  SCMD_join: (client, chname) ->
+    if channel = @channels[chname]
+      channel.subscribe(client)
+    else
+      client.sendSystemMessage("I don't know about this channel, sorry!")
+      client.sendSystemMessage("<small>You can create it with <strong>/control #{UTIL.htmlEntities(chname)} [password]</strong></small>", COLORS.info)
 
-  SCMD_rename: (client) ->
-    client.sendCode "require_username", autofill: false
-    client.old_name = client.name
-    client.name = null
-    client.sendSystemMessage "Tell me your new username!"
-    client.ack()
-    return true
-
-  SCMD_restart: (client) ->
-    client.sendSystemMessage   "See ya!"
-    throw "bye"
-    #@delay 1000, => client.sendCode "navigate", reload: true
-    return true
-
-  SCMD_retry: (client) ->
-    return unless ch = client.subscribed
-    ch.revokeControl(client)
-    ch.unsubscribe(client)
-    ch.subscribe(client)
     return client.ack()
 
   SCMD_control: (client, name, password) ->
-    chname = @htmlEntities(name || client.subscribed?.name || "")
+    chname = UTIL.htmlEntities(name || client.subscribed?.name || "")
     unless chname
       client.sendSystemMessage("Channel name required", COLORS.red)
       return client.ack()
@@ -182,20 +149,28 @@ exports.Class = class SyncTubeServer
 
     return client.ack()
 
-  SCMD_join: (client, chname) ->
-    if channel = @channels[chname]
-      channel.subscribe(client)
-    else
-      client.sendSystemMessage("I don't know about this channel, sorry!")
-      client.sendSystemMessage("<small>You can create it with <strong>/control #{@htmlEntities(chname)} [password]</strong></small>", COLORS.info)
-
+  SCMD_rename: (client) ->
+    client.sendCode "require_username", autofill: false
+    client.old_name = client.name
+    client.name = null
+    client.sendSystemMessage "Tell me your new username!"
     return client.ack()
 
-  SCMD_leave: (client) ->
-    if ch = client.subscribed
-      ch.unsubscribe(client)
-      client.sendCode("video_action", action: "destroy")
-    else
-      client.sendSystemMessage("You are not in any channel!")
+  SCMD_restart: (client) ->
+    client.sendSystemMessage "See ya!"
+    throw "bye"
+    #UTIL.delay 1000, => client.sendCode "navigate", reload: true
+    return true
+
+  SCMD_invoke: (client, which, args) ->
+    args ||= "{}"
+    client.sendCode(which, JSON.parse(args))
+    return client.ack()
+
+  SCMD_dump: (client, what, detail) ->
+    if what == "client"
+      console.log if detail then @clients[parseInt(detail)] else client
+    else if what == "channel"
+      console.log if detail then @channels[detail] else if client.subscribed then client.subscribed else @channels
 
     return client.ack()

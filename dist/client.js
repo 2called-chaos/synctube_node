@@ -25,61 +25,46 @@
       }
 
       constructor(opts = {}) {
-        var base, base1, base10, base11, base12, base13, base2, base3, base4, base5, base6, base7, base8, base9;
+        var base, base1, base2, base3, base4, base5, base6, base7, j, l, len, len1, ref, ref1, x;
         this.opts = opts;
         // options
         if ((base = this.opts).debug == null) {
           base.debug = false;
         }
-        if ((base1 = this.opts).wsIp == null) {
-          base1.wsIp = this.WS_IP;
+        if ((base1 = this.opts).maxWidth == null) {
+          base1.maxWidth = 12;
         }
-        if ((base2 = this.opts).wsPort == null) {
-          base2.wsPort = this.WS_PORT;
-        }
-        if ((base3 = this.opts).maxWidth == null) {
-          base3.maxWidth = 12;
-        }
-        if ((base4 = this.opts).content == null) {
-          base4.content = $("#content");
-        }
-        if ((base5 = this.opts).view == null) {
-          base5.view = $("#view");
-        }
-        if ((base6 = this.opts).input == null) {
-          base6.input = $("#input");
-        }
-        if ((base7 = this.opts).status == null) {
-          base7.status = $("#status");
-        }
-        if ((base8 = this.opts).queue == null) {
-          base8.queue = $("#queue");
-        }
-        if ((base9 = this.opts).playlist == null) {
-          base9.playlist = $("#playlist");
-        }
-        if ((base10 = this.opts).clients == null) {
-          base10.clients = $("#clients");
+        ref = this.VIEW_COMPONENTS;
+        for (j = 0, len = ref.length; j < len; j++) {
+          x = ref[j];
+          if ((base2 = this.opts)[x] == null) {
+            base2[x] = $(`#${x}`);
+          }
         }
         // synced settings (controlled by server)
-        if ((base11 = this.opts).synced == null) {
-          base11.synced = {};
+        if ((base3 = this.opts).synced == null) {
+          base3.synced = {};
         }
-        if ((base12 = this.opts.synced).maxDrift == null) {
-          base12.maxDrift = 60; // superseded by server instructions
+        if ((base4 = this.opts.synced).maxDrift == null) {
+          base4.maxDrift = 60; // superseded by server instructions
         }
-        if ((base13 = this.opts.synced).packetInterval == null) {
-          base13.packetInterval = 10000; // superseded by server instructions
+        if ((base5 = this.opts.synced).packetInterval == null) {
+          base5.packetInterval = 10000; // superseded by server instructions
         }
-        
-        // DOM
-        this.content = $(this.opts.content);
-        this.view = $(this.opts.view);
-        this.input = $(this.opts.input);
-        this.status = $(this.opts.status);
-        this.queue = $(this.opts.queue);
-        this.playlist = $(this.opts.playlist);
-        this.clients = $(this.opts.clients);
+        ref1 = this.VIEW_COMPONENTS;
+        for (l = 0, len1 = ref1.length; l < len1; l++) {
+          x = ref1[l];
+          
+          // DOM
+          this[x] = $(this.opts[x]);
+        }
+        // connection options
+        if ((base6 = this.opts).wsIp == null) {
+          base6.wsIp = $("meta[name=synctube-server-ip]").attr("content");
+        }
+        if ((base7 = this.opts).wsPort == null) {
+          base7.wsPort = $("meta[name=synctube-server-port]").attr("content");
+        }
         // Client data
         this.name = null;
         this.index = null;
@@ -130,7 +115,7 @@
           return;
         }
         // open connection
-        address = `ws://${this.WS_IP}:${this.WS_PORT}/cable`;
+        address = `ws://${this.opts.wsIp}:${this.opts.wsPort}/cable`;
         this.debug(`Opening connection to ${address}`);
         this.connection = new WebSocket(address);
         this.connection.onopen = () => {
@@ -149,7 +134,9 @@
           if (this.connection.readyState !== 1) {
             this.status.text("Error");
             this.disableInput().val("Unable to communicate with the WebSocket server. Please reload!");
-            return window.location.reload();
+            return setTimeout((function() {
+              return window.location.reload();
+            }), 1000);
           }
         }), 3000);
       }
@@ -202,7 +189,7 @@
               }
               break;
             case "message":
-              this.debug("received MESSAGE", json.data);
+              //@debug "received MESSAGE", json.data
               return this.addMessage(json.data);
             default:
               return this.warn("Hmm..., I've never seen JSON like this:", json);
@@ -306,61 +293,6 @@
         });
       }
 
-      secondsToTime(cur, max) {
-        var mf, mh, mm, ms, r, sf, sh, sm, ss;
-        mh = null;
-        mm = null;
-        ms = null;
-        mf = null;
-        if (max >= (60 * 60)) {
-          mh = parseInt(max / (60 * 60));
-          max %= 60 * 60;
-        }
-        if (max >= 60) {
-          mm = parseInt(max / 60);
-          max %= 60;
-        }
-        ms = ("0" + parseInt(max)).slice(-2);
-        mf = max.toFixed(1).toString().split(".");
-        mf = mf[mf.length - 1];
-        sh = null;
-        sm = null;
-        ss = null;
-        sf = null;
-        if (cur >= (60 * 60)) {
-          sh = parseInt(cur / (60 * 60));
-          cur %= 60 * 60;
-        }
-        if (cur >= 60) {
-          sm = parseInt(cur / 60);
-          cur %= 60;
-        }
-        ss = ("0" + parseInt(cur)).slice(-2);
-        sf = cur.toFixed(1).toString().split(".");
-        sf = sf[sf.length - 1];
-        r = "";
-        if (mh != null) {
-          r += `0${sh || 0}:`.slice(mh >= 10 ? -3 : -2);
-        }
-        if ((mh != null) || (mm != null)) {
-          r += `0${sm || 0}:`.slice(mm >= 10 || (mh != null) ? -3 : -2);
-        }
-        r += `0${ss}`.slice(-2);
-        r += `.${sf}`;
-        r += "/";
-        if (mh != null) {
-          r += `0${mh}:`.slice(mh >= 10 ? -3 : -2);
-        }
-        if ((mh != null) || (mm != null)) {
-          r += `0${mm}:`.slice(mm >= 10 || (mh != null) ? -3 : -2);
-        }
-        r += `0${ms}`.slice(-2);
-        if (mf !== "0") {
-          r += `.${mf}`;
-        }
-        return r;
-      }
-
       broadcastState(ev = (ref = this.player) != null ? ref.getPlayerState() : void 0) {
         var packet, ref1, ref2, ref3, ref4, state;
         state = (function() {
@@ -389,15 +321,12 @@
           loaded_fraction: player.getVideoLoadedFraction(),
           url: (ref3 = player.getVideoUrl()) != null ? (ref4 = ref3.match(/([A-Za-z0-9_\-]{11})/)) != null ? ref4[0] : void 0 : void 0
         };
-        if ((packet.seek != null) && (packet.playtime != null)) {
-          packet.timestamp = this.secondsToTime(packet.seek, packet.playtime);
-        }
         return this.connection.send("!packet:" + JSON.stringify(packet));
       }
 
-      // ========
-      // = CMDS =
-      // ========
+      // =================
+      // = Control codes =
+      // =================
       CMD_server_settings(data) {
         var k, results, v;
         results = [];
@@ -421,6 +350,12 @@
       }
 
       CMD_unsubscribe() {
+        var ref1;
+        this.clients.html("");
+        if ((ref1 = this.player) != null) {
+          ref1.destroy();
+        }
+        this.player = null;
         return clearInterval(this.broadcastStateInterval);
       }
 
@@ -455,6 +390,7 @@
       }
 
       CMD_video_action(data) {
+        var ref1;
         switch (data.action) {
           case "resume":
             return this.player.playVideo();
@@ -463,7 +399,9 @@
           case "sync":
             return this.force_resync = true;
           case "destroy":
-            this.player.destroy();
+            if ((ref1 = this.player) != null) {
+              ref1.destroy();
+            }
             return this.player = null;
           case "seek":
             this.player.seekTo(data.to, true);
@@ -577,9 +515,7 @@
 
     };
 
-    SyncTubeClient.prototype.WS_IP = "blitzfunke.bmonkeys.net";
-
-    SyncTubeClient.prototype.WS_PORT = 80;
+    SyncTubeClient.prototype.VIEW_COMPONENTS = ["content", "view", "input", "status", "queue", "playlist", "clients"];
 
     return SyncTubeClient;
 

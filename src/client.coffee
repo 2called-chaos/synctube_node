@@ -1,6 +1,5 @@
 window.SyncTubeClient = class SyncTubeClient
-  WS_IP: "blitzfunke.bmonkeys.net"
-  WS_PORT: 80
+  VIEW_COMPONENTS: ["content", "view", "input", "status", "queue", "playlist", "clients"]
 
   debug: (msg...) ->
     return unless @opts.debug
@@ -18,16 +17,8 @@ window.SyncTubeClient = class SyncTubeClient
   constructor: (@opts = {}) ->
     # options
     @opts.debug ?= false
-    @opts.wsIp ?= @WS_IP
-    @opts.wsPort ?= @WS_PORT
     @opts.maxWidth ?= 12
-    @opts.content ?= $("#content")
-    @opts.view ?= $("#view")
-    @opts.input ?= $("#input")
-    @opts.status ?= $("#status")
-    @opts.queue ?= $("#queue")
-    @opts.playlist ?= $("#playlist")
-    @opts.clients ?= $("#clients")
+    @opts[x] ?= $("##{x}") for x in @VIEW_COMPONENTS
 
     # synced settings (controlled by server)
     @opts.synced ?= {}
@@ -35,13 +26,11 @@ window.SyncTubeClient = class SyncTubeClient
     @opts.synced.packetInterval ?= 10000 # superseded by server instructions
 
     # DOM
-    @content = $(@opts.content)
-    @view = $(@opts.view)
-    @input = $(@opts.input)
-    @status = $(@opts.status)
-    @queue = $(@opts.queue)
-    @playlist = $(@opts.playlist)
-    @clients = $(@opts.clients)
+    @[x] = $(@opts[x]) for x in @VIEW_COMPONENTS
+
+    # connection options
+    @opts.wsIp ?= $("meta[name=synctube-server-ip]").attr("content")
+    @opts.wsPort ?= $("meta[name=synctube-server-port]").attr("content")
 
     # Client data
     @name = null
@@ -82,7 +71,7 @@ window.SyncTubeClient = class SyncTubeClient
       return
 
     # open connection
-    address = "ws://#{@WS_IP}:#{@WS_PORT}/cable"
+    address = "ws://#{@opts.wsIp}:#{@opts.wsPort}/cable"
     @debug "Opening connection to #{address}"
     @connection = new WebSocket(address)
 
@@ -96,7 +85,7 @@ window.SyncTubeClient = class SyncTubeClient
       if @connection.readyState != 1
         @status.text("Error")
         @disableInput().val("Unable to communicate with the WebSocket server. Please reload!")
-        window.location.reload()
+        setTimeout((-> window.location.reload()), 1000)
     ), 3000)
 
   captureInput: ->
@@ -136,7 +125,7 @@ window.SyncTubeClient = class SyncTubeClient
           else
             @warn "no client implementation for CMD_#{json.data.type}"
         when "message"
-          @debug "received MESSAGE", json.data
+          #@debug "received MESSAGE", json.data
           @addMessage(json.data)
         else
           @warn "Hmm..., I've never seen JSON like this:", json
@@ -216,47 +205,6 @@ window.SyncTubeClient = class SyncTubeClient
               @lastPlayerState = newState
               @broadcastState(ev)
 
-  secondsToTime: (cur, max) ->
-    mh = null
-    mm = null
-    ms = null
-    mf = null
-    if max >= (60*60)
-      mh = parseInt(max / (60*60))
-      max %= 60*60
-    if max >= 60
-      mm = parseInt(max / 60)
-      max %= 60
-    ms = ("0"+parseInt(max)).slice(-2)
-    mf = max.toFixed(1).toString().split(".")
-    mf = mf[mf.length - 1]
-
-    sh = null
-    sm = null
-    ss = null
-    sf = null
-    if cur >= (60*60)
-      sh = parseInt(cur / (60*60))
-      cur %= 60*60
-    if cur >= 60
-      sm = parseInt(cur / 60)
-      cur %= 60
-    ss = ("0"+parseInt(cur)).slice(-2)
-    sf = cur.toFixed(1).toString().split(".")
-    sf = sf[sf.length - 1]
-
-    r = ""
-    r += "0#{sh || 0}:".slice(if mh >= 10 then -3 else -2) if mh?
-    r += "0#{sm || 0}:".slice(if mm >= 10 || mh? then -3 else -2) if mh? || mm?
-    r += "0#{ss}".slice(-2)
-    r += ".#{sf}"
-    r += "/"
-    r += "0#{mh}:".slice(if mh >= 10 then -3 else -2) if mh?
-    r += "0#{mm}:".slice(if mm >= 10 || mh? then -3 else -2) if mh? || mm?
-    r += "0#{ms}".slice(-2)
-    r += ".#{mf}" unless mf == "0"
-    r
-
   broadcastState: (ev = @player?.getPlayerState()) ->
     state = switch ev?.data
       when -1 then "unstarted"
@@ -275,14 +223,11 @@ window.SyncTubeClient = class SyncTubeClient
       loaded_fraction: player.getVideoLoadedFraction()
       url: player.getVideoUrl()?.match(/([A-Za-z0-9_\-]{11})/)?[0]
 
-    if packet.seek? && packet.playtime?
-      packet.timestamp = @secondsToTime(packet.seek, packet.playtime)
-
     @connection.send("!packet:" + JSON.stringify(packet))
 
-  # ========
-  # = CMDS =
-  # ========
+  # =================
+  # = Control codes =
+  # =================
   CMD_server_settings: (data) ->
     for k, v of data
       continue if k == "type"
@@ -294,7 +239,11 @@ window.SyncTubeClient = class SyncTubeClient
 
   CMD_ack: -> @enableInput()
 
-  CMD_unsubscribe: -> clearInterval(@broadcastStateInterval)
+  CMD_unsubscribe: ->
+    @clients.html("")
+    @player?.destroy()
+    @player = null
+    clearInterval(@broadcastStateInterval)
 
   CMD_desired: (data) ->
     unless @player
@@ -330,7 +279,7 @@ window.SyncTubeClient = class SyncTubeClient
       when "pause" then @player.pauseVideo()
       when "sync" then @force_resync = true
       when "destroy"
-        @player.destroy()
+        @player?.destroy()
         @player = null
       when "seek"
         @player.seekTo(data.to, true)

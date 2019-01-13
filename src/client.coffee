@@ -107,6 +107,10 @@ window.SyncTubeClient = class SyncTubeClient
         @force_resync = true
         @input.val("")
         return
+      else if m = msg.match(/^\/clear$/i)
+        @content.html("")
+        @input.val("")
+        return
 
       @connection.send(msg)
       @disableInput()

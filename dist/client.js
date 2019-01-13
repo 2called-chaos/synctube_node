@@ -169,6 +169,10 @@
             this.force_resync = true;
             this.input.val("");
             return;
+          } else if (m = msg.match(/^\/clear$/i)) {
+            this.content.html("");
+            this.input.val("");
+            return;
           }
           this.connection.send(msg);
           return this.disableInput();

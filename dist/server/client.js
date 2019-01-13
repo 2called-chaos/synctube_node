@@ -158,6 +158,10 @@
             this.name = this.old_name;
             this.subscribed.broadcast(this, `<i>changed his name to ${_name}</i>`, COLORS.info, COLORS.muted);
             this.name = _name;
+            this.subscribed.broadcastCode(this, "update_single_subscriber", {
+              channel: this.subscribed.name,
+              data: this.subscribed.getSubscriberData(this, this, this.index)
+            });
           } else {
             this.sendSystemMessage(`You changed your name from ${this.old_name} to ${this.name}!`, COLORS.info);
           }

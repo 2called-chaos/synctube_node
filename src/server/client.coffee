@@ -101,6 +101,7 @@ exports.Class = class SyncTubeServerClient
           @name = @old_name
           @subscribed.broadcast(this, "<i>changed his name to #{_name}</i>", COLORS.info, COLORS.muted)
           @name = _name
+          @subscribed.broadcastCode(this, "update_single_subscriber", channel: @subscribed.name, data: @subscribed.getSubscriberData(this, this, @index))
         else
           @sendSystemMessage "You changed your name from #{@old_name} to #{@name}!", COLORS.info
         @old_name = null

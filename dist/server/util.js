@@ -8,14 +8,18 @@
     return setTimeout(func, ms);
   };
 
-  exports.strbool = function(v) {
+  exports.strbool = function(v, rescue) {
     if (["true", "t", "1", "y", "yes", "on"].indexOf(v) > -1) {
       return true;
     }
     if (["false", "f", "0", "n", "no", "off"].indexOf(v) > -1) {
       return false;
     }
-    throw `Can't convert \`${v}' to boolean, expression invalid!`;
+    if (rescue != null) {
+      return rescue;
+    } else {
+      throw `Can't convert \`${v}' to boolean, expression invalid!`;
+    }
   };
 
   exports.secondsToArray = function(sec) {

@@ -477,11 +477,11 @@
     }
 
     CHSCMD_loop(client, what) {
-      if (what) {
+      if (what || this.control.indexOf(client) > -1) {
         if (!(this.control.indexOf(client) > -1)) {
           return this.permissionDenied(client, "loop");
         }
-        what = UTIL.strbool(what || "false");
+        what = UTIL.strbool(what, !this.desired.loop);
         if (this.desired.loop === what) {
           client.sendSystemMessage(`Loop is already ${(this.desired.loop ? "enabled" : "disabled")}!`);
         } else {

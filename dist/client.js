@@ -242,7 +242,7 @@
         return firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
       }
 
-      loadVideo(ytid, cue = false) {
+      loadVideo(ytid, cue = false, seek = 0) {
         var m;
         this.destroyIframe();
         this.destroyImage();
@@ -255,9 +255,9 @@
         return this.loadYTAPI(() => {
           if (this.player) {
             if (cue) {
-              this.player.cueVideoById(ytid);
+              this.player.cueVideoById(ytid, 0);
             } else {
-              this.player.loadVideoById(ytid);
+              this.player.loadVideoById(ytid, 0);
             }
             return this.player;
           } else {
@@ -265,6 +265,7 @@
               videoId: ytid,
               height: '100%',
               width: '100%',
+              //playerVars: controls: 0
               events: {
                 onReady: (ev) => {
                   var ref, ref1;
@@ -436,7 +437,7 @@
           return this.openVideo(data);
         }
         if (!this.player) {
-          this.loadVideo(data.url, true);
+          this.loadVideo(data.url, true, data.seek);
           return;
         }
         current_ytid = (ref1 = player.getVideoUrl()) != null ? (ref2 = ref1.match(/([A-Za-z0-9_\-]{11})/)) != null ? ref2[0] : void 0 : void 0;

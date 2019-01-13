@@ -248,9 +248,9 @@ exports.Class = class SyncTubeServerChannel
     return client.ack()
 
   CHSCMD_loop: (client, what) ->
-    if what
+    if what || @control.indexOf(client) > -1
       return @permissionDenied(client, "loop") unless @control.indexOf(client) > -1
-      what = UTIL.strbool(what || "false")
+      what = UTIL.strbool(what, !@desired.loop)
       if @desired.loop == what
         client.sendSystemMessage("Loop is already #{if @desired.loop then "enabled" else "disabled"}!")
       else

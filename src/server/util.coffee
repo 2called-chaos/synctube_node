@@ -5,10 +5,10 @@ exports.htmlEntities = (str) ->
 
 exports.delay = (ms, func) -> setTimeout(func, ms)
 
-exports.strbool = (v) ->
+exports.strbool = (v, rescue) ->
   return true if ["true", "t", "1", "y", "yes", "on"].indexOf(v) > -1
   return false if ["false", "f", "0", "n", "no", "off"].indexOf(v) > -1
-  throw "Can't convert `#{v}' to boolean, expression invalid!"
+  if rescue? then rescue else throw "Can't convert `#{v}' to boolean, expression invalid!"
 
 exports.secondsToArray = (sec) ->
   r = []

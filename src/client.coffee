@@ -169,7 +169,7 @@ window.SyncTubeClient = class SyncTubeClient
     firstScriptTag = document.getElementsByTagName('script')[0]
     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag)
 
-  loadVideo: (ytid, cue = false) ->
+  loadVideo: (ytid, cue = false, seek = 0) ->
     @destroyIframe()
     @destroyImage()
     @destroyVideo()
@@ -181,15 +181,16 @@ window.SyncTubeClient = class SyncTubeClient
     @loadYTAPI =>
       if @player
         if cue
-          @player.cueVideoById(ytid)
+          @player.cueVideoById(ytid, 0)
         else
-          @player.loadVideoById(ytid)
+          @player.loadVideoById(ytid, 0)
         return @player
       else
         window.player = @player = new YT.Player 'view',
           videoId: ytid
           height: '100%'
           width: '100%'
+          #playerVars: controls: 0
           events:
             onReady: (ev) =>
               @player.playVideo() unless cue
@@ -299,7 +300,7 @@ window.SyncTubeClient = class SyncTubeClient
     return @openVideo(data) if data.ctype == "video"
 
     unless @player
-      @loadVideo(data.url, true)
+      @loadVideo(data.url, true, data.seek)
       return
 
     current_ytid = player.getVideoUrl()?.match(/([A-Za-z0-9_\-]{11})/)?[0]

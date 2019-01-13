@@ -85,7 +85,7 @@ exports.Class = class SyncTubeServerClient
       @sendSystemMessage "This name is not allowed!", COLORS.red
       #@sendCode "require_username", autofill: false
       return @ack()
-    else if @name.slice(0, 8) == "!packet:"
+    else if UTIL.startsWith(@name, "!packet:")
       # ignore packets
       @name = null
       return @ack()

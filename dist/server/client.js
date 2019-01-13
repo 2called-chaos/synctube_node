@@ -142,7 +142,7 @@
         this.sendSystemMessage("This name is not allowed!", COLORS.red);
         //@sendCode "require_username", autofill: false
         return this.ack();
-      } else if (this.name.slice(0, 8) === "!packet:") {
+      } else if (UTIL.startsWith(this.name, "!packet:")) {
         // ignore packets
         this.name = null;
         return this.ack();

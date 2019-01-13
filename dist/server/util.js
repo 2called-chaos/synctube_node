@@ -22,6 +22,31 @@
     }
   };
 
+  exports.startsWith = function(str, ...which) {
+    var j, len, w;
+    for (j = 0, len = which.length; j < len; j++) {
+      w = which[j];
+      if (str.slice(0, w.length) === w) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  exports.endsWith = function(str, ...which) {
+    var j, len, w;
+    if (str == null) {
+      return false;
+    }
+    for (j = 0, len = which.length; j < len; j++) {
+      w = which[j];
+      if (str.slice(-w.length) === w) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   exports.secondsToArray = function(sec) {
     var j, len, r, ref, x;
     r = [];

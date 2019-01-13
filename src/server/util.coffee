@@ -10,6 +10,17 @@ exports.strbool = (v, rescue) ->
   return false if ["false", "f", "0", "n", "no", "off"].indexOf(v) > -1
   if rescue? then rescue else throw "Can't convert `#{v}' to boolean, expression invalid!"
 
+exports.startsWith = (str, which...) ->
+  for w in which
+    return true if str.slice(0, w.length) == w
+  false
+
+exports.endsWith = (str, which...) ->
+  return false unless str?
+  for w in which
+    return true if str.slice(-w.length) == w
+  false
+
 exports.secondsToArray = (sec) ->
   r = []
   for x in [60*60, 60]

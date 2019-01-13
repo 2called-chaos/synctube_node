@@ -93,6 +93,7 @@ window.SyncTubeClient = class SyncTubeClient
     @input.keydown (event) =>
       return true unless event.keyCode == 13
       return unless msg = @input.val()
+      @addSendCommand(msg) if msg.charAt(0) == "/"
 
       if m = msg.match(/^\/(?:mw|maxwidth|width)(?:\s([0-9]+))?$/i)
         i = parseInt(m[1])
@@ -148,6 +149,17 @@ window.SyncTubeClient = class SyncTubeClient
         <#{tagname} style="color:#{data.author_color}">#{data.author}</#{tagname}>
         @ #{"0#{dt.getHours()}".slice(-2)}:#{"0#{dt.getMinutes()}".slice(-2)}
         <span style="color: #{data.text_color}">#{data.text}</span>
+      </p>
+    """
+    @content.scrollTop(@content.prop("scrollHeight"))
+
+  addSendCommand: (msg) ->
+    dt = new Date()
+    @content.append """
+      <p style="color: #7a8288">
+        <span><i class="fa fa-terminal"></i></span>
+        @ #{"0#{dt.getHours()}".slice(-2)}:#{"0#{dt.getMinutes()}".slice(-2)}
+        <span>#{msg}</span>
       </p>
     """
     @content.scrollTop(@content.prop("scrollHeight"))

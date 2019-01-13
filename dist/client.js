@@ -153,6 +153,9 @@
           if (!(msg = this.input.val())) {
             return;
           }
+          if (msg.charAt(0) === "/") {
+            this.addSendCommand(msg);
+          }
           if (m = msg.match(/^\/(?:mw|maxwidth|width)(?:\s([0-9]+))?$/i)) {
             i = parseInt(m[1]);
             if (m[1] && i >= 1 && i <= 12) {
@@ -218,6 +221,13 @@
         dt = new Date(data.time);
         tagname = data.author === "system" ? "strong" : "span";
         this.content.append(`<p>\n  <${tagname} style="color:${data.author_color}">${data.author}</${tagname}>\n  @ ${`0${dt.getHours()}`.slice(-2)}:${`0${dt.getMinutes()}`.slice(-2)}\n  <span style="color: ${data.text_color}">${data.text}</span>\n</p>`);
+        return this.content.scrollTop(this.content.prop("scrollHeight"));
+      }
+
+      addSendCommand(msg) {
+        var dt;
+        dt = new Date();
+        this.content.append(`<p style="color: #7a8288">\n  <span><i class="fa fa-terminal"></i></span>\n  @ ${`0${dt.getHours()}`.slice(-2)}:${`0${dt.getMinutes()}`.slice(-2)}\n  <span>${msg}</span>\n</p>`);
         return this.content.scrollTop(this.content.prop("scrollHeight"));
       }
 

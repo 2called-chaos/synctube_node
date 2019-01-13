@@ -41,3 +41,12 @@ exports.videoTimestamp = (cur, max, fract = 2) ->
     exports.secondsToTimestamp(cur, fract)
     exports.secondsToTimestamp(max, fract).replace(/\.[0]+$/, "")
   ].join(" / ")
+
+exports.timestamp2Seconds = (ts) ->
+  parts = ts.replace(/\.[0-9]+$/, "").split(":").reverse()
+  seconds = 0
+
+  for x, i in parts
+    seconds += if i == 0 then parseInt(x) else parseInt(x) * Math.pow(60, i)
+
+  seconds

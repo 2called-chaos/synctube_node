@@ -154,7 +154,7 @@ exports.Class = class SyncTubeServerChannel
   # = Channel commands =
   # ====================
   handleMessage: (client, message, msg) ->
-    return @CHSCMD_seek(client, m[1]) if m = msg.match(/^\/(?:seek)(?:\s([0-9\-+]+))?$/i)
+    return @CHSCMD_seek(client, m[1]) if m = msg.match(/^\/(?:seek)(?:\s([0-9\-+:\.]+))?$/i)
     return @CHSCMD_pause(client) if m = msg.match(/^\/(?:p|pause)$/i)
     return @CHSCMD_resume(client) if m = msg.match(/^\/(?:r|resume)$/i)
     return @CHSCMD_toggle(client) if m = msg.match(/^\/(?:t|toggle)$/i)
@@ -215,18 +215,17 @@ exports.Class = class SyncTubeServerChannel
 
   CHSCMD_seek: (client, to) ->
     return @permissionDenied(client, "seek") unless @control.indexOf(client) > -1
-    if to.charAt(0) == "-"
-      to = @desired.seek - parseFloat(to.slice(1))
-    else if to.charAt(0) == "+"
-      to = @desired.seek + parseFloat(to.slice(1))
+    if to?.charAt(0) == "-"
+      to = @desired.seek - UTIL.timestamp2Seconds(to.slice(1))
+    else if to?.charAt(0) == "+"
+      to = @desired.seek + UTIL.timestamp2Seconds(to.slice(1))
     else if to
-      to = to
+      to = UTIL.timestamp2Seconds(to)
     else
       client.sendSystemMessage("Number required (absolute or +/-)")
       return client.ack()
 
     @desired.seek = parseFloat(to)
-    @broadcastCode(false, "video_action", action: "sync")
     @broadcastCode(false, "desired", Object.assign({}, @desired, { force: true }))
     return client.ack()
 

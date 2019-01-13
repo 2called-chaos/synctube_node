@@ -60,4 +60,15 @@
     return [exports.secondsToTimestamp(cur, fract), exports.secondsToTimestamp(max, fract).replace(/\.[0]+$/, "")].join(" / ");
   };
 
+  exports.timestamp2Seconds = function(ts) {
+    var i, j, len, parts, seconds, x;
+    parts = ts.replace(/\.[0-9]+$/, "").split(":").reverse();
+    seconds = 0;
+    for (i = j = 0, len = parts.length; j < len; i = ++j) {
+      x = parts[i];
+      seconds += i === 0 ? parseInt(x) : parseInt(x) * Math.pow(60, i);
+    }
+    return seconds;
+  };
+
 }).call(this);

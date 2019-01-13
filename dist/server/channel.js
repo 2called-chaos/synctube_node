@@ -313,7 +313,7 @@
     // ====================
     handleMessage(client, message, msg) {
       var m;
-      if (m = msg.match(/^\/(?:seek)(?:\s([0-9\-+]+))?$/i)) {
+      if (m = msg.match(/^\/(?:seek)(?:\s([0-9\-+:\.]+))?$/i)) {
         return this.CHSCMD_seek(client, m[1]);
       }
       if (m = msg.match(/^\/(?:p|pause)$/i)) {
@@ -431,20 +431,17 @@
       if (!(this.control.indexOf(client) > -1)) {
         return this.permissionDenied(client, "seek");
       }
-      if (to.charAt(0) === "-") {
-        to = this.desired.seek - parseFloat(to.slice(1));
-      } else if (to.charAt(0) === "+") {
-        to = this.desired.seek + parseFloat(to.slice(1));
+      if ((to != null ? to.charAt(0) : void 0) === "-") {
+        to = this.desired.seek - UTIL.timestamp2Seconds(to.slice(1));
+      } else if ((to != null ? to.charAt(0) : void 0) === "+") {
+        to = this.desired.seek + UTIL.timestamp2Seconds(to.slice(1));
       } else if (to) {
-        to = to;
+        to = UTIL.timestamp2Seconds(to);
       } else {
         client.sendSystemMessage("Number required (absolute or +/-)");
         return client.ack();
       }
       this.desired.seek = parseFloat(to);
-      this.broadcastCode(false, "video_action", {
-        action: "sync"
-      });
       this.broadcastCode(false, "desired", Object.assign({}, this.desired, {
         force: true
       }));

@@ -5,7 +5,8 @@
     <!-- <meta name="synctube-server-ip" content="127.0.0.1"> -->
     <!-- <meta name="synctube-server-port" content="1337"> -->
     <meta name="synctube-server-ip" content="blitzfunke.bmonkeys.net">
-    <meta name="synctube-server-port" content="80">
+    <meta name="synctube-server-port" content="443">
+    <meta name="synctube-server-protocol" content="wss"> <!-- ws (http) or wss (https) -->
     <!-- ^^^ CHANGE IP/PORT HERE ^^^ -->
 
     <meta charset="utf-8">
@@ -68,6 +69,8 @@
         right: 0;
         bottom: 0;
         left: 0;
+        text-align: center;
+        overflow: hidden;
       }
       #clients {
         color: #f26638;

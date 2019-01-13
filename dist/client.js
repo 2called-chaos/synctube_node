@@ -25,7 +25,7 @@
       }
 
       constructor(opts = {}) {
-        var base, base1, base2, base3, base4, base5, base6, base7, j, l, len, len1, ref, ref1, x;
+        var base, base1, base2, base3, base4, base5, base6, base7, base8, j, l, len, len1, ref, ref1, x;
         this.opts = opts;
         // options
         if ((base = this.opts).debug == null) {
@@ -64,6 +64,9 @@
         }
         if ((base7 = this.opts).wsPort == null) {
           base7.wsPort = $("meta[name=synctube-server-port]").attr("content");
+        }
+        if ((base8 = this.opts).wsProtocol == null) {
+          base8.wsProtocol = $("meta[name=synctube-server-protocol]").attr("content");
         }
         // Client data
         this.name = null;
@@ -115,7 +118,7 @@
           return;
         }
         // open connection
-        address = `ws://${this.opts.wsIp}:${this.opts.wsPort}/cable`;
+        address = `${this.opts.wsProtocol}://${this.opts.wsIp}:${this.opts.wsPort}/cable`;
         this.debug(`Opening connection to ${address}`);
         this.connection = new WebSocket(address);
         this.connection.onopen = () => {
@@ -241,6 +244,9 @@
 
       loadVideo(ytid, cue = false) {
         var m;
+        this.destroyIframe();
+        this.destroyImage();
+        this.destroyVideo();
         if (m = ytid.match(/([A-Za-z0-9_\-]{11})/)) {
           ytid = m[1];
         } else {
@@ -291,6 +297,67 @@
             });
           }
         });
+      }
+
+      openIframe(data) {
+        this.destroyPlayer();
+        this.destroyIframe();
+        this.destroyImage();
+        this.destroyVideo();
+        return this.view.append(`<iframe id="view_frame" src="${data.url}" width="100%" height="100%"></iframe>`);
+      }
+
+      openImage(data) {
+        this.destroyPlayer();
+        this.destroyIframe();
+        this.destroyImage();
+        this.destroyVideo();
+        return this.view.append(`<img id="view_image" src="${data.url}" height="100%">`);
+      }
+
+      openVideo(data) {
+        var tag;
+        this.destroyPlayer();
+        this.destroyIframe();
+        this.destroyImage();
+        if (!this.view.find("#view_video").length) {
+          this.view.append("<video id=\"view_video\" width=\"100%\" height=\"100%\" controls=\"true\">");
+        }
+        tag = this.view.find("#view_video");
+        if (data.url !== tag.attr("src")) {
+          tag.attr("src", data.url);
+        }
+        if (data.state === "play") {
+          tag.attr("autoplay", "autoplay");
+        } else {
+          tag.removeAttr("autoplay");
+        }
+        if (data.loop) {
+          return tag.attr("loop", "loop");
+        } else {
+          return tag.removeAttr("loop");
+        }
+      }
+
+      destroyIframe() {
+        return this.view.find("#view_frame").remove();
+      }
+
+      destroyImage() {
+        return this.view.find("#view_image").remove();
+      }
+
+      destroyVideo() {
+        return this.view.find("#view_video").remove();
+      }
+
+      destroyPlayer() {
+        var ref;
+        if ((ref = this.player) != null) {
+          ref.destroy();
+        }
+        this.player = null;
+        return clearInterval(this.broadcastStateInterval);
       }
 
       broadcastState(ev = (ref = this.player) != null ? ref.getPlayerState() : void 0) {
@@ -350,17 +417,24 @@
       }
 
       CMD_unsubscribe() {
-        var ref1;
         this.clients.html("");
-        if ((ref1 = this.player) != null) {
-          ref1.destroy();
-        }
-        this.player = null;
-        return clearInterval(this.broadcastStateInterval);
+        this.destroyPlayer();
+        this.destroyIframe();
+        this.destroyImage();
+        return this.destroyVideo();
       }
 
       CMD_desired(data) {
         var current_ytid, ref1, ref2;
+        if (data.ctype === "frame") {
+          return this.openIframe(data);
+        }
+        if (data.ctype === "image") {
+          return this.openImage(data);
+        }
+        if (data.ctype === "video") {
+          return this.openVideo(data);
+        }
         if (!this.player) {
           this.loadVideo(data.url, true);
           return;

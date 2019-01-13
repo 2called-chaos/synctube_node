@@ -31,6 +31,7 @@ window.SyncTubeClient = class SyncTubeClient
     # connection options
     @opts.wsIp ?= $("meta[name=synctube-server-ip]").attr("content")
     @opts.wsPort ?= $("meta[name=synctube-server-port]").attr("content")
+    @opts.wsProtocol ?= $("meta[name=synctube-server-protocol]").attr("content")
 
     # Client data
     @name = null
@@ -71,7 +72,7 @@ window.SyncTubeClient = class SyncTubeClient
       return
 
     # open connection
-    address = "ws://#{@opts.wsIp}:#{@opts.wsPort}/cable"
+    address = "#{@opts.wsProtocol}://#{@opts.wsIp}:#{@opts.wsPort}/cable"
     @debug "Opening connection to #{address}"
     @connection = new WebSocket(address)
 
@@ -169,6 +170,9 @@ window.SyncTubeClient = class SyncTubeClient
     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag)
 
   loadVideo: (ytid, cue = false) ->
+    @destroyIframe()
+    @destroyImage()
+    @destroyVideo()
     if m = ytid.match(/([A-Za-z0-9_\-]{11})/)
       ytid = m[1]
     else
@@ -204,6 +208,49 @@ window.SyncTubeClient = class SyncTubeClient
 
               @lastPlayerState = newState
               @broadcastState(ev)
+
+  openIframe: (data) ->
+    @destroyPlayer()
+    @destroyIframe()
+    @destroyImage()
+    @destroyVideo()
+    @view.append """
+      <iframe id="view_frame" src="#{data.url}" width="100%" height="100%"></iframe>
+    """
+
+  openImage: (data) ->
+    @destroyPlayer()
+    @destroyIframe()
+    @destroyImage()
+    @destroyVideo()
+    @view.append """
+      <img id="view_image" src="#{data.url}" height="100%">
+    """
+
+  openVideo: (data) ->
+    @destroyPlayer()
+    @destroyIframe()
+    @destroyImage()
+    @view.append("""<video id="view_video" width="100%" height="100%" controls="true">""") unless @view.find("#view_video").length
+    tag = @view.find("#view_video")
+    tag.attr("src", data.url) if data.url != tag.attr("src")
+
+    if data.state == "play" then tag.attr("autoplay", "autoplay") else tag.removeAttr("autoplay")
+    if data.loop then tag.attr("loop", "loop") else tag.removeAttr("loop")
+
+  destroyIframe: ->
+    @view.find("#view_frame").remove()
+
+  destroyImage: ->
+    @view.find("#view_image").remove()
+
+  destroyVideo: ->
+    @view.find("#view_video").remove()
+
+  destroyPlayer: ->
+    @player?.destroy()
+    @player = null
+    clearInterval(@broadcastStateInterval)
 
   broadcastState: (ev = @player?.getPlayerState()) ->
     state = switch ev?.data
@@ -241,11 +288,16 @@ window.SyncTubeClient = class SyncTubeClient
 
   CMD_unsubscribe: ->
     @clients.html("")
-    @player?.destroy()
-    @player = null
-    clearInterval(@broadcastStateInterval)
+    @destroyPlayer()
+    @destroyIframe()
+    @destroyImage()
+    @destroyVideo()
 
   CMD_desired: (data) ->
+    return @openIframe(data) if data.ctype == "frame"
+    return @openImage(data) if data.ctype == "image"
+    return @openVideo(data) if data.ctype == "video"
+
     unless @player
       @loadVideo(data.url, true)
       return

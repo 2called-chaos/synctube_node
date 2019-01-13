@@ -8,6 +8,16 @@
     return setTimeout(func, ms);
   };
 
+  exports.strbool = function(v) {
+    if (["true", "t", "1", "y", "yes", "on"].indexOf(v) > -1) {
+      return true;
+    }
+    if (["false", "f", "0", "n", "no", "off"].indexOf(v) > -1) {
+      return false;
+    }
+    throw `Can't convert \`${v}' to boolean, expression invalid!`;
+  };
+
   exports.secondsToArray = function(sec) {
     var j, len, r, ref, x;
     r = [];

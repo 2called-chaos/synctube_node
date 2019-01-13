@@ -15,7 +15,7 @@ exports.Class = class SyncTubeServerChannel
     @ready_timeout = null
     @playlist = []
     @playlist_index = 0
-    @desired = { url: @server.DEFAULT_VIDEO, seek: 0, seek_update: new Date, state: if @server.DEFAULT_AUTOPLAY then "play" else "pause" }
+    @desired = { ctype: @server.DEFAULT_CTYPTE, url: @server.DEFAULT_URL, seek: 0, loop: false, seek_update: new Date, state: if @server.DEFAULT_AUTOPLAY then "play" else "pause" }
 
   broadcast: (client, message, color, client_color, sendToAuthor = true) ->
     for c in @subscribers
@@ -67,7 +67,7 @@ exports.Class = class SyncTubeServerChannel
     data
 
   liveVideo: (url, state = "pause") ->
-    @desired = { url: url, seek: 0, state: state }
+    @desired = { ctype: "youtube", url: url, state: state, seek: 0, loop: false, seek_update: new Date}
     @ready = []
     @broadcastCode(false, "desired", @desired)
 
@@ -75,6 +75,11 @@ exports.Class = class SyncTubeServerChannel
     @ready_timeout = UTIL.delay 2000, =>
       @desired.state = "play"
       @broadcastCode(false, "video_action", action: "play")
+
+  liveUrl: (url, ctype = "frame") ->
+    @desired = { ctype: ctype, url: url, loop: false, state: "play" }
+    @ready = []
+    @broadcastCode(false, "desired", @desired)
 
   pauseVideo: (client, sendMessage = true) ->
     return unless @control.indexOf(client) > -1
@@ -137,6 +142,14 @@ exports.Class = class SyncTubeServerChannel
 
     delete @server.channels[@name]
 
+  clientColor: (client) ->
+    if @control[@host] == client
+      COLORS.red
+    else if @control.indexOf(client) > -1
+      COLORS.info
+    else
+      null
+
   # ====================
   # = Channel commands =
   # ====================
@@ -148,11 +161,15 @@ exports.Class = class SyncTubeServerChannel
     return @CHSCMD_ready(client) if m = msg.match(/^\/(?:ready|rdy)$/i)
     return @CHSCMD_retry(client) if m = msg.match(/^\/retry$/i)
     return @CHSCMD_play(client, m[1]) if m = msg.match(/^\/play\s(.+)$/i)
+    return @CHSCMD_browse(client, m[1], "frame") if m = msg.match(/^\/(?:browse|url)\s(.+)$/i)
+    return @CHSCMD_browse(client, m[1], "image") if m = msg.match(/^\/(?:image|pic(?:ture)?|gif|png|jpg)\s(.+)$/i)
+    return @CHSCMD_browse(client, m[1], "video") if m = msg.match(/^\/(?:video|vid|mp4|webp)\s(.+)$/i)
     return @CHSCMD_host(client, m[1]) if m = msg.match(/^\/host(?:\s(.+))?$/i)
     return @CHSCMD_grantControl(client, m[1]) if m = msg.match(/^\/grant(?:\s(.+))?$/i)
     return @CHSCMD_revokeControl(client, m[1]) if m = msg.match(/^\/revoke(?:\s(.+))?$/i)
     return @CHSCMD_leave(client) if m = msg.match(/^\/leave$/i)
-    @broadcast(client, msg, null, (if @control[@host] == client then COLORS.red else if @control.indexOf(client) > -1 then COLORS.info else null))
+    return @CHSCMD_loop(client, m[1]) if m = msg.match(/^\/loop(?:\s(.+))?$/i)
+    @broadcast(client, msg, null, @clientColor(client))
     return client.ack()
 
   permissionDenied: (client, context) ->
@@ -228,6 +245,26 @@ exports.Class = class SyncTubeServerChannel
     else
       client.sendSystemMessage("I don't recognize this URL/YTID format, sorry")
 
+    return client.ack()
+
+  CHSCMD_loop: (client, what) ->
+    if what
+      return @permissionDenied(client, "loop") unless @control.indexOf(client) > -1
+      what = UTIL.strbool(what || "false")
+      if @desired.loop == what
+        client.sendSystemMessage("Loop is already #{if @desired.loop then "enabled" else "disabled"}!")
+      else
+        @desired.loop = what
+        @broadcastCode(false, "desired", @desired)
+        @broadcast(client, "<strong>#{if @desired.loop then "enabled" else "disabled"} loop!</strong>", COLORS.warning, @clientColor(client))
+    else
+      client.sendSystemMessage("Loop is currently #{if @desired.loop then "enabled" else "disabled"}", if @desired.loop then COLORS.green else COLORS.red)
+
+    return client.ack()
+
+  CHSCMD_browse: (client, url, ctype = "frame") ->
+    return @permissionDenied(client, "browse-#{ctype}") unless @control.indexOf(client) > -1
+    @liveUrl(url, ctype)
     return client.ack()
 
   CHSCMD_leave: (client) ->

@@ -5,6 +5,11 @@ exports.htmlEntities = (str) ->
 
 exports.delay = (ms, func) -> setTimeout(func, ms)
 
+exports.strbool = (v) ->
+  return true if ["true", "t", "1", "y", "yes", "on"].indexOf(v) > -1
+  return false if ["false", "f", "0", "n", "no", "off"].indexOf(v) > -1
+  throw "Can't convert `#{v}' to boolean, expression invalid!"
+
 exports.secondsToArray = (sec) ->
   r = []
   for x in [60*60, 60]

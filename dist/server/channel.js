@@ -32,8 +32,10 @@
       this.playlist = [];
       this.playlist_index = 0;
       this.desired = {
-        url: this.server.DEFAULT_VIDEO,
+        ctype: this.server.DEFAULT_CTYPTE,
+        url: this.server.DEFAULT_URL,
         seek: 0,
+        loop: false,
         seek_update: new Date,
         state: this.server.DEFAULT_AUTOPLAY ? "play" : "pause"
       };
@@ -147,9 +149,12 @@
 
     liveVideo(url, state = "pause") {
       this.desired = {
+        ctype: "youtube",
         url: url,
+        state: state,
         seek: 0,
-        state: state
+        loop: false,
+        seek_update: new Date
       };
       this.ready = [];
       this.broadcastCode(false, "desired", this.desired);
@@ -160,6 +165,17 @@
           action: "play"
         });
       });
+    }
+
+    liveUrl(url, ctype = "frame") {
+      this.desired = {
+        ctype: ctype,
+        url: url,
+        loop: false,
+        state: "play"
+      };
+      this.ready = [];
+      return this.broadcastCode(false, "desired", this.desired);
     }
 
     pauseVideo(client, sendMessage = true) {
@@ -282,6 +298,16 @@
       return delete this.server.channels[this.name];
     }
 
+    clientColor(client) {
+      if (this.control[this.host] === client) {
+        return COLORS.red;
+      } else if (this.control.indexOf(client) > -1) {
+        return COLORS.info;
+      } else {
+        return null;
+      }
+    }
+
     // ====================
     // = Channel commands =
     // ====================
@@ -308,6 +334,15 @@
       if (m = msg.match(/^\/play\s(.+)$/i)) {
         return this.CHSCMD_play(client, m[1]);
       }
+      if (m = msg.match(/^\/(?:browse|url)\s(.+)$/i)) {
+        return this.CHSCMD_browse(client, m[1], "frame");
+      }
+      if (m = msg.match(/^\/(?:image|pic(?:ture)?|gif|png|jpg)\s(.+)$/i)) {
+        return this.CHSCMD_browse(client, m[1], "image");
+      }
+      if (m = msg.match(/^\/(?:video|vid|mp4|webp)\s(.+)$/i)) {
+        return this.CHSCMD_browse(client, m[1], "video");
+      }
       if (m = msg.match(/^\/host(?:\s(.+))?$/i)) {
         return this.CHSCMD_host(client, m[1]);
       }
@@ -320,7 +355,10 @@
       if (m = msg.match(/^\/leave$/i)) {
         return this.CHSCMD_leave(client);
       }
-      this.broadcast(client, msg, null, (this.control[this.host] === client ? COLORS.red : this.control.indexOf(client) > -1 ? COLORS.info : null));
+      if (m = msg.match(/^\/loop(?:\s(.+))?$/i)) {
+        return this.CHSCMD_loop(client, m[1]);
+      }
+      this.broadcast(client, msg, null, this.clientColor(client));
       return client.ack();
     }
 
@@ -435,6 +473,33 @@
       } else {
         client.sendSystemMessage("I don't recognize this URL/YTID format, sorry");
       }
+      return client.ack();
+    }
+
+    CHSCMD_loop(client, what) {
+      if (what) {
+        if (!(this.control.indexOf(client) > -1)) {
+          return this.permissionDenied(client, "loop");
+        }
+        what = UTIL.strbool(what || "false");
+        if (this.desired.loop === what) {
+          client.sendSystemMessage(`Loop is already ${(this.desired.loop ? "enabled" : "disabled")}!`);
+        } else {
+          this.desired.loop = what;
+          this.broadcastCode(false, "desired", this.desired);
+          this.broadcast(client, `<strong>${(this.desired.loop ? "enabled" : "disabled")} loop!</strong>`, COLORS.warning, this.clientColor(client));
+        }
+      } else {
+        client.sendSystemMessage(`Loop is currently ${(this.desired.loop ? "enabled" : "disabled")}`, this.desired.loop ? COLORS.green : COLORS.red);
+      }
+      return client.ack();
+    }
+
+    CHSCMD_browse(client, url, ctype = "frame") {
+      if (!(this.control.indexOf(client) > -1)) {
+        return this.permissionDenied(client, `browse-${ctype}`);
+      }
+      this.liveUrl(url, ctype);
       return client.ack();
     }
 

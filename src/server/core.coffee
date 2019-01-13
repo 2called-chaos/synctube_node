@@ -18,8 +18,9 @@ exports.Class = class SyncTubeServer
   ]
 
   # Default video to cue in new channels
-  DEFAULT_VIDEO: "6Dh-RL__uN4"
-  DEFAULT_AUTOPLAY: false
+  DEFAULT_CTYPE: "youtube" # youtube, frame, image, video (mp4/webp)
+  DEFAULT_URL: "6Dh-RL__uN4" # id suffices when YouTube
+  DEFAULT_AUTOPLAY: false # only when youtube or video
 
   constructor: (@opts = {}) ->
     # set process title

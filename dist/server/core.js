@@ -261,9 +261,11 @@
     SyncTubeServer.prototype.PROTECTED_NAMES = ["admin", "system"];
 
     // Default video to cue in new channels
-    SyncTubeServer.prototype.DEFAULT_VIDEO = "6Dh-RL__uN4";
+    SyncTubeServer.prototype.DEFAULT_CTYPE = "youtube"; // youtube, frame, image, video (mp4/webp)
 
-    SyncTubeServer.prototype.DEFAULT_AUTOPLAY = false;
+    SyncTubeServer.prototype.DEFAULT_URL = "6Dh-RL__uN4"; // id suffices when YouTube
+
+    SyncTubeServer.prototype.DEFAULT_AUTOPLAY = false; // only when youtube or video
 
     return SyncTubeServer;
 

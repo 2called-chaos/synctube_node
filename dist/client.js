@@ -303,10 +303,10 @@
                 onStateChange: (ev) => {
                   var newState;
                   newState = this.player.getPlayerState();
-                  if ((this.lastPlayerState != null) && ([-1, 2].indexOf(this.lastPlayerState) > -1 && [1, 3].indexOf(newState) > -1)) {
+                  if (!this.dontBroadcast && (this.lastPlayerState != null) && ([-1, 2].indexOf(this.lastPlayerState) > -1 && [1, 3].indexOf(newState) > -1)) {
                     console.log("send resume", this.lastPlayerState, newState);
                     this.connection.send("/resume");
-                  } else if ((this.lastPlayerState != null) && ([1, 3].indexOf(this.lastPlayerState) > -1 && [2].indexOf(newState) > -1)) {
+                  } else if (!this.dontBroadcast && (this.lastPlayerState != null) && ([1, 3].indexOf(this.lastPlayerState) > -1 && [2].indexOf(newState) > -1)) {
                     console.log("send pause");
                     this.connection.send("/pause");
                   }
@@ -318,6 +318,46 @@
             });
           }
         });
+      }
+
+      ensurePause(data) {
+        var done, fails, interval;
+        //console.log("stopBC")
+        //@connection.send("stopBC")
+        this.dontBroadcast = true;
+        done = (int) => {
+          clearInterval(int);
+          //console.log("startBC")
+          //@connection.send("startBC")
+          return this.dontBroadcast = false;
+        };
+        fails = 0;
+        return interval = setInterval((() => {
+          var ref;
+          if (((ref = this.player) != null ? typeof ref.getPlayerState === "function" ? ref.getPlayerState() : void 0 : void 0) == null) {
+            return fails += 1;
+          }
+          if (data.state !== "pause") {
+            return done(interval);
+          }
+          if (!([5, -1].indexOf(this.player.getPlayerState()) > -1)) {
+            return done(interval);
+          }
+          if (this.player.getCurrentTime() === 0 && data.seek === 0) {
+            return done(interval);
+          }
+          if ([-1, 2].indexOf(this.player.getPlayerState()) > -1 && Math.abs(this.player.getCurrentTime() - data.seek) <= 0.5) {
+            done(interval);
+            return this.broadcastState();
+          } else {
+            this.player.seekTo(data.seek, true);
+            this.player.playVideo() && this.player.pauseVideo();
+            if ((fails += 1) > 40) {
+              clearInterval(interval);
+              return this.dontBroadcast = false;
+            }
+          }
+        }), 100);
       }
 
       openIframe(data) {
@@ -383,6 +423,9 @@
 
       broadcastState(ev = (ref = this.player) != null ? ref.getPlayerState() : void 0) {
         var packet, ref1, ref2, ref3, ref4, state;
+        if (this.dontBroadcast) {
+          return;
+        }
         state = (function() {
           switch (ev != null ? ev.data : void 0) {
             case -1:
@@ -458,18 +501,13 @@
         }
         if (!this.player) {
           this.loadVideo(data.url, data.state !== "play", data.seek);
+          this.ensurePause(data);
           return;
         }
         current_ytid = (ref1 = player.getVideoUrl()) != null ? (ref2 = ref1.match(/([A-Za-z0-9_\-]{11})/)) != null ? ref2[0] : void 0 : void 0;
         if (current_ytid !== data.url) {
           this.debug("Switching video from", current_ytid, "to", data.url);
           this.loadVideo(data.url);
-          return;
-        }
-        if (Math.abs(this.drift * 1000) > this.opts.synced.maxDrift || this.force_resync || data.force) {
-          this.force_resync = false;
-          this.debug("Seek to correct drift", this.drift);
-          this.player.seekTo(data.seek, true);
           return;
         }
         if (this.player.getPlayerState() === 1 && data.state !== "play") {
@@ -481,6 +519,17 @@
         if (this.player.getPlayerState() !== 1 && data.state === "play") {
           this.debug("starting playback, state:", this.player.getPlayerState());
           this.player.playVideo();
+          return;
+        }
+        if (Math.abs(this.drift * 1000) > this.opts.synced.maxDrift || this.force_resync || data.force) {
+          this.force_resync = false;
+          this.debug("Seek to correct drift", this.drift, data.seek, this.player.getPlayerState());
+          if (this.player.getCurrentTime() !== 0 && data.seek !== 0) {
+            this.player.seekTo(data.seek, true);
+          }
+          // ensure paused player at correct position when it was cued
+          // seekTo on a cued video will start playback delayed
+          return this.ensurePause(data);
         }
       }
 

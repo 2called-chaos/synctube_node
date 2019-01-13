@@ -220,16 +220,45 @@ window.SyncTubeClient = class SyncTubeClient
               @broadcastStateInterval = setInterval((=> @broadcastState(data: @lastPlayerState)), @opts.synced.packetInterval)
             onStateChange: (ev) =>
               newState = @player.getPlayerState()
-              if @lastPlayerState? && ([-1, 2].indexOf(@lastPlayerState) > -1 && [1, 3].indexOf(newState) > -1)
+              if !@dontBroadcast && @lastPlayerState? && ([-1, 2].indexOf(@lastPlayerState) > -1 && [1, 3].indexOf(newState) > -1)
                 console.log "send resume", @lastPlayerState, newState
                 @connection.send("/resume")
-              else if @lastPlayerState? && ([1, 3].indexOf(@lastPlayerState) > -1 && [2].indexOf(newState) > -1)
+              else if !@dontBroadcast && @lastPlayerState? && ([1, 3].indexOf(@lastPlayerState) > -1 && [2].indexOf(newState) > -1)
                 console.log "send pause"
                 @connection.send("/pause")
               console.log "state", "was", @lastPlayerState, "is", newState
 
               @lastPlayerState = newState
               @broadcastState(ev)
+
+  ensurePause: (data) ->
+    #console.log("stopBC")
+    #@connection.send("stopBC")
+    @dontBroadcast = true
+
+    done = (int) =>
+      clearInterval(int)
+      #console.log("startBC")
+      #@connection.send("startBC")
+      @dontBroadcast = false
+
+    fails = 0
+    interval = setInterval((=>
+      return fails += 1 unless @player?.getPlayerState?()?
+      return done(interval) unless data.state == "pause"
+      return done(interval) unless [5, -1].indexOf(@player.getPlayerState()) > -1
+      return done(interval) if @player.getCurrentTime() == 0 && data.seek == 0
+
+      if [-1, 2].indexOf(@player.getPlayerState()) > -1 && Math.abs(@player.getCurrentTime() - data.seek) <= 0.5
+        done(interval)
+        @broadcastState()
+      else
+        @player.seekTo(data.seek, true)
+        @player.playVideo() && @player.pauseVideo()
+        if (fails += 1) > 40
+          clearInterval(interval)
+          @dontBroadcast = false
+    ), 100)
 
   openIframe: (data) ->
     @destroyPlayer()
@@ -275,6 +304,7 @@ window.SyncTubeClient = class SyncTubeClient
     clearInterval(@broadcastStateInterval)
 
   broadcastState: (ev = @player?.getPlayerState()) ->
+    return if @dontBroadcast
     state = switch ev?.data
       when -1 then "unstarted"
       when 0 then "ended"
@@ -322,18 +352,13 @@ window.SyncTubeClient = class SyncTubeClient
 
     unless @player
       @loadVideo(data.url, data.state != "play", data.seek)
+      @ensurePause(data)
       return
 
     current_ytid = player.getVideoUrl()?.match(/([A-Za-z0-9_\-]{11})/)?[0]
     if current_ytid != data.url
       @debug "Switching video from", current_ytid, "to", data.url
       @loadVideo(data.url)
-      return
-
-    if Math.abs(@drift * 1000) > @opts.synced.maxDrift || @force_resync || data.force
-      @force_resync = false
-      @debug "Seek to correct drift", @drift
-      @player.seekTo(data.seek, true)
       return
 
     if @player.getPlayerState() == 1 && data.state != "play"
@@ -346,6 +371,15 @@ window.SyncTubeClient = class SyncTubeClient
       @debug "starting playback, state:", @player.getPlayerState()
       @player.playVideo()
       return
+
+    if Math.abs(@drift * 1000) > @opts.synced.maxDrift || @force_resync || data.force
+      @force_resync = false
+      @debug "Seek to correct drift", @drift, data.seek, @player.getPlayerState()
+      @player.seekTo(data.seek, true) if @player.getCurrentTime() != 0 && data.seek != 0
+
+      # ensure paused player at correct position when it was cued
+      # seekTo on a cued video will start playback delayed
+      @ensurePause(data)
 
   CMD_video_action: (data) ->
     switch data.action

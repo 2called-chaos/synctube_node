@@ -171,7 +171,7 @@
             return;
           }
           this.connection.send(msg);
-          return this.disableInput().val("");
+          return this.disableInput();
         });
       }
 
@@ -203,7 +203,10 @@
         };
       }
 
-      enableInput(focus = true) {
+      enableInput(focus = true, clear = true) {
+        if (clear && this.input.is(":disabled")) {
+          this.input.val("");
+        }
         this.input.removeAttr("disabled");
         if (focus) {
           this.input.focus();

@@ -109,7 +109,7 @@ window.SyncTubeClient = class SyncTubeClient
         return
 
       @connection.send(msg)
-      @disableInput().val("")
+      @disableInput()
 
   listen: ->
     @connection.onmessage = (message) =>
@@ -132,7 +132,8 @@ window.SyncTubeClient = class SyncTubeClient
         else
           @warn "Hmm..., I've never seen JSON like this:", json
 
-  enableInput: (focus = true) ->
+  enableInput: (focus = true, clear = true) ->
+    @input.val("") if clear && @input.is(":disabled")
     @input.removeAttr("disabled")
     @input.focus() if focus
     @input

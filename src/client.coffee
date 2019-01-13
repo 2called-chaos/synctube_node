@@ -181,9 +181,9 @@ window.SyncTubeClient = class SyncTubeClient
     @loadYTAPI =>
       if @player
         if cue
-          @player.cueVideoById(ytid, 0)
+          @player.cueVideoById(ytid, seek)
         else
-          @player.loadVideoById(ytid, 0)
+          @player.loadVideoById(ytid, seek)
         return @player
       else
         window.player = @player = new YT.Player 'view',
@@ -193,14 +193,18 @@ window.SyncTubeClient = class SyncTubeClient
           #playerVars: controls: 0
           events:
             onReady: (ev) =>
-              @player.playVideo() unless cue
+              if cue
+                @player.cueVideoById(ytid, seek)
+              else
+                @player.seekTo(seek)
+                @player.playVideo()
               @broadcastState(ev)
               @lastPlayerState = if @player?.getPlayerState()? then @player?.getPlayerState() else 2
               @broadcastStateInterval = setInterval((=> @broadcastState(data: @lastPlayerState)), @opts.synced.packetInterval)
             onStateChange: (ev) =>
               newState = @player.getPlayerState()
               if @lastPlayerState? && ([-1, 2].indexOf(@lastPlayerState) > -1 && [1, 3].indexOf(newState) > -1)
-                console.log "send resume"
+                console.log "send resume", @lastPlayerState, newState
                 @connection.send("/resume")
               else if @lastPlayerState? && ([1, 3].indexOf(@lastPlayerState) > -1 && [2].indexOf(newState) > -1)
                 console.log "send pause"
@@ -283,7 +287,7 @@ window.SyncTubeClient = class SyncTubeClient
       @opts.synced[k] = v
 
   CMD_load_video: (data) ->
-    @loadVideo data.ytid, data.cue
+    @loadVideo data.ytid, data.cue, data.seek
 
   CMD_ack: -> @enableInput()
 
@@ -300,7 +304,7 @@ window.SyncTubeClient = class SyncTubeClient
     return @openVideo(data) if data.ctype == "video"
 
     unless @player
-      @loadVideo(data.url, true, data.seek)
+      @loadVideo(data.url, data.state != "play", data.seek)
       return
 
     current_ytid = player.getVideoUrl()?.match(/([A-Za-z0-9_\-]{11})/)?[0]

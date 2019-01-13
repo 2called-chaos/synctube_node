@@ -255,9 +255,9 @@
         return this.loadYTAPI(() => {
           if (this.player) {
             if (cue) {
-              this.player.cueVideoById(ytid, 0);
+              this.player.cueVideoById(ytid, seek);
             } else {
-              this.player.loadVideoById(ytid, 0);
+              this.player.loadVideoById(ytid, seek);
             }
             return this.player;
           } else {
@@ -269,7 +269,10 @@
               events: {
                 onReady: (ev) => {
                   var ref, ref1;
-                  if (!cue) {
+                  if (cue) {
+                    this.player.cueVideoById(ytid, seek);
+                  } else {
+                    this.player.seekTo(seek);
                     this.player.playVideo();
                   }
                   this.broadcastState(ev);
@@ -284,7 +287,7 @@
                   var newState;
                   newState = this.player.getPlayerState();
                   if ((this.lastPlayerState != null) && ([-1, 2].indexOf(this.lastPlayerState) > -1 && [1, 3].indexOf(newState) > -1)) {
-                    console.log("send resume");
+                    console.log("send resume", this.lastPlayerState, newState);
                     this.connection.send("/resume");
                   } else if ((this.lastPlayerState != null) && ([1, 3].indexOf(this.lastPlayerState) > -1 && [2].indexOf(newState) > -1)) {
                     console.log("send pause");
@@ -410,7 +413,7 @@
       }
 
       CMD_load_video(data) {
-        return this.loadVideo(data.ytid, data.cue);
+        return this.loadVideo(data.ytid, data.cue, data.seek);
       }
 
       CMD_ack() {
@@ -437,7 +440,7 @@
           return this.openVideo(data);
         }
         if (!this.player) {
-          this.loadVideo(data.url, true, data.seek);
+          this.loadVideo(data.url, data.state !== "play", data.seek);
           return;
         }
         current_ytid = (ref1 = player.getVideoUrl()) != null ? (ref2 = ref1.match(/([A-Za-z0-9_\-]{11})/)) != null ? ref2[0] : void 0 : void 0;

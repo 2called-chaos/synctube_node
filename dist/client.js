@@ -26,11 +26,12 @@
       return this.control = false;
     },
     CMD_unsubscribe: function() {
+      var ref;
       this.clients.html("");
-      this.destroyPlayer();
-      this.destroyIframe();
-      this.destroyImage();
-      return this.destroyVideo();
+      if ((ref = this.player) != null) {
+        ref.destroy();
+      }
+      return this.player = null;
     },
     CMD_desired: function(data) {
       var e, klass, ref, ref1;
@@ -60,7 +61,7 @@
         case "sync":
           return (ref2 = this.player) != null ? ref2.force_resync = true : void 0;
         case "seek":
-          return (ref3 = this.player) != null ? ref3.seekTo(data.to, true, data.paused) : void 0;
+          return (ref3 = this.player) != null ? ref3.seekTo(data.to, data.paused) : void 0;
         case "destroy":
           if ((ref4 = this.player) != null) {
             ref4.destroy();
@@ -210,7 +211,7 @@
           base1.synced = {};
         }
         if ((base2 = this.opts.synced).maxDrift == null) {
-          base2.maxDrift = 60; // superseded by server instructions
+          base2.maxDrift = 60000; // superseded by server instructions
         }
         if ((base3 = this.opts.synced).packetInterval == null) {
           base3.packetInterval = 10000; // superseded by server instructions
@@ -230,10 +231,10 @@
         this.include(SyncTubeClient_Player_HtmlFrame);
         this.include(SyncTubeClient_Player_HtmlImage);
         this.include(SyncTubeClient_Player_HtmlVideo);
+        this.include(SyncTubeClient_History);
         ref = this.included;
         for (j = 0, len = ref.length; j < len; j++) {
           inc = ref[j];
-          // @include SyncTubeClient_History
           if ((ref1 = inc.init) != null) {
             ref1.apply(this);
           }
@@ -289,9 +290,95 @@
   }).call(this);
 
   window.SyncTubeClient_History = SyncTubeClient_History = class SyncTubeClient_History {
-    constructor(client1) {
+    constructor(client1, opts = {}) {
+      var base, base1;
       this.client = client1;
-      console.log("hisot");
+      this.opts = opts;
+      if ((base = this.opts).limit == null) {
+        base.limit = 100;
+      }
+      if ((base1 = this.opts).save == null) {
+        base1.save = true; // @todo set to false
+      }
+      this.log = this.opts.save ? this.loadLog() : [];
+      this.index = -1;
+      this.buffer = null;
+      this.captureInput();
+    }
+
+    captureInput() {
+      return this.client.input.keydown((event) => {
+        if (event.keyCode === 27) { // ESC
+          if (this.index !== -1) {
+            this.index = -1;
+            if (this.buffer != null) {
+              this.client.input.val(this.buffer);
+            }
+            this.buffer = null;
+          }
+          return true;
+        }
+        if (event.keyCode === 38) { // ArrowUp
+          if (this.log[this.index + 1] == null) {
+            return false;
+          }
+          if (this.index === -1) {
+            this.buffer = this.client.input.val();
+          }
+          this.index++;
+          this.client.input.val(this.log[this.index]);
+          return false;
+        }
+        if (event.keyCode === 40) { // ArrowDown
+          if (this.index === 0) {
+            this.index = -1;
+            this.restoreBuffer();
+            return false;
+          }
+          if (this.log[this.index - 1] == null) {
+            return false;
+          }
+          this.index--;
+          this.client.input.val(this.log[this.index]);
+          return false;
+        }
+        return true;
+      });
+    }
+
+    restoreBuffer() {
+      if (this.buffer != null) {
+        this.client.input.val(this.buffer);
+      }
+      return this.buffer = null;
+    }
+
+    append(cmd) {
+      if (cmd) {
+        this.log.unshift(cmd);
+      }
+      while (this.log.length > this.opts.limit) {
+        this.log.pop();
+      }
+      if (this.opts.save) {
+        this.saveLog();
+      }
+      this.index = -1;
+      return this.buffer = null;
+    }
+
+    saveLog() {
+      return localStorage.setItem("synctube_client_history", JSON.stringify(this.log));
+    }
+
+    loadLog() {
+      var e;
+      try {
+        return JSON.parse(localStorage.getItem("synctube_client_history")) || [];
+      } catch (error1) {
+        e = error1;
+        return [];
+      }
     }
 
   };
@@ -396,9 +483,11 @@
       return this.broadcastStateInterval = null;
     },
     sendControl: function(cmd) {
-      if (this.control) {
-        return this.connection.send(cmd);
+      if (!this.control) {
+        return;
       }
+      this.debug("send control", cmd);
+      return this.connection.send(cmd);
     },
     broadcastState: function(ev = (ref = this.player) != null ? ref.getState() : void 0) {
       var packet, ref1, ref2, ref3, ref4, state;
@@ -407,7 +496,7 @@
       }
       state = (function() {
         switch (ev) {
-          case -0:
+          case -1:
             return "unstarted";
           case 0:
             return "ended";
@@ -587,6 +676,9 @@
         this.video.on("canplaythrough", () => {
           return this.sendReady();
         });
+        this.video.on("error", () => {
+          return this.error = this.video.get(0).error;
+        });
         this.video.on("playing", () => {
           return this.sendResume();
         });
@@ -628,9 +720,9 @@
           this.video.removeAttr("autoplay");
         }
         if (data.url !== this.video.attr("src")) {
-          this.client.debug("Switching video from", this.getUrl(), "to", data.url);
+          this.client.debug("switching video from", this.getUrl(), "to", data.url);
           this.video.attr("src", data.url);
-          this.ended = false;
+          this.error = false;
           this.everPlayed = false;
           this.client.startBroadcast();
           this.client.broadcastState();
@@ -640,7 +732,7 @@
         } else {
           this.video.removeAttr("loop");
         }
-        if (this.getState() === 1 && data.state !== "play") {
+        if (!this.error && this.getState() === 1 && data.state !== "play") {
           this.client.debug("pausing playback");
           this.pause();
           if (!this.video.get(0).seeking) {
@@ -648,13 +740,13 @@
           }
           return;
         }
-        if (this.getState() !== 1 && data.state === "play") {
+        if (!this.error && this.getState() !== 1 && data.state === "play") {
           this.client.debug("starting playback");
           this.play();
         }
         if (Math.abs(this.client.drift * 1000) > this.client.opts.synced.maxDrift || this.force_resync || data.force) {
           this.force_resync = false;
-          this.client.debug("Seek to correct drift", this.client.drift, data.seek);
+          this.client.debug("seek to correct drift", this.client.drift, data.seek);
           if (!(this.getCurrentTime() === 0 && data.seek === 0)) {
             return this.seekTo(data.seek, true);
           }
@@ -806,7 +898,7 @@
         }
         current_ytid = (ref1 = this.getUrl()) != null ? (ref2 = ref1.match(/([A-Za-z0-9_\-]{11})/)) != null ? ref2[0] : void 0 : void 0;
         if (current_ytid !== data.url) {
-          this.client.debug("Switching video from", current_ytid, "to", data.url);
+          this.client.debug("switching video from", current_ytid, "to", data.url);
           this.loadVideo(data.url);
           return;
         }
@@ -823,7 +915,7 @@
         }
         if (Math.abs(this.client.drift * 1000) > this.client.opts.synced.maxDrift || this.force_resync || data.force) {
           this.force_resync = false;
-          this.client.debug("Seek to correct drift", this.client.drift, data.seek, this.getState());
+          this.client.debug("seek to correct drift", this.client.drift, data.seek, this.getState());
           if (!(this.getCurrentTime() === 0 && data.seek === 0)) {
             this.seekTo(data.seek, true);
           }
@@ -848,7 +940,11 @@
 
       getState() {
         var ref1;
-        return (ref1 = this.api) != null ? ref1.getPlayerState() : void 0;
+        if (((ref1 = this.api) != null ? ref1.getPlayerState : void 0) != null) {
+          return this.api.getPlayerState();
+        } else {
+          return -1;
+        }
       }
 
       play() {
@@ -863,22 +959,34 @@
 
       getCurrentTime() {
         var ref1;
-        return (ref1 = this.api) != null ? ref1.getCurrentTime() : void 0;
+        if (((ref1 = this.api) != null ? ref1.getCurrentTime : void 0) != null) {
+          return this.api.getCurrentTime();
+        } else {
+          return 0;
+        }
       }
 
       getDuration() {
         var ref1;
-        return (ref1 = this.api) != null ? ref1.getDuration() : void 0;
+        if (((ref1 = this.api) != null ? ref1.getDuration : void 0) != null) {
+          return this.api.getDuration();
+        } else {
+          return 0;
+        }
       }
 
       getLoadedFraction() {
         var ref1;
-        return (ref1 = this.api) != null ? ref1.getVideoLoadedFraction() : void 0;
+        if (((ref1 = this.api) != null ? ref1.getVideoLoadedFraction : void 0) != null) {
+          return this.api.getVideoLoadedFraction();
+        } else {
+          return 0;
+        }
       }
 
       getUrl() {
         var ref1, ref2, ref3;
-        return (ref1 = this.api) != null ? (ref2 = ref1.getVideoUrl()) != null ? (ref3 = ref2.match(/([A-Za-z0-9_\-]{11})/)) != null ? ref3[0] : void 0 : void 0 : void 0;
+        return (ref1 = this.api) != null ? typeof ref1.getVideoUrl === "function" ? (ref2 = ref1.getVideoUrl()) != null ? (ref3 = ref2.match(/([A-Za-z0-9_\-]{11})/)) != null ? ref3[0] : void 0 : void 0 : void 0 : void 0;
       }
 
       // ----------------------
@@ -1029,12 +1137,15 @@
     },
     captureInput: function() {
       return this.input.keydown((event) => {
-        var i, m, msg, ref1;
+        var i, m, msg, ref1, ref2;
         if (event.keyCode !== 13) {
           return true;
         }
         if (!(msg = this.input.val())) {
           return;
+        }
+        if ((ref1 = this.history) != null) {
+          ref1.append(msg);
         }
         if (msg.charAt(0) === "/") {
           this.addSendCommand(msg);
@@ -1049,8 +1160,8 @@
           }
           return;
         } else if (m = msg.match(/^\/(?:s|sync|resync)$/i)) {
-          if ((ref1 = this.player) != null) {
-            ref1.force_resync = true;
+          if ((ref2 = this.player) != null) {
+            ref2.force_resync = true;
           }
           this.input.val("");
           return;

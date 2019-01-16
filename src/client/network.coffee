@@ -68,12 +68,14 @@ window.SyncTubeClient_Network =
     @broadcastStateInterval = null
 
   sendControl: (cmd) ->
-    @connection.send(cmd) if @control
+    return unless @control
+    @debug "send control", cmd
+    @connection.send(cmd)
 
   broadcastState: (ev = @player?.getState()) ->
     return if @dontBroadcast
     state = switch ev
-      when -0 then "unstarted"
+      when -1 then "unstarted"
       when 0 then "ended"
       when 1 then "playing"
       when 2 then "paused"

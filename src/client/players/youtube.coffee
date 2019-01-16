@@ -17,7 +17,7 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
 
     current_ytid = @getUrl()?.match(/([A-Za-z0-9_\-]{11})/)?[0]
     if current_ytid != data.url
-      @client.debug "Switching video from", current_ytid, "to", data.url
+      @client.debug "switching video from", current_ytid, "to", data.url
       @loadVideo(data.url)
       return
 
@@ -34,7 +34,7 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
 
     if Math.abs(@client.drift * 1000) > @client.opts.synced.maxDrift || @force_resync || data.force
       @force_resync = false
-      @client.debug "Seek to correct drift", @client.drift, data.seek, @getState()
+      @client.debug "seek to correct drift", @client.drift, data.seek, @getState()
       @seekTo(data.seek, true) unless @getCurrentTime() == 0 && data.seek == 0
 
       # ensure paused player at correct position when it was cued
@@ -49,13 +49,13 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
     else
       @player?.play()
 
-  getState: -> @api?.getPlayerState()
+  getState: -> if @api?.getPlayerState? then @api.getPlayerState() else -1
   play: -> @api?.playVideo()
   pause: -> @api?.pauseVideo()
-  getCurrentTime: -> @api?.getCurrentTime()
-  getDuration: -> @api?.getDuration()
-  getLoadedFraction: -> @api?.getVideoLoadedFraction()
-  getUrl: -> @api?.getVideoUrl()?.match(/([A-Za-z0-9_\-]{11})/)?[0]
+  getCurrentTime: -> if @api?.getCurrentTime? then @api.getCurrentTime() else 0
+  getDuration: -> if @api?.getDuration? then @api.getDuration() else 0
+  getLoadedFraction: -> if @api?.getVideoLoadedFraction? then @api.getVideoLoadedFraction() else 0
+  getUrl: -> @api?.getVideoUrl?()?.match(/([A-Za-z0-9_\-]{11})/)?[0]
 
   # ----------------------
 

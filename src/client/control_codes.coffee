@@ -12,10 +12,8 @@ window.SyncTubeClient_ControlCodes =
 
   CMD_unsubscribe: ->
     @clients.html("")
-    @destroyPlayer()
-    @destroyIframe()
-    @destroyImage()
-    @destroyVideo()
+    @player?.destroy()
+    @player = null
 
   CMD_desired: (data) ->
     if data.ctype != @player?.ctype
@@ -35,7 +33,7 @@ window.SyncTubeClient_ControlCodes =
       when "resume" then @player?.play()
       when "pause" then @player?.pause()
       when "sync" then @player?.force_resync = true
-      when "seek" then @player?.seekTo(data.to, true, data.paused)
+      when "seek" then @player?.seekTo(data.to, data.paused)
       when "destroy"
         @player?.destroy()
         @player = null

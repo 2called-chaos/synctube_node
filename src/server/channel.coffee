@@ -168,13 +168,13 @@ exports.Class = class SyncTubeServerChannel
       return @CHSCMD_grantControl(client, m[1]) if m = msg.match(/^\/grant(?:\s(.+))?$/i)
       return @CHSCMD_revokeControl(client, m[1]) if m = msg.match(/^\/revoke(?:\s(.+))?$/i)
       return @CHSCMD_loop(client, m[1]) if m = msg.match(/^\/loop(?:\s(.+))?$/i)
+      return false
     else
       return @CHSCMD_ready(client) if m = msg.match(/^\/(?:ready|rdy)$/i)
       return @CHSCMD_retry(client) if m = msg.match(/^\/retry$/i)
       return @CHSCMD_leave(client) if m = msg.match(/^\/leave$/i)
       @broadcast(client, msg, null, @clientColor(client))
-
-    return client.ack()
+      return client.ack()
 
   permissionDenied: (client, context) ->
     msg = "You don't have the required permissions to perform this action"

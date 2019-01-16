@@ -355,6 +355,7 @@
         if (m = msg.match(/^\/loop(?:\s(.+))?$/i)) {
           return this.CHSCMD_loop(client, m[1]);
         }
+        return false;
       } else {
         if (m = msg.match(/^\/(?:ready|rdy)$/i)) {
           return this.CHSCMD_ready(client);
@@ -366,8 +367,8 @@
           return this.CHSCMD_leave(client);
         }
         this.broadcast(client, msg, null, this.clientColor(client));
+        return client.ack();
       }
-      return client.ack();
     }
 
     permissionDenied(client, context) {

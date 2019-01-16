@@ -17,7 +17,7 @@ window.SyncTubeClient = class SyncTubeClient
 
     # synced settings (controlled by server)
     @opts.synced ?= {}
-    @opts.synced.maxDrift ?= 60 # superseded by server instructions
+    @opts.synced.maxDrift ?= 60000 # superseded by server instructions
     @opts.synced.packetInterval ?= 10000 # superseded by server instructions
 
     # Client data
@@ -35,7 +35,7 @@ window.SyncTubeClient = class SyncTubeClient
     @include SyncTubeClient_Player_HtmlFrame
     @include SyncTubeClient_Player_HtmlImage
     @include SyncTubeClient_Player_HtmlVideo
-    # @include SyncTubeClient_History
+    @include SyncTubeClient_History
 
     inc.init?.apply(this) for inc in @included
 

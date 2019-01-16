@@ -15,6 +15,7 @@ window.SyncTubeClient_Player_HtmlVideo = class SyncTubeClient_Player_HtmlVideo
       if @getState() == 1 then @pause() else @play()
     #@video.on "canplay", => console.log "canplay", (new Date).toISOString()
     @video.on "canplaythrough", => @sendReady()
+    @video.on "error", => @error = @video.get(0).error
     @video.on "playing", => @sendResume()
     @video.on "pause", => @sendPause() unless @getCurrentTime() == @getDuration()
     @video.on "timeupdate", => @lastKnownTime = @getCurrentTime() unless @seeking
@@ -35,28 +36,28 @@ window.SyncTubeClient_Player_HtmlVideo = class SyncTubeClient_Player_HtmlVideo
     if data.state == "play" then @video.attr("autoplay", "autoplay") else @video.removeAttr("autoplay")
 
     if data.url != @video.attr("src")
-      @client.debug "Switching video from", @getUrl(), "to", data.url
+      @client.debug "switching video from", @getUrl(), "to", data.url
       @video.attr("src", data.url)
-      @ended = false
+      @error = false
       @everPlayed = false
       @client.startBroadcast()
       @client.broadcastState()
 
     if data.loop then @video.attr("loop", "loop") else @video.removeAttr("loop")
 
-    if @getState() == 1 && data.state != "play"
+    if !@error && @getState() == 1 && data.state != "play"
       @client.debug "pausing playback"
       @pause()
       @seekTo(data.seek, true) unless @video.get(0).seeking
       return
 
-    if @getState() != 1 && data.state == "play"
+    if !@error && @getState() != 1 && data.state == "play"
       @client.debug "starting playback"
       @play()
 
     if Math.abs(@client.drift * 1000) > @client.opts.synced.maxDrift || @force_resync || data.force
       @force_resync = false
-      @client.debug "Seek to correct drift", @client.drift, data.seek
+      @client.debug "seek to correct drift", @client.drift, data.seek
       @seekTo(data.seek, true) unless @getCurrentTime() == 0 && data.seek == 0
 
   getState: ->

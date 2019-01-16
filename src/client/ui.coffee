@@ -17,6 +17,7 @@ window.SyncTubeClient_UI =
     @input.keydown (event) =>
       return true unless event.keyCode == 13
       return unless msg = @input.val()
+      @history?.append(msg)
       @addSendCommand(msg) if msg.charAt(0) == "/"
 
       if m = msg.match(/^\/(?:mw|maxwidth|width)(?:\s([0-9]+))?$/i)

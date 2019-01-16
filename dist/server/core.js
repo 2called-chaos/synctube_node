@@ -23,7 +23,7 @@
   exports.Class = SyncTubeServer = (function() {
     class SyncTubeServer {
       constructor(opts = {}) {
-        var base, base1, base2, base3, base4;
+        var base, base1, base2, base3, base4, base5;
         this.opts = opts;
         // set process title
         process.title = 'synctube-server';
@@ -41,6 +41,9 @@
         }
         if ((base4 = this.opts).answerHttp == null) {
           base4.answerHttp = true; // If set to false no static assets will be served, all requests result in a 400: Bad request
+        }
+        if ((base5 = this.opts).sessionReindex == null) {
+          base5.sessionReindex = 250; // amount of nulled sessions before a reindexing occurs
         }
         this.clients = [];
         this.channels = {};
@@ -76,6 +79,40 @@
           results.push(typeof c[method] === "function" ? c[method](...args) : void 0);
         }
         return results;
+      }
+
+      nullSession(client, forceReindex) {
+        this.clients[client.index] = null;
+        return this.cleanupSessions(forceReindex);
+      }
+
+      cleanupSessions(force = false) {
+        var c, i, j, len, len1, newClients, nulled, ref, ref1;
+        if (!force) {
+          nulled = 0;
+          ref = this.clients;
+          for (i = 0, len = ref.length; i < len; i++) {
+            c = ref[i];
+            if (c === null) {
+              nulled += 1;
+            }
+          }
+          if (nulled >= this.opts.sessionReindex) {
+            this.debug(`reindexing sessions (${nulled} nulled sessions)`);
+          } else {
+            return;
+          }
+        }
+        newClients = [];
+        ref1 = this.clients;
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          c = ref1[j];
+          if (c !== null) {
+            newClients.push(c);
+          }
+        }
+        this.clients = newClients;
+        return this.eachClient("reindex");
       }
 
       handleHTTPRequest(request, response) {

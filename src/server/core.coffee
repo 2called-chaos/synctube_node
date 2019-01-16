@@ -32,6 +32,7 @@ exports.Class = class SyncTubeServer
     @opts.packetInterval ?= 2000 # (CL) interval in ms for CLIENTS to send packet updates to the server
     @opts.maxDrift       ?= 5000 # (CL) max ms (1000ms = 1s) for CLIENTS before force seeking to correct drift to host
     @opts.answerHttp     ?= true # If set to false no static assets will be served, all requests result in a 400: Bad request
+    @opts.sessionReindex ?= 250  # amount of nulled sessions before a reindexing occurs
 
     @clients = []
     @channels = {}
@@ -49,6 +50,24 @@ exports.Class = class SyncTubeServer
     @ws.on "request", (request) => @handleWSRequest(request)
 
   eachClient: (method, args...) -> c[method]?(args...) for c in @clients
+
+  nullSession: (client, forceReindex) ->
+    @clients[client.index] = null
+    @cleanupSessions(forceReindex)
+
+  cleanupSessions: (force = false) ->
+    unless force
+      nulled = 0
+      nulled += 1 for c in @clients when c is  null
+      if nulled >= @opts.sessionReindex
+        @debug "reindexing sessions (#{nulled} nulled sessions)"
+      else
+        return
+
+    newClients = []
+    newClients.push(c) for c in @clients when c isnt null
+    @clients = newClients
+    @eachClient("reindex")
 
   handleHTTPRequest: (request, response) ->
     req = new HttpRequest(this)

@@ -44,10 +44,7 @@ exports.Class = class SyncTubeServerClient
     @debug "Peer #{@ip} disconnected."
     @control?.revokeControl?(this)
     @subscribed?.unsubscribe?(this)
-
-    # delete reference and reindex clients
-    @server.clients.splice(@index, 1)
-    @server.eachClient("reindex")
+    @server.nullSession(this)
 
   reindex: ->
     was_index = @index

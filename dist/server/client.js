@@ -81,9 +81,7 @@
           ref1.unsubscribe(this);
         }
       }
-      // delete reference and reindex clients
-      this.server.clients.splice(this.index, 1);
-      return this.server.eachClient("reindex");
+      return this.server.nullSession(this);
     }
 
     reindex() {

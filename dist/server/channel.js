@@ -376,16 +376,35 @@
     }
 
     findClient(client, who) {
-      var j, len, ref, sub;
+      var base, e, j, k, len, len1, ref, ref1, sub;
       if (!who) {
         return client;
       }
       ref = this.subscribers;
+      // exact match?
       for (j = 0, len = ref.length; j < len; j++) {
         sub = ref[j];
-        if (sub.name.match(new RegExp(who, "i"))) {
+        if ((typeof (base = sub.name).toLowerCase === "function" ? base.toLowerCase() : void 0) === (typeof who.toLowerCase === "function" ? who.toLowerCase() : void 0)) {
           return sub;
         }
+      }
+      if (who.charAt(0) !== "^") {
+        // regex search
+        who = `^${who}`;
+      }
+      try {
+        ref1 = this.subscribers;
+        for (k = 0, len1 = ref1.length; k < len1; k++) {
+          sub = ref1[k];
+          if (sub.name.match(new RegExp(who, "i"))) {
+            return sub;
+          }
+        }
+      } catch (error) {
+        e = error;
+        client.sendSystemMessage(e.message);
+        client.ack();
+        return false;
       }
       client.sendSystemMessage("Couldn't find the target in channel");
       client.ack();
@@ -522,7 +541,7 @@
         return false;
       }
       if (who === this.control[this.host]) {
-        client.sendSystemMessage("Target is already host");
+        client.sendSystemMessage(`${(who != null ? who.name : void 0) || "Target"} is already host`);
       } else if (this.control.indexOf(who) > -1) {
         this.debug("Switching host to #", who.index);
         wasHostI = this.host;
@@ -533,7 +552,7 @@
         this.control[newHostI] = wasHost;
         this.updateSubscriberList(client);
       } else {
-        client.sendSystemMessage("Target is not in control and thereby can't be host");
+        client.sendSystemMessage(`${(who != null ? who.name : void 0) || "Target"} is not in control and thereby can't be host`);
       }
       //@broadcastCode(false, "desired", @desired)
       return client.ack();
@@ -544,13 +563,13 @@
         return this.permissionDenied(client, "grantControl");
       }
       if (!(who = this.findClient(client, who))) {
-        return false;
+        return true;
       }
       if (this.control.indexOf(who) > -1) {
-        client.sendSystemMessage("Target is already in control");
+        client.sendSystemMessage(`${(who != null ? who.name : void 0) || "Target"} is already in control`);
       } else {
         this.grantControl(who);
-        client.sendSystemMessage("Target is now in control!", COLORS.green);
+        client.sendSystemMessage(`${(who != null ? who.name : void 0) || "Target"} is now in control!`, COLORS.green);
       }
       return client.ack();
     }
@@ -560,13 +579,13 @@
         return this.permissionDenied(client, "revokeControl");
       }
       if (!(who = this.findClient(client, who))) {
-        return false;
+        return true;
       }
       if (this.control.indexOf(who) > -1) {
         this.revokeControl(who);
-        client.sendSystemMessage("Target is no longer in control!", COLORS.green);
+        client.sendSystemMessage(`${(who != null ? who.name : void 0) || "Target"} is no longer in control!`, COLORS.green);
       } else {
-        client.sendSystemMessage("Target was not in control");
+        client.sendSystemMessage(`${(who != null ? who.name : void 0) || "Target"} was not in control`);
       }
       return client.ack();
     }

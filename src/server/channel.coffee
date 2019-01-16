@@ -184,8 +184,20 @@ exports.Class = class SyncTubeServerChannel
   findClient: (client, who) ->
     return client unless who
 
+    # exact match?
     for sub in @subscribers
-      return sub if sub.name.match(new RegExp(who, "i"))
+      return sub if sub.name.toLowerCase?() == who.toLowerCase?()
+
+    # regex search
+    who = "^#{who}" unless who.charAt(0) == "^"
+    try
+      for sub in @subscribers
+        return sub if sub.name.match(new RegExp(who, "i"))
+    catch e
+      client.sendSystemMessage(e.message)
+      client.ack()
+      return false
+
 
     client.sendSystemMessage("Couldn't find the target in channel")
     client.ack()
@@ -282,7 +294,7 @@ exports.Class = class SyncTubeServerChannel
     return false unless who = @findClient(client, who)
 
     if who == @control[@host]
-      client.sendSystemMessage("Target is already host")
+      client.sendSystemMessage("#{who?.name || "Target"} is already host")
     else if @control.indexOf(who) > -1
       @debug "Switching host to #", who.index
       wasHostI = @host
@@ -293,30 +305,30 @@ exports.Class = class SyncTubeServerChannel
       @control[newHostI] = wasHost
       @updateSubscriberList(client)
     else
-      client.sendSystemMessage("Target is not in control and thereby can't be host")
+      client.sendSystemMessage("#{who?.name || "Target"} is not in control and thereby can't be host")
     #@broadcastCode(false, "desired", @desired)
     return client.ack()
 
   CHSCMD_grantControl: (client, who) ->
     return @permissionDenied(client, "grantControl") unless @control.indexOf(client) > -1
-    return false unless who = @findClient(client, who)
+    return true unless who = @findClient(client, who)
 
     if @control.indexOf(who) > -1
-      client.sendSystemMessage("Target is already in control")
+      client.sendSystemMessage("#{who?.name || "Target"} is already in control")
     else
       @grantControl(who)
-      client.sendSystemMessage("Target is now in control!", COLORS.green)
+      client.sendSystemMessage("#{who?.name || "Target"} is now in control!", COLORS.green)
 
     return client.ack()
 
   CHSCMD_revokeControl: (client, who) ->
     return @permissionDenied(client, "revokeControl") unless @control.indexOf(client) > -1
-    return false unless who = @findClient(client, who)
+    return true unless who = @findClient(client, who)
 
     if @control.indexOf(who) > -1
       @revokeControl(who)
-      client.sendSystemMessage("Target is no longer in control!", COLORS.green)
+      client.sendSystemMessage("#{who?.name || "Target"} is no longer in control!", COLORS.green)
     else
-      client.sendSystemMessage("Target was not in control")
+      client.sendSystemMessage("#{who?.name || "Target"} was not in control")
 
     return client.ack()

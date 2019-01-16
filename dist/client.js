@@ -644,8 +644,18 @@
       }
 
       CMD_subscriber_list(data) {
-        var j, len, ref1, results, sub;
+        var j, len, ref1, results, sub, subs;
         this.clients.html("");
+        // get ordered list
+        subs = data.subscribers.sort(function(a, b) {
+          if (a.isHost) {
+            return -1;
+          }
+          if (!a.control) {
+            return 1;
+          }
+          return 0;
+        });
         ref1 = data.subscribers;
         results = [];
         for (j = 0, len = ref1.length; j < len; j++) {

@@ -458,6 +458,13 @@ window.SyncTubeClient = class SyncTubeClient
 
   CMD_subscriber_list: (data) ->
     @clients.html("")
+
+    # get ordered list
+    subs = data.subscribers.sort (a, b) ->
+      return -1 if a.isHost
+      return 1 unless a.control
+      return 0
+
     @CMD_update_single_subscriber(data: sub) for sub in data.subscribers
 
 $ ->

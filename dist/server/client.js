@@ -2,7 +2,7 @@
 (function() {
   var COLORS, SyncTubeServerClient, UTIL;
 
-  COLORS = require("../colors.js");
+  COLORS = require("./colors.js");
 
   UTIL = require("./util.js");
 

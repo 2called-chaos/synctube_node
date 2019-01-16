@@ -1,10 +1,9 @@
 # requires
 http = require('http');
 webSocketServer = require('websocket').server;
-{spawn} = require( 'child_process' )
 
 # colors
-COLORS = require("../colors.js")
+COLORS = require("./colors.js")
 UTIL = require("./util.js")
 Channel = require("./channel.js").Class
 Client = require("./client.js").Class

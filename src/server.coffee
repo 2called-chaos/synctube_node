@@ -1,4 +1,3 @@
-# core files
 SyncTubeServer = require("./server/core.js")
 
 server = new SyncTubeServer.Class

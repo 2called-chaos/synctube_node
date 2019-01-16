@@ -311,54 +311,57 @@
     // ====================
     // = Channel commands =
     // ====================
-    handleMessage(client, message, msg) {
+    handleMessage(client, message, msg, control = false) {
       var m;
-      if (m = msg.match(/^\/(?:seek)(?:\s([0-9\-+:\.]+))?$/i)) {
-        return this.CHSCMD_seek(client, m[1]);
+      if (control) {
+        if (m = msg.match(/^\/(?:seek)(?:\s([0-9\-+:\.]+))?$/i)) {
+          return this.CHSCMD_seek(client, m[1]);
+        }
+        if (m = msg.match(/^\/(?:p|pause)$/i)) {
+          return this.CHSCMD_pause(client);
+        }
+        if (m = msg.match(/^\/(?:r|resume)$/i)) {
+          return this.CHSCMD_resume(client);
+        }
+        if (m = msg.match(/^\/(?:t|toggle)$/i)) {
+          return this.CHSCMD_toggle(client);
+        }
+        if (m = msg.match(/^\/play\s(.+)$/i)) {
+          return this.CHSCMD_play(client, m[1]);
+        }
+        if (m = msg.match(/^\/(?:browse|url)\s(.+)$/i)) {
+          return this.CHSCMD_browse(client, m[1], "frame");
+        }
+        if (m = msg.match(/^\/(?:image|pic(?:ture)?|gif|png|jpg)\s(.+)$/i)) {
+          return this.CHSCMD_browse(client, m[1], "image");
+        }
+        if (m = msg.match(/^\/(?:video|vid|mp4|webp)\s(.+)$/i)) {
+          return this.CHSCMD_browse(client, m[1], "video");
+        }
+        if (m = msg.match(/^\/host(?:\s(.+))?$/i)) {
+          return this.CHSCMD_host(client, m[1]);
+        }
+        if (m = msg.match(/^\/grant(?:\s(.+))?$/i)) {
+          return this.CHSCMD_grantControl(client, m[1]);
+        }
+        if (m = msg.match(/^\/revoke(?:\s(.+))?$/i)) {
+          return this.CHSCMD_revokeControl(client, m[1]);
+        }
+        if (m = msg.match(/^\/loop(?:\s(.+))?$/i)) {
+          return this.CHSCMD_loop(client, m[1]);
+        }
+      } else {
+        if (m = msg.match(/^\/(?:ready|rdy)$/i)) {
+          return this.CHSCMD_ready(client);
+        }
+        if (m = msg.match(/^\/retry$/i)) {
+          return this.CHSCMD_retry(client);
+        }
+        if (m = msg.match(/^\/leave$/i)) {
+          return this.CHSCMD_leave(client);
+        }
+        this.broadcast(client, msg, null, this.clientColor(client));
       }
-      if (m = msg.match(/^\/(?:p|pause)$/i)) {
-        return this.CHSCMD_pause(client);
-      }
-      if (m = msg.match(/^\/(?:r|resume)$/i)) {
-        return this.CHSCMD_resume(client);
-      }
-      if (m = msg.match(/^\/(?:t|toggle)$/i)) {
-        return this.CHSCMD_toggle(client);
-      }
-      if (m = msg.match(/^\/(?:ready|rdy)$/i)) {
-        return this.CHSCMD_ready(client);
-      }
-      if (m = msg.match(/^\/retry$/i)) {
-        return this.CHSCMD_retry(client);
-      }
-      if (m = msg.match(/^\/play\s(.+)$/i)) {
-        return this.CHSCMD_play(client, m[1]);
-      }
-      if (m = msg.match(/^\/(?:browse|url)\s(.+)$/i)) {
-        return this.CHSCMD_browse(client, m[1], "frame");
-      }
-      if (m = msg.match(/^\/(?:image|pic(?:ture)?|gif|png|jpg)\s(.+)$/i)) {
-        return this.CHSCMD_browse(client, m[1], "image");
-      }
-      if (m = msg.match(/^\/(?:video|vid|mp4|webp)\s(.+)$/i)) {
-        return this.CHSCMD_browse(client, m[1], "video");
-      }
-      if (m = msg.match(/^\/host(?:\s(.+))?$/i)) {
-        return this.CHSCMD_host(client, m[1]);
-      }
-      if (m = msg.match(/^\/grant(?:\s(.+))?$/i)) {
-        return this.CHSCMD_grantControl(client, m[1]);
-      }
-      if (m = msg.match(/^\/revoke(?:\s(.+))?$/i)) {
-        return this.CHSCMD_revokeControl(client, m[1]);
-      }
-      if (m = msg.match(/^\/leave$/i)) {
-        return this.CHSCMD_leave(client);
-      }
-      if (m = msg.match(/^\/loop(?:\s(.+))?$/i)) {
-        return this.CHSCMD_loop(client, m[1]);
-      }
-      this.broadcast(client, msg, null, this.clientColor(client));
       return client.ack();
     }
 

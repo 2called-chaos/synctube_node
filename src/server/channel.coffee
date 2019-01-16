@@ -153,23 +153,26 @@ exports.Class = class SyncTubeServerChannel
   # ====================
   # = Channel commands =
   # ====================
-  handleMessage: (client, message, msg) ->
-    return @CHSCMD_seek(client, m[1]) if m = msg.match(/^\/(?:seek)(?:\s([0-9\-+:\.]+))?$/i)
-    return @CHSCMD_pause(client) if m = msg.match(/^\/(?:p|pause)$/i)
-    return @CHSCMD_resume(client) if m = msg.match(/^\/(?:r|resume)$/i)
-    return @CHSCMD_toggle(client) if m = msg.match(/^\/(?:t|toggle)$/i)
-    return @CHSCMD_ready(client) if m = msg.match(/^\/(?:ready|rdy)$/i)
-    return @CHSCMD_retry(client) if m = msg.match(/^\/retry$/i)
-    return @CHSCMD_play(client, m[1]) if m = msg.match(/^\/play\s(.+)$/i)
-    return @CHSCMD_browse(client, m[1], "frame") if m = msg.match(/^\/(?:browse|url)\s(.+)$/i)
-    return @CHSCMD_browse(client, m[1], "image") if m = msg.match(/^\/(?:image|pic(?:ture)?|gif|png|jpg)\s(.+)$/i)
-    return @CHSCMD_browse(client, m[1], "video") if m = msg.match(/^\/(?:video|vid|mp4|webp)\s(.+)$/i)
-    return @CHSCMD_host(client, m[1]) if m = msg.match(/^\/host(?:\s(.+))?$/i)
-    return @CHSCMD_grantControl(client, m[1]) if m = msg.match(/^\/grant(?:\s(.+))?$/i)
-    return @CHSCMD_revokeControl(client, m[1]) if m = msg.match(/^\/revoke(?:\s(.+))?$/i)
-    return @CHSCMD_leave(client) if m = msg.match(/^\/leave$/i)
-    return @CHSCMD_loop(client, m[1]) if m = msg.match(/^\/loop(?:\s(.+))?$/i)
-    @broadcast(client, msg, null, @clientColor(client))
+  handleMessage: (client, message, msg, control = false) ->
+    if control
+      return @CHSCMD_seek(client, m[1]) if m = msg.match(/^\/(?:seek)(?:\s([0-9\-+:\.]+))?$/i)
+      return @CHSCMD_pause(client) if m = msg.match(/^\/(?:p|pause)$/i)
+      return @CHSCMD_resume(client) if m = msg.match(/^\/(?:r|resume)$/i)
+      return @CHSCMD_toggle(client) if m = msg.match(/^\/(?:t|toggle)$/i)
+      return @CHSCMD_play(client, m[1]) if m = msg.match(/^\/play\s(.+)$/i)
+      return @CHSCMD_browse(client, m[1], "frame") if m = msg.match(/^\/(?:browse|url)\s(.+)$/i)
+      return @CHSCMD_browse(client, m[1], "image") if m = msg.match(/^\/(?:image|pic(?:ture)?|gif|png|jpg)\s(.+)$/i)
+      return @CHSCMD_browse(client, m[1], "video") if m = msg.match(/^\/(?:video|vid|mp4|webp)\s(.+)$/i)
+      return @CHSCMD_host(client, m[1]) if m = msg.match(/^\/host(?:\s(.+))?$/i)
+      return @CHSCMD_grantControl(client, m[1]) if m = msg.match(/^\/grant(?:\s(.+))?$/i)
+      return @CHSCMD_revokeControl(client, m[1]) if m = msg.match(/^\/revoke(?:\s(.+))?$/i)
+      return @CHSCMD_loop(client, m[1]) if m = msg.match(/^\/loop(?:\s(.+))?$/i)
+    else
+      return @CHSCMD_ready(client) if m = msg.match(/^\/(?:ready|rdy)$/i)
+      return @CHSCMD_retry(client) if m = msg.match(/^\/retry$/i)
+      return @CHSCMD_leave(client) if m = msg.match(/^\/leave$/i)
+      @broadcast(client, msg, null, @clientColor(client))
+
     return client.ack()
 
   permissionDenied: (client, context) ->

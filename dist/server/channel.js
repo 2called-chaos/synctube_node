@@ -32,7 +32,7 @@
       this.playlist = [];
       this.playlist_index = 0;
       this.desired = {
-        ctype: this.server.DEFAULT_CTYPTE,
+        ctype: this.server.DEFAULT_CTYPE,
         url: this.server.DEFAULT_URL,
         seek: 0,
         loop: false,
@@ -149,7 +149,7 @@
 
     liveVideo(url, state = "pause") {
       this.desired = {
-        ctype: "youtube",
+        ctype: "Youtube",
         url: url,
         state: state,
         seek: 0,
@@ -167,7 +167,10 @@
       });
     }
 
-    liveUrl(url, ctype = "frame") {
+    liveUrl(url, ctype = "HtmlFrame") {
+      if (!UTIL.startsWith(url, "http://", "https://")) {
+        url = `https://${url}`;
+      }
       this.desired = {
         ctype: ctype,
         url: url,
@@ -255,7 +258,9 @@
       client.sendCode("subscribe", {
         channel: this.name
       });
-      client.sendCode("desired", this.desired);
+      client.sendCode("desired", Object.assign({}, this.desired, {
+        force: true
+      }));
       this.broadcast(client, "<i>joined the party!</i>", COLORS.green, COLORS.muted, false);
       this.updateSubscriberList(client);
       return this.debug(`subscribed client #${client.index}(${client.ip})`);
@@ -330,13 +335,13 @@
           return this.CHSCMD_play(client, m[1]);
         }
         if (m = msg.match(/^\/(?:browse|url)\s(.+)$/i)) {
-          return this.CHSCMD_browse(client, m[1], "frame");
+          return this.CHSCMD_browse(client, m[1], "HtmlFrame");
         }
         if (m = msg.match(/^\/(?:image|pic(?:ture)?|gif|png|jpg)\s(.+)$/i)) {
-          return this.CHSCMD_browse(client, m[1], "image");
+          return this.CHSCMD_browse(client, m[1], "HtmlImage");
         }
         if (m = msg.match(/^\/(?:video|vid|mp4|webp)\s(.+)$/i)) {
-          return this.CHSCMD_browse(client, m[1], "video");
+          return this.CHSCMD_browse(client, m[1], "HtmlVideo");
         }
         if (m = msg.match(/^\/host(?:\s(.+))?$/i)) {
           return this.CHSCMD_host(client, m[1]);

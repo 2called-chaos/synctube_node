@@ -207,7 +207,7 @@
             ch.desired.seek = json.seek;
             ch.desired.seek_update = new Date();
             ch.broadcastCode(false, "desired", Object.assign({}, ch.desired, {
-              force: Math.abs(ch.desired.seek - seek_was) > 2.75
+              force: Math.abs(ch.desired.seek - seek_was) > (this.opts.packetInterval + 0.75)
             }));
           }
         } else {
@@ -295,7 +295,7 @@
     SyncTubeServer.prototype.PROTECTED_NAMES = ["admin", "system"];
 
     // Default video to cue in new channels
-    SyncTubeServer.prototype.DEFAULT_CTYPE = "youtube"; // youtube, frame, image, video (mp4/webp)
+    SyncTubeServer.prototype.DEFAULT_CTYPE = "Youtube"; // youtube, frame, image, video (mp4/webp)
 
     SyncTubeServer.prototype.DEFAULT_URL = "6Dh-RL__uN4"; // id suffices when YouTube
 

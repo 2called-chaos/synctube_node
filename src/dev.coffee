@@ -23,7 +23,7 @@ compileServer = (f) ->
 
 compileClient = (f) ->
   console.log ">>>> compile client (#{if f then "#{f} changed" else "init"})"
-  child_process.exec "cat src/client/*.coffee src/client.coffee | coffee -c --stdio > ./dist/client.js", {}, (e, stdout, stderr) -> process.stdout.write(stdout.toString())
+  exec "cat $(find ./src/client -type f -name '*.coffee' -print0 | xargs -0 echo) src/client.coffee | coffee -c --stdio > ./dist/client.js"
 
 # compile and watch server
 compileServer()
@@ -34,6 +34,7 @@ fs.watch "./src/server", encoding: "buffer", (_, f) => compileServer(f.toString(
 compileClient()
 fs.watch "./src/client.coffee", encoding: "buffer", (_, f) => compileClient(f.toString())
 fs.watch "./src/client", encoding: "buffer", (_, f) => compileClient(f.toString())
+fs.watch "./src/client/players", encoding: "buffer", (_, f) => compileClient(f.toString())
 
 # run server in loop
 runServer = (f) ->

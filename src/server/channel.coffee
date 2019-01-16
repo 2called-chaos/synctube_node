@@ -15,7 +15,7 @@ exports.Class = class SyncTubeServerChannel
     @ready_timeout = null
     @playlist = []
     @playlist_index = 0
-    @desired = { ctype: @server.DEFAULT_CTYPTE, url: @server.DEFAULT_URL, seek: 0, loop: false, seek_update: new Date, state: if @server.DEFAULT_AUTOPLAY then "play" else "pause" }
+    @desired = { ctype: @server.DEFAULT_CTYPE, url: @server.DEFAULT_URL, seek: 0, loop: false, seek_update: new Date, state: if @server.DEFAULT_AUTOPLAY then "play" else "pause" }
 
   broadcast: (client, message, color, client_color, sendToAuthor = true) ->
     for c in @subscribers
@@ -67,7 +67,7 @@ exports.Class = class SyncTubeServerChannel
     data
 
   liveVideo: (url, state = "pause") ->
-    @desired = { ctype: "youtube", url: url, state: state, seek: 0, loop: false, seek_update: new Date}
+    @desired = { ctype: "Youtube", url: url, state: state, seek: 0, loop: false, seek_update: new Date}
     @ready = []
     @broadcastCode(false, "desired", @desired)
 
@@ -76,7 +76,8 @@ exports.Class = class SyncTubeServerChannel
       @desired.state = "play"
       @broadcastCode(false, "video_action", action: "play")
 
-  liveUrl: (url, ctype = "frame") ->
+  liveUrl: (url, ctype = "HtmlFrame") ->
+    url = "https://#{url}" unless UTIL.startsWith(url, "http://", "https://")
     @desired = { ctype: ctype, url: url, loop: false, state: "play" }
     @ready = []
     @broadcastCode(false, "desired", @desired)
@@ -116,7 +117,7 @@ exports.Class = class SyncTubeServerChannel
     client.state = {}
     client.sendSystemMessage("You joined #{@name}!", COLORS.green) if sendMessage
     client.sendCode("subscribe", channel: @name)
-    client.sendCode("desired", @desired)
+    client.sendCode("desired", Object.assign({}, @desired, { force: true }))
     @broadcast(client, "<i>joined the party!</i>", COLORS.green, COLORS.muted, false)
     @updateSubscriberList(client)
     @debug "subscribed client ##{client.index}(#{client.ip})"
@@ -160,9 +161,9 @@ exports.Class = class SyncTubeServerChannel
       return @CHSCMD_resume(client) if m = msg.match(/^\/(?:r|resume)$/i)
       return @CHSCMD_toggle(client) if m = msg.match(/^\/(?:t|toggle)$/i)
       return @CHSCMD_play(client, m[1]) if m = msg.match(/^\/play\s(.+)$/i)
-      return @CHSCMD_browse(client, m[1], "frame") if m = msg.match(/^\/(?:browse|url)\s(.+)$/i)
-      return @CHSCMD_browse(client, m[1], "image") if m = msg.match(/^\/(?:image|pic(?:ture)?|gif|png|jpg)\s(.+)$/i)
-      return @CHSCMD_browse(client, m[1], "video") if m = msg.match(/^\/(?:video|vid|mp4|webp)\s(.+)$/i)
+      return @CHSCMD_browse(client, m[1], "HtmlFrame") if m = msg.match(/^\/(?:browse|url)\s(.+)$/i)
+      return @CHSCMD_browse(client, m[1], "HtmlImage") if m = msg.match(/^\/(?:image|pic(?:ture)?|gif|png|jpg)\s(.+)$/i)
+      return @CHSCMD_browse(client, m[1], "HtmlVideo") if m = msg.match(/^\/(?:video|vid|mp4|webp)\s(.+)$/i)
       return @CHSCMD_host(client, m[1]) if m = msg.match(/^\/host(?:\s(.+))?$/i)
       return @CHSCMD_grantControl(client, m[1]) if m = msg.match(/^\/grant(?:\s(.+))?$/i)
       return @CHSCMD_revokeControl(client, m[1]) if m = msg.match(/^\/revoke(?:\s(.+))?$/i)

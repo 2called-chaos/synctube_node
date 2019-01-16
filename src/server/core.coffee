@@ -17,7 +17,7 @@ exports.Class = class SyncTubeServer
   ]
 
   # Default video to cue in new channels
-  DEFAULT_CTYPE: "youtube" # youtube, frame, image, video (mp4/webp)
+  DEFAULT_CTYPE: "Youtube" # youtube, frame, image, video (mp4/webp)
   DEFAULT_URL: "6Dh-RL__uN4" # id suffices when YouTube
   DEFAULT_AUTOPLAY: false # only when youtube or video
 
@@ -130,7 +130,7 @@ exports.Class = class SyncTubeServer
         seek_was = ch.desired.seek
         ch.desired.seek = json.seek
         ch.desired.seek_update = new Date()
-        ch.broadcastCode(false, "desired", Object.assign({}, ch.desired, { force: Math.abs(ch.desired.seek - seek_was) > 2.75 }))
+        ch.broadcastCode(false, "desired", Object.assign({}, ch.desired, { force: Math.abs(ch.desired.seek - seek_was) > (@opts.packetInterval + 0.75) }))
     else
       client.sendCode("desired", ch.desired) if ch
     return true

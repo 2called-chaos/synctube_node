@@ -1,8 +1,11 @@
 window.SyncTubeClient_Network =
   init: ->
-    @opts.wsIp ?= $("meta[name=synctube-server-ip]").attr("content")
-    @opts.wsPort ?= $("meta[name=synctube-server-port]").attr("content")
-    @opts.wsProtocol ?= $("meta[name=synctube-server-protocol]").attr("content")
+    discoveredHost = document.location.hostname
+    discoveredPort = document.location.port || (if document.location.protocol == "https:" then 443 else 80)
+    discoveredProtocol = if document.location.protocol == "https:" then "wss" else "ws"
+    @opts.wsIp ?= $("meta[name=synctube-server-ip]").attr("content") || discoveredHost
+    @opts.wsPort ?= $("meta[name=synctube-server-port]").attr("content") || discoveredPort
+    @opts.wsProtocol ?= $("meta[name=synctube-server-protocol]").attr("content") || discoveredProtocol
     @dontBroadcast = false
 
   start: ->

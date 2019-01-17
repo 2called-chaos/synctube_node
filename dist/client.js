@@ -395,15 +395,18 @@
 
   window.SyncTubeClient_Network = {
     init: function() {
-      var base, base1, base2;
+      var base, base1, base2, discoveredHost, discoveredPort, discoveredProtocol;
+      discoveredHost = document.location.hostname;
+      discoveredPort = document.location.port || (document.location.protocol === "https:" ? 443 : 80);
+      discoveredProtocol = document.location.protocol === "https:" ? "wss" : "ws";
       if ((base = this.opts).wsIp == null) {
-        base.wsIp = $("meta[name=synctube-server-ip]").attr("content");
+        base.wsIp = $("meta[name=synctube-server-ip]").attr("content") || discoveredHost;
       }
       if ((base1 = this.opts).wsPort == null) {
-        base1.wsPort = $("meta[name=synctube-server-port]").attr("content");
+        base1.wsPort = $("meta[name=synctube-server-port]").attr("content") || discoveredPort;
       }
       if ((base2 = this.opts).wsProtocol == null) {
-        base2.wsProtocol = $("meta[name=synctube-server-protocol]").attr("content");
+        base2.wsProtocol = $("meta[name=synctube-server-protocol]").attr("content") || discoveredProtocol;
       }
       return this.dontBroadcast = false;
     },

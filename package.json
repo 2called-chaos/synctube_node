@@ -1,6 +1,7 @@
 {
   "scripts": {
     "start": "node ./dist/server.js",
+    "build": "coffee ./src/dev.coffee -n build",
     "dev": "coffee ./src/dev.coffee -n"
   },
   "name": "synctube",

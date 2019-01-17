@@ -75,6 +75,7 @@ window.SyncTubeClient_Network =
   broadcastState: (ev = @player?.getState()) ->
     return if @dontBroadcast
     state = switch ev
+      when -666 then "uninitialized"
       when -1 then "unstarted"
       when 0 then "ended"
       when 1 then "playing"

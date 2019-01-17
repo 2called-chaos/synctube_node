@@ -28,9 +28,7 @@ window.SyncTubeClient_Player_HtmlVideo = class SyncTubeClient_Player_HtmlVideo
       else
         @sendSeek()
 
-  destroy: ->
-    @video.remove()
-    @client.stopBroadcast()
+  destroy: -> @video.remove()
 
   updateDesired: (data) ->
     console.log data.state

@@ -6,7 +6,6 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
   destroy: ->
     @api?.destroy()
     @api = null
-    @client.stopBroadcast()
     @pauseEnsured()
 
   updateDesired: (data) ->
@@ -42,16 +41,15 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
       @ensurePause(data)
 
   seekTo: (time, paused = false) ->
-    console.log time
-    @api?.seekTo(time, true)
+    @api?.seekTo?(time, true)
     if paused
       @player?.pause()
     else
       @player?.play()
 
   getState: -> if @api?.getPlayerState? then @api.getPlayerState() else -1
-  play: -> @api?.playVideo()
-  pause: -> @api?.pauseVideo()
+  play: -> @api?.playVideo?()
+  pause: -> @api?.pauseVideo?()
   getCurrentTime: -> if @api?.getCurrentTime? then @api.getCurrentTime() else 0
   getDuration: -> if @api?.getDuration? then @api.getDuration() else 0
   getLoadedFraction: -> if @api?.getVideoLoadedFraction? then @api.getVideoLoadedFraction() else 0

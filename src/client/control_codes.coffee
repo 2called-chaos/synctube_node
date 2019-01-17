@@ -12,12 +12,11 @@ window.SyncTubeClient_ControlCodes =
 
   CMD_unsubscribe: ->
     @clients.html("")
-    @player?.destroy()
-    @player = null
+    @CMD_video_action(action: "destroy")
 
   CMD_desired: (data) ->
     if data.ctype != @player?.ctype
-      @player?.destroy()
+      @CMD_video_action(action: "destroy")
       klass = "SyncTubeClient_Player_#{data.ctype}"
       try
         @player = new window[klass](this)
@@ -35,8 +34,12 @@ window.SyncTubeClient_ControlCodes =
       when "sync" then @player?.force_resync = true
       when "seek" then @player?.seekTo(data.to, data.paused)
       when "destroy"
-        @player?.destroy()
-        @player = null
+        @dontBroadcast = false
+        @stopBroadcast()
+        if @player
+          @player.destroy()
+          @player = null
+          @broadcastState(-666)
 
   CMD_navigate: (data) ->
     if data.reload
@@ -72,8 +75,8 @@ window.SyncTubeClient_ControlCodes =
     data = resp?.data || {}
     return unless data.index?
     el = @clients.find("[data-client-index=#{data.index}]")
-    unless el.length
-      el = $ """
+    if !el.length || data.state.istate == -666
+      _el = $ """
         <div data-client-index="#{data.index}">
           <div class="first">
             <span data-attr="admin-ctn"><i></i></span>
@@ -86,7 +89,8 @@ window.SyncTubeClient_ControlCodes =
           </div>
         </div>
       """
-      @clients.append(el)
+      if el.length then el.replaceWith(_el) else @clients.append(_el)
+      el = _el
     el.find("[data-attr=#{k}]").html(v) for k, v of data
     el.find("[data-attr=#{k}]").html(v) for k, v of data.state
     el.find("[data-attr=progress-bar-buffered]").css(width: "#{(data.state.loaded_fraction || 0) * 100}%")

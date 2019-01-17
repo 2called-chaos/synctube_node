@@ -26,19 +26,17 @@
       return this.control = false;
     },
     CMD_unsubscribe: function() {
-      var ref;
       this.clients.html("");
-      if ((ref = this.player) != null) {
-        ref.destroy();
-      }
-      return this.player = null;
+      return this.CMD_video_action({
+        action: "destroy"
+      });
     },
     CMD_desired: function(data) {
-      var e, klass, ref, ref1;
+      var e, klass, ref;
       if (data.ctype !== ((ref = this.player) != null ? ref.ctype : void 0)) {
-        if ((ref1 = this.player) != null) {
-          ref1.destroy();
-        }
+        this.CMD_video_action({
+          action: "destroy"
+        });
         klass = `SyncTubeClient_Player_${data.ctype}`;
         try {
           this.player = new window[klass](this);
@@ -52,7 +50,7 @@
       return this.player.updateDesired(data);
     },
     CMD_video_action: function(data) {
-      var ref, ref1, ref2, ref3, ref4;
+      var ref, ref1, ref2, ref3;
       switch (data.action) {
         case "resume":
           return (ref = this.player) != null ? ref.play() : void 0;
@@ -63,10 +61,13 @@
         case "seek":
           return (ref3 = this.player) != null ? ref3.seekTo(data.to, data.paused) : void 0;
         case "destroy":
-          if ((ref4 = this.player) != null) {
-            ref4.destroy();
+          this.dontBroadcast = false;
+          this.stopBroadcast();
+          if (this.player) {
+            this.player.destroy();
+            this.player = null;
+            return this.broadcastState(-666);
           }
-          return this.player = null;
       }
     },
     CMD_navigate: function(data) {
@@ -113,15 +114,20 @@
       }
     },
     CMD_update_single_subscriber: function(resp) {
-      var data, el, k, ref, v;
+      var _el, data, el, k, ref, v;
       data = (resp != null ? resp.data : void 0) || {};
       if (data.index == null) {
         return;
       }
       el = this.clients.find(`[data-client-index=${data.index}]`);
-      if (!el.length) {
-        el = $(`<div data-client-index="${data.index}">\n  <div class="first">\n    <span data-attr="admin-ctn"><i></i></span>\n    <span data-attr="name"></span>\n  </div>\n  <div class="second">\n    <span data-attr="icon-ctn"><i><span data-attr="progress"></span> <span data-attr="timestamp"></span></i></span>\n    <span data-attr="drift-ctn" style="float:right"><i><span data-attr="drift"></span></i></span>\n    <div data-attr="progress-bar"><div data-attr="progress-bar-buffered"></div><div data-attr="progress-bar-position"></div></div>\n  </div>\n</div>`);
-        this.clients.append(el);
+      if (!el.length || data.state.istate === -666) {
+        _el = $(`<div data-client-index="${data.index}">\n  <div class="first">\n    <span data-attr="admin-ctn"><i></i></span>\n    <span data-attr="name"></span>\n  </div>\n  <div class="second">\n    <span data-attr="icon-ctn"><i><span data-attr="progress"></span> <span data-attr="timestamp"></span></i></span>\n    <span data-attr="drift-ctn" style="float:right"><i><span data-attr="drift"></span></i></span>\n    <div data-attr="progress-bar"><div data-attr="progress-bar-buffered"></div><div data-attr="progress-bar-position"></div></div>\n  </div>\n</div>`);
+        if (el.length) {
+          el.replaceWith(_el);
+        } else {
+          this.clients.append(_el);
+        }
+        el = _el;
       }
       for (k in data) {
         v = data[k];
@@ -496,6 +502,8 @@
       }
       state = (function() {
         switch (ev) {
+          case -666:
+            return "uninitialized";
           case -1:
             return "unstarted";
           case 0:
@@ -711,8 +719,7 @@
       }
 
       destroy() {
-        this.video.remove();
-        return this.client.stopBroadcast();
+        return this.video.remove();
       }
 
       updateDesired(data) {
@@ -901,7 +908,6 @@
           ref1.destroy();
         }
         this.api = null;
-        this.client.stopBroadcast();
         return this.pauseEnsured();
       }
 
@@ -943,9 +949,10 @@
 
       seekTo(time, paused = false) {
         var ref1, ref2, ref3;
-        console.log(time);
         if ((ref1 = this.api) != null) {
-          ref1.seekTo(time, true);
+          if (typeof ref1.seekTo === "function") {
+            ref1.seekTo(time, true);
+          }
         }
         if (paused) {
           return (ref2 = this.player) != null ? ref2.pause() : void 0;
@@ -965,12 +972,12 @@
 
       play() {
         var ref1;
-        return (ref1 = this.api) != null ? ref1.playVideo() : void 0;
+        return (ref1 = this.api) != null ? typeof ref1.playVideo === "function" ? ref1.playVideo() : void 0 : void 0;
       }
 
       pause() {
         var ref1;
-        return (ref1 = this.api) != null ? ref1.pauseVideo() : void 0;
+        return (ref1 = this.api) != null ? typeof ref1.pauseVideo === "function" ? ref1.pauseVideo() : void 0 : void 0;
       }
 
       getCurrentTime() {

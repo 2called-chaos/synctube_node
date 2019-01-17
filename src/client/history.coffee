@@ -42,7 +42,7 @@ window.SyncTubeClient_History = class SyncTubeClient_History
     @buffer = null
 
   append: (cmd) ->
-    @log.unshift(cmd) if cmd
+    @log.unshift(cmd) if cmd && @log.length && @log[0] != cmd
     @log.pop() while @log.length > @opts.limit
     @saveLog() if @opts.save
     @index = -1

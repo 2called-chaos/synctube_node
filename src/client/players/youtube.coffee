@@ -20,7 +20,7 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
       @loadVideo(data.url)
       return
 
-    if @getState() == 1 && data.state != "play"
+    if @getState() == 1 && data.state == "pause"
       @client.debug "pausing playback, state:", @getState()
       @pause()
       @seekTo(data.seek, true)

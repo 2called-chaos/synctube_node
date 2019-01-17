@@ -924,7 +924,7 @@
           this.loadVideo(data.url);
           return;
         }
-        if (this.getState() === 1 && data.state !== "play") {
+        if (this.getState() === 1 && data.state === "pause") {
           this.client.debug("pausing playback, state:", this.getState());
           this.pause();
           this.seekTo(data.seek, true);

@@ -17,9 +17,9 @@ window.SyncTubeClient_Player_HtmlVideo = class SyncTubeClient_Player_HtmlVideo
     @video.on "canplaythrough", => @sendReady()
     @video.on "error", => @error = @video.get(0).error
     @video.on "playing", => @sendResume()
-    @video.on "pause", => @sendPause() unless @getCurrentTime() == @getDuration()
+    @video.on "pause", => @sendPause() if @getCurrentTime() != @getDuration()
     @video.on "timeupdate", => @lastKnownTime = @getCurrentTime() unless @seeking
-    @video.on "ended", => @sendEnded()
+    @video.on "ended", => @sendEnded() if @getCurrentTime() == @getDuration()
     @video.on "seeking", => @seeking = true
     @video.on "seeked", (a) =>
       @seeking = false
@@ -33,26 +33,34 @@ window.SyncTubeClient_Player_HtmlVideo = class SyncTubeClient_Player_HtmlVideo
     @client.stopBroadcast()
 
   updateDesired: (data) ->
+    console.log data.state
     if data.state == "play" then @video.attr("autoplay", "autoplay") else @video.removeAttr("autoplay")
 
     if data.url != @video.attr("src")
       @client.debug "switching video from", @getUrl(), "to", data.url
       @video.attr("src", data.url)
       @error = false
+      @playing = false
       @everPlayed = false
       @client.startBroadcast()
       @client.broadcastState()
 
-    if data.loop then @video.attr("loop", "loop") else @video.removeAttr("loop")
+    if data.loop
+      @video.attr("loop", "loop")
+      @play() if @getCurrentTime() == @getDuration() && @getDuration() > 0
+    else
+      @video.removeAttr("loop")
 
-    if !@error && @getState() == 1 && data.state != "play"
-      @client.debug "pausing playback"
+    if !@error && @getState() == 1 && data.state == "pause"
+      @client.debug "pausing playback", data.state, data.seek, @getState()
+      @systemPause = true
       @pause()
-      @seekTo(data.seek, true) unless @video.get(0).seeking
+      @seekTo(data.seek, true)
       return
 
     if !@error && @getState() != 1 && data.state == "play"
       @client.debug "starting playback"
+      @systemResume = true
       @play()
 
     if Math.abs(@client.drift * 1000) > @client.opts.synced.maxDrift || @force_resync || data.force
@@ -73,7 +81,7 @@ window.SyncTubeClient_Player_HtmlVideo = class SyncTubeClient_Player_HtmlVideo
     # paused or playing
     if @video.get(0).paused
       return 2
-    else if @video.get(0).readyState == 4
+    else if @playing
       return 1
     else
       return -1
@@ -110,13 +118,21 @@ window.SyncTubeClient_Player_HtmlVideo = class SyncTubeClient_Player_HtmlVideo
 
   sendResume: ->
     @everPlayed = true
-    @client.sendControl("/resume") unless @client.dontBroadcast
+    @playing = true
+    if @systemResume
+      @systemResume = false
+    else
+      @client.sendControl("/resume") unless @client.dontBroadcast
+    @client.broadcastState()
 
   sendPause: ->
-    @client.sendControl("/pause") unless @client.dontBroadcast
-
-  sendToggle: ->
-    @client.sendControl("/toggle") unless @client.dontBroadcast
+    @playing = false
+    if @systemPause
+      @systemPause = false
+    else
+      @client.sendControl("/pause") unless @client.dontBroadcast
+    @client.broadcastState()
 
   sendEnded: ->
-    @client.broadcastState()
+    @playing = false
+    @client.broadcastState() if @everPlayed

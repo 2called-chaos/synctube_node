@@ -204,6 +204,9 @@
           });
           if (client === ch.control[ch.host] && ch.desired.url === json.url) {
             seek_was = ch.desired.seek;
+            if (json.state === "ended") {
+              ch.desired.state = json.state;
+            }
             ch.desired.seek = json.seek;
             ch.desired.seek_update = new Date();
             ch.broadcastCode(false, "desired", Object.assign({}, ch.desired, {

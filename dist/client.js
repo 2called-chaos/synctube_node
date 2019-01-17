@@ -693,7 +693,9 @@
           }
         });
         this.video.on("ended", () => {
-          return this.sendEnded();
+          if (this.getCurrentTime() === this.getDuration()) {
+            return this.sendEnded();
+          }
         });
         this.video.on("seeking", () => {
           return this.seeking = true;
@@ -714,6 +716,7 @@
       }
 
       updateDesired(data) {
+        console.log(data.state);
         if (data.state === "play") {
           this.video.attr("autoplay", "autoplay");
         } else {
@@ -723,25 +726,29 @@
           this.client.debug("switching video from", this.getUrl(), "to", data.url);
           this.video.attr("src", data.url);
           this.error = false;
+          this.playing = false;
           this.everPlayed = false;
           this.client.startBroadcast();
           this.client.broadcastState();
         }
         if (data.loop) {
           this.video.attr("loop", "loop");
+          if (this.getCurrentTime() === this.getDuration() && this.getDuration() > 0) {
+            this.play();
+          }
         } else {
           this.video.removeAttr("loop");
         }
-        if (!this.error && this.getState() === 1 && data.state !== "play") {
-          this.client.debug("pausing playback");
+        if (!this.error && this.getState() === 1 && data.state === "pause") {
+          this.client.debug("pausing playback", data.state, data.seek, this.getState());
+          this.systemPause = true;
           this.pause();
-          if (!this.video.get(0).seeking) {
-            this.seekTo(data.seek, true);
-          }
+          this.seekTo(data.seek, true);
           return;
         }
         if (!this.error && this.getState() !== 1 && data.state === "play") {
           this.client.debug("starting playback");
+          this.systemResume = true;
           this.play();
         }
         if (Math.abs(this.client.drift * 1000) > this.client.opts.synced.maxDrift || this.force_resync || data.force) {
@@ -769,7 +776,7 @@
         // paused or playing
         if (this.video.get(0).paused) {
           return 2;
-        } else if (this.video.get(0).readyState === 4) {
+        } else if (this.playing) {
           return 1;
         } else {
           return -1;
@@ -844,25 +851,34 @@
 
       sendResume() {
         this.everPlayed = true;
-        if (!this.client.dontBroadcast) {
-          return this.client.sendControl("/resume");
+        this.playing = true;
+        if (this.systemResume) {
+          this.systemResume = false;
+        } else {
+          if (!this.client.dontBroadcast) {
+            this.client.sendControl("/resume");
+          }
         }
+        return this.client.broadcastState();
       }
 
       sendPause() {
-        if (!this.client.dontBroadcast) {
-          return this.client.sendControl("/pause");
+        this.playing = false;
+        if (this.systemPause) {
+          this.systemPause = false;
+        } else {
+          if (!this.client.dontBroadcast) {
+            this.client.sendControl("/pause");
+          }
         }
-      }
-
-      sendToggle() {
-        if (!this.client.dontBroadcast) {
-          return this.client.sendControl("/toggle");
-        }
+        return this.client.broadcastState();
       }
 
       sendEnded() {
-        return this.client.broadcastState();
+        this.playing = false;
+        if (this.everPlayed) {
+          return this.client.broadcastState();
+        }
       }
 
     };

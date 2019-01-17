@@ -242,6 +242,7 @@ exports.Class = class SyncTubeServerChannel
       return client.ack()
 
     @desired.seek = parseFloat(to)
+    @desired.state = "play" if @desired.state == "ended"
     @broadcastCode(false, "desired", Object.assign({}, @desired, { force: true }))
     return client.ack()
 

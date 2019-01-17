@@ -128,6 +128,7 @@ exports.Class = class SyncTubeServer
       ch.broadcastCode(client, "update_single_subscriber", channel: ch.name, data: ch.getSubscriberData(client, client, client.index))
       if client == ch.control[ch.host] && ch.desired.url == json.url
         seek_was = ch.desired.seek
+        ch.desired.state = json.state if json.state == "ended"
         ch.desired.seek = json.seek
         ch.desired.seek_update = new Date()
         ch.broadcastCode(false, "desired", Object.assign({}, ch.desired, { force: Math.abs(ch.desired.seek - seek_was) > (@opts.packetInterval + 0.75) }))

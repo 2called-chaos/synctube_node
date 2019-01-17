@@ -470,6 +470,9 @@
         return client.ack();
       }
       this.desired.seek = parseFloat(to);
+      if (this.desired.state === "ended") {
+        this.desired.state = "play";
+      }
       this.broadcastCode(false, "desired", Object.assign({}, this.desired, {
         force: true
       }));

@@ -166,7 +166,7 @@ exports.Class = class SyncTubeServerChannel
       return @CHSCMD_toggle(client) if m = msg.match(/^\/(?:t|toggle)$/i)
       return @CHSCMD_play(client, m[1]) if m = msg.match(/^\/play\s(.+)$/i)
       return @CHSCMD_browse(client, m[1], "HtmlFrame") if m = msg.match(/^\/(?:browse|url)\s(.+)$/i)
-      return @CHSCMD_browse(client, m[1], "HtmlImage") if m = msg.match(/^\/(?:image|pic(?:ture)?|gif|png|jpg)\s(.+)$/i)
+      return @CHSCMD_browse(client, m[1], "HtmlImage") if m = msg.match(/^\/(?:image|img|pic(?:ture)?|gif|png|jpg)\s(.+)$/i)
       return @CHSCMD_browse(client, m[1], "HtmlVideo") if m = msg.match(/^\/(?:video|vid|mp4|webp)\s(.+)$/i)
       return @CHSCMD_host(client, m[1]) if m = msg.match(/^\/host(?:\s(.+))?$/i)
       return @CHSCMD_grantControl(client, m[1]) if m = msg.match(/^\/grant(?:\s(.+))?$/i)
@@ -174,6 +174,7 @@ exports.Class = class SyncTubeServerChannel
       return @CHSCMD_loop(client, m[1]) if m = msg.match(/^\/loop(?:\s(.+))?$/i)
       return false
     else
+      return @CHSCMD_loop(client, m[1]) if m = msg.match(/^\/loop(?:\s(.+))?$/i)
       return @CHSCMD_ready(client) if m = msg.match(/^\/(?:ready|rdy)$/i)
       return @CHSCMD_retry(client) if m = msg.match(/^\/retry$/i)
       return @CHSCMD_leave(client) if m = msg.match(/^\/leave$/i)

@@ -347,7 +347,7 @@
         if (m = msg.match(/^\/(?:browse|url)\s(.+)$/i)) {
           return this.CHSCMD_browse(client, m[1], "HtmlFrame");
         }
-        if (m = msg.match(/^\/(?:image|pic(?:ture)?|gif|png|jpg)\s(.+)$/i)) {
+        if (m = msg.match(/^\/(?:image|img|pic(?:ture)?|gif|png|jpg)\s(.+)$/i)) {
           return this.CHSCMD_browse(client, m[1], "HtmlImage");
         }
         if (m = msg.match(/^\/(?:video|vid|mp4|webp)\s(.+)$/i)) {
@@ -367,6 +367,9 @@
         }
         return false;
       } else {
+        if (m = msg.match(/^\/loop(?:\s(.+))?$/i)) {
+          return this.CHSCMD_loop(client, m[1]);
+        }
         if (m = msg.match(/^\/(?:ready|rdy)$/i)) {
           return this.CHSCMD_ready(client);
         }

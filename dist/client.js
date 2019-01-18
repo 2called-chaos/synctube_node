@@ -121,7 +121,8 @@
       }
       el = this.clients.find(`[data-client-index=${data.index}]`);
       if (!el.length || data.state.istate === -666) {
-        _el = $(`<div data-client-index="${data.index}">\n  <div class="first">\n    <span data-attr="admin-ctn"><i></i></span>\n    <span data-attr="name"></span>\n  </div>\n  <div class="second">\n    <span data-attr="icon-ctn"><i><span data-attr="progress"></span> <span data-attr="timestamp"></span></i></span>\n    <span data-attr="drift-ctn" style="float:right"><i><span data-attr="drift"></span></i></span>\n    <div data-attr="progress-bar"><div data-attr="progress-bar-buffered"></div><div data-attr="progress-bar-position"></div></div>\n  </div>\n</div>`);
+        _el = $(this.buildSubscriberElement());
+        _el.attr("data-client-index", data.index);
         if (el.length) {
           el.replaceWith(_el);
         } else {
@@ -1042,11 +1043,16 @@
           throw "unknown ID";
         }
         return this.loadYTAPI(() => {
+          var base, base1;
           if (this.api) {
             if (cue) {
-              this.api.cueVideoById(ytid, seek);
+              if (typeof (base = this.api).cueVideoById === "function") {
+                base.cueVideoById(ytid, seek);
+              }
             } else {
-              this.api.loadVideoById(ytid, seek);
+              if (typeof (base1 = this.api).loadVideoById === "function") {
+                base1.loadVideoById(ytid, seek);
+              }
             }
             return this.api;
           } else {
@@ -1226,6 +1232,9 @@
       tagname = data.author === "system" ? "strong" : "span";
       this.content.append(`<p>\n  <${tagname} style="color:${data.author_color}">${data.author}</${tagname}>\n  @ ${`0${dt.getHours()}`.slice(-2)}:${`0${dt.getMinutes()}`.slice(-2)}\n  <span style="color: ${data.text_color}">${data.text}</span>\n</p>`);
       return this.content.scrollTop(this.content.prop("scrollHeight"));
+    },
+    buildSubscriberElement: function() {
+      return $("<div data-client-index=\"\">\n  <div class=\"first\">\n    <span data-attr=\"admin-ctn\"><i></i></span>\n    <span data-attr=\"name\"></span>\n  </div>\n  <div class=\"second\">\n    <span data-attr=\"icon-ctn\"><i><span data-attr=\"progress\"></span> <span data-attr=\"timestamp\"></span></i></span>\n    <span data-attr=\"drift-ctn\" style=\"float:right\"><i><span data-attr=\"drift\"></span></i></span>\n    <div data-attr=\"progress-bar\"><div data-attr=\"progress-bar-buffered\"></div><div data-attr=\"progress-bar-position\"></div></div>\n  </div>\n</div>");
     },
     addSendCommand: function(msg) {
       var dt;

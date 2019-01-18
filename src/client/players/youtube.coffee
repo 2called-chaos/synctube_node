@@ -80,9 +80,9 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
     @loadYTAPI =>
       if @api
         if cue
-          @api.cueVideoById(ytid, seek)
+          @api.cueVideoById?(ytid, seek)
         else
-          @api.loadVideoById(ytid, seek)
+          @api.loadVideoById?(ytid, seek)
         return @api
       else
         @api = new YT.Player 'view',

@@ -73,6 +73,21 @@ window.SyncTubeClient_UI =
     """
     @content.scrollTop(@content.prop("scrollHeight"))
 
+  buildSubscriberElement: ->
+    $ """
+      <div data-client-index="">
+        <div class="first">
+          <span data-attr="admin-ctn"><i></i></span>
+          <span data-attr="name"></span>
+        </div>
+        <div class="second">
+          <span data-attr="icon-ctn"><i><span data-attr="progress"></span> <span data-attr="timestamp"></span></i></span>
+          <span data-attr="drift-ctn" style="float:right"><i><span data-attr="drift"></span></i></span>
+          <div data-attr="progress-bar"><div data-attr="progress-bar-buffered"></div><div data-attr="progress-bar-position"></div></div>
+        </div>
+      </div>
+    """
+
   addSendCommand: (msg) ->
     dt = new Date()
     @content.append """

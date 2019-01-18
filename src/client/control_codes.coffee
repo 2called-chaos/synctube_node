@@ -76,19 +76,8 @@ window.SyncTubeClient_ControlCodes =
     return unless data.index?
     el = @clients.find("[data-client-index=#{data.index}]")
     if !el.length || data.state.istate == -666
-      _el = $ """
-        <div data-client-index="#{data.index}">
-          <div class="first">
-            <span data-attr="admin-ctn"><i></i></span>
-            <span data-attr="name"></span>
-          </div>
-          <div class="second">
-            <span data-attr="icon-ctn"><i><span data-attr="progress"></span> <span data-attr="timestamp"></span></i></span>
-            <span data-attr="drift-ctn" style="float:right"><i><span data-attr="drift"></span></i></span>
-            <div data-attr="progress-bar"><div data-attr="progress-bar-buffered"></div><div data-attr="progress-bar-position"></div></div>
-          </div>
-        </div>
-      """
+      _el = $(@buildSubscriberElement())
+      _el.attr("data-client-index", data.index)
       if el.length then el.replaceWith(_el) else @clients.append(_el)
       el = _el
     el.find("[data-attr=#{k}]").html(v) for k, v of data

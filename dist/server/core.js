@@ -58,8 +58,9 @@
         return this.handleHTTPRequest(...a);
       });
       this.debug(`Binding HTTP/WS server on port ${this.opts.port}...`);
-      this.http.listen(this.opts.port, () => {
-        return this.info(`HTTP/WS server is listening on port ${this.opts.port}!`);
+      this.http.listen(this.opts.port, this.opts.host);
+      this.http.on("listening", () => {
+        return this.info(`HTTP/WS server is listening on IPv${this.http._connectionKey}`);
       });
       // create WS socket server
       this.ws = new webSocketServer({

@@ -10,6 +10,9 @@ config.debug = false;
 // Client will autodiscover from document.location, otherwise edit index.html
 config.port = 1337;
 
+// IP/Host to bind to, set to 0.0.0.0 (v4) or ::0 (v6) to bind to all devices
+config.host = "localhost";
+
 // Amount of nulled sessions before a reindexing occurs (there should be no need to change this value)
 config.sessionReindex = 250;
 

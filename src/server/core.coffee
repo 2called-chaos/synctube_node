@@ -43,7 +43,8 @@ exports.Class = class SyncTubeServer
     @http = http.createServer((a...) => @handleHTTPRequest(a...))
 
     @debug "Binding HTTP/WS server on port #{@opts.port}..."
-    @http.listen @opts.port, => @info "HTTP/WS server is listening on port #{@opts.port}!"
+    @http.listen @opts.port, @opts.host
+    @http.on "listening", => @info "HTTP/WS server is listening on IPv#{@http._connectionKey}"
 
     # create WS socket server
     @ws = new webSocketServer httpServer: @http

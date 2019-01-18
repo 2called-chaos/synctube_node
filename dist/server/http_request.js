@@ -50,6 +50,8 @@
         return type = "application/javascript";
       } else if (file.slice(-5) === ".html") {
         return "text/html";
+      } else if (file.slice(-4) === ".css") {
+        return "text/css";
       } else if (file.slice(-4) === ".jpg" || file.slice(-5) === ".jpeg") {
         return "image/jpeg";
       } else if (file.slice(-4) === ".gif") {

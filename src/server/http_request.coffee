@@ -11,7 +11,7 @@ exports.Class = class HttpRequest
   accept: (@request, @response) ->
     @ip = @request.connection.remoteAddress
     if @server.opts.allowedAssets.indexOf(@request.url) > -1
-      file = "." + if @request.url == "/" then "/index.html" else @request.url
+      file = "./www" + if @request.url == "/" then "/index.html" else @request.url
       @renderSuccess(file)
     else
       @renderBadRequest()

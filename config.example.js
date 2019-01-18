@@ -48,13 +48,15 @@ config.maxDrift = 5000;
 
 // If enabled, will server static assets, otherwise will answer requests with "400: Bad Request"
 // Disable this if you serve static assets via nginx, etc.
+// which is recommended due to crude implementation to avoid express dependency
 config.answerHttp = true;
 
-// The HTTP server will only ever serve assets listed here and when answerHttp is enabled
+// The HTTP server (if answerHttp is true) will only ever serve assets listed here for security reasons (basedir evasion)
 config.allowedAssets = [
   "/", // will serve index.html
   "/index.html",
   "/favicon.ico",
-  "/dist/client.js",
+  "/client.js",
+  "/client.css",
 ];
 

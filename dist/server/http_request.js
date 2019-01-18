@@ -31,7 +31,7 @@
       this.response = response;
       this.ip = this.request.connection.remoteAddress;
       if (this.server.opts.allowedAssets.indexOf(this.request.url) > -1) {
-        file = "." + (this.request.url === "/" ? "/index.html" : this.request.url);
+        file = "./www" + (this.request.url === "/" ? "/index.html" : this.request.url);
         return this.renderSuccess(file);
       } else {
         return this.renderBadRequest();

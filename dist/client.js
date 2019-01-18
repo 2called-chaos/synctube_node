@@ -362,7 +362,7 @@
     }
 
     append(cmd) {
-      if (cmd && this.log.length && this.log[0] !== cmd) {
+      if (cmd && (this.log.length && this.log[0] !== cmd)) {
         this.log.unshift(cmd);
       }
       while (this.log.length > this.opts.limit) {

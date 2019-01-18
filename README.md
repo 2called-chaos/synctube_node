@@ -38,7 +38,7 @@ Feel free to leave some feedback or request features as well, just dump your tho
 
 ## Requirements
 
-  * Node (sorry no idea about versions)
+  * Node (sorry no idea about versions, I only know 4.2.6 doesn't work)
   * npm (sorry no idea about versions)
 
 
@@ -52,7 +52,7 @@ Feel free to leave some feedback or request features as well, just dump your tho
   * Go somewhere you want to install the server to (note: it might persists data into this directory) `cd /home/synctube`
   * `git clone https://github.com/2called-chaos/synctube_node.git`
   * `cd synctube_node`
-  * Install dependencies with `npm install`
+  * Install dependencies with `npm install --only=prod`
   * Optional: `cp config.example.js config.js` and edit config (generated on first start otherwise)
   * Optional: Use a webserver (like nginx) to tunnel WS and server static assets ([example config](https://github.com/2called-chaos/synctube_node/wiki/Nginx-configuration))
   * Run via `npm start` or `node dist/server.js` (put it in a screen or something, maybe someone can explain npm services to me :D)

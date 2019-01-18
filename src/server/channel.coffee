@@ -3,6 +3,7 @@ UTIL = require("./util.js")
 
 exports.Class = class SyncTubeServerChannel
   debug: (a...) -> @server.debug("[#{@name}]", a...)
+  info: (a...) -> @server.info("[#{@name}]", a...)
   warn: (a...) -> @server.warn("[#{@name}]", a...)
   error: (a...) -> @server.error("[#{@name}]", a...)
 
@@ -15,7 +16,7 @@ exports.Class = class SyncTubeServerChannel
     @ready_timeout = null
     @playlist = []
     @playlist_index = 0
-    @desired = { ctype: @server.DEFAULT_CTYPE, url: @server.DEFAULT_URL, seek: 0, loop: false, seek_update: new Date, state: if @server.DEFAULT_AUTOPLAY then "play" else "pause" }
+    @desired = { ctype: @server.opts.defaultCtype, url: @server.opts.defaultUrl, seek: 0, loop: false, seek_update: new Date, state: if @server.opts.defaultAutoplay then "play" else "pause" }
 
   broadcast: (client, message, color, client_color, sendToAuthor = true) ->
     for c in @subscribers

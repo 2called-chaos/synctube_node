@@ -1,16 +1,8 @@
-fs = require('fs');
+fs = require('fs')
 
 exports.Class = class HttpRequest
-  # only files listed here will be served!
-  # you probably want nginx or something to handle this!
-  SERVE_STATIC: [
-    "/"
-    "/index.html"
-    "/favicon.ico"
-    "/dist/client.js"
-  ]
-
   debug: (a...) -> @server.debug("[HTTP]", a...)
+  info: (a...) -> @server.info("[HTTP]", a...)
   warn: (a...) -> @server.warn("[HTTP]", a...)
   error: (a...) -> @server.error("[HTTP]", a...)
 
@@ -18,7 +10,7 @@ exports.Class = class HttpRequest
 
   accept: (@request, @response) ->
     @ip = @request.connection.remoteAddress
-    if @SERVE_STATIC.indexOf(@request.url) > -1
+    if @server.opts.allowedAssets.indexOf(@request.url) > -1
       file = "." + if @request.url == "/" then "/index.html" else @request.url
       @renderSuccess(file)
     else

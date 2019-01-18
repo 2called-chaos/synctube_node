@@ -3,6 +3,7 @@ UTIL = require("./util.js")
 
 exports.Class = class SyncTubeServerClient
   debug: (a...) -> @server.debug("[##{@index}]", a...)
+  info: (a...) -> @server.info("[##{@index}]", a...)
   warn: (a...) -> @server.warn("[##{@index}]", a...)
   error: (a...) -> @server.error("[##{@index}]", a...)
 
@@ -77,7 +78,7 @@ exports.Class = class SyncTubeServerClient
 
   setUsername: (name) ->
     @name = UTIL.htmlEntities(name)
-    if @server.PROTECTED_NAMES.indexOf(@name.toLowerCase()) > -1
+    if @server.opts.protectedNames.indexOf(@name.toLowerCase()) > -1
       @name = null
       @sendSystemMessage "This name is not allowed!", COLORS.red
       #@sendCode "require_username", autofill: false

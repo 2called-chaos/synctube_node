@@ -11,6 +11,10 @@
       return this.server.debug(`[${this.name}]`, ...a);
     }
 
+    info(...a) {
+      return this.server.info(`[${this.name}]`, ...a);
+    }
+
     warn(...a) {
       return this.server.warn(`[${this.name}]`, ...a);
     }
@@ -32,12 +36,12 @@
       this.playlist = [];
       this.playlist_index = 0;
       this.desired = {
-        ctype: this.server.DEFAULT_CTYPE,
-        url: this.server.DEFAULT_URL,
+        ctype: this.server.opts.defaultCtype,
+        url: this.server.opts.defaultUrl,
         seek: 0,
         loop: false,
         seek_update: new Date,
-        state: this.server.DEFAULT_AUTOPLAY ? "play" : "pause"
+        state: this.server.opts.defaultAutoplay ? "play" : "pause"
       };
     }
 

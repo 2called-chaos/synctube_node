@@ -11,6 +11,10 @@
       return this.server.debug(`[#${this.index}]`, ...a);
     }
 
+    info(...a) {
+      return this.server.info(`[#${this.index}]`, ...a);
+    }
+
     warn(...a) {
       return this.server.warn(`[#${this.index}]`, ...a);
     }
@@ -135,7 +139,7 @@
     setUsername(name) {
       var _name;
       this.name = UTIL.htmlEntities(name);
-      if (this.server.PROTECTED_NAMES.indexOf(this.name.toLowerCase()) > -1) {
+      if (this.server.opts.protectedNames.indexOf(this.name.toLowerCase()) > -1) {
         this.name = null;
         this.sendSystemMessage("This name is not allowed!", COLORS.red);
         //@sendCode "require_username", autofill: false

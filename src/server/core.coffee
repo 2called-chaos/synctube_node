@@ -1,8 +1,9 @@
-# requires
-http = require('http');
-webSocketServer = require('websocket').server;
+# libraries
+fs = require('fs')
+http = require('http')
+webSocketServer = require('websocket').server
 
-# colors
+# internal
 COLORS = require("./colors.js")
 UTIL = require("./util.js")
 Channel = require("./channel.js").Class
@@ -10,39 +11,39 @@ Client = require("./client.js").Class
 HttpRequest = require("./http_request.js").Class
 
 exports.Class = class SyncTubeServer
-  # Clients can't use these names
-  PROTECTED_NAMES: [
-    "admin"
-    "system"
-  ]
-
-  # Default video to cue in new channels
-  DEFAULT_CTYPE: "Youtube" # youtube, frame, image, video (mp4/webp)
-  DEFAULT_URL: "6Dh-RL__uN4" # id suffices when YouTube
-  DEFAULT_AUTOPLAY: false # only when youtube or video
-
   constructor: (@opts = {}) ->
-    # set process title
-    process.title = 'synctube-server';
-
-    # options
-    @opts.debug          ?= false
-    @opts.port           ?= 1337 # Don't forget to change in client as well
-    @opts.packetInterval ?= 2000 # (CL) interval in ms for CLIENTS to send packet updates to the server
-    @opts.maxDrift       ?= 5000 # (CL) max ms (1000ms = 1s) for CLIENTS before force seeking to correct drift to host
-    @opts.answerHttp     ?= true # If set to false no static assets will be served, all requests result in a 400: Bad request
-    @opts.sessionReindex ?= 250  # amount of nulled sessions before a reindexing occurs
-
+    @root = process.env.ST_ROOT || process.cwd()
+    @loadConfig()
     @clients = []
     @channels = {}
 
+    # set process title
+    process.title = "synctube-server"
+
+  loadConfig: () ->
+    unless fs.existsSync("#{@root}/config.js")
+      fs.copyFileSync("#{@root}/config.example.js", "#{@root}/config.js")
+      @warn "No config file found! Copied config.example.js to config.js"
+
+    @opts = require("#{@root}/config.js")
+
+    unless @opts.systemPassword
+      @opts.systemPassword = require("crypto").randomBytes(10).toString("hex")
+      @warn "==========================================="
+      @warn "== No system password defined in config, =="
+      @warn "== a random password will be generated!  =="
+      @warn "== This will happen every boot, to avoid =="
+      @warn "== this set a password in your config.js =="
+      @warn "== SystemPassword: #{@opts.systemPassword}  =="
+      @warn "==========================================="
+
   listen: ->
     throw "HTTP server is already bound!" if @http
-    @debug "Creating HTTP server..."
+    @info "Creating HTTP server..."
     @http = http.createServer((a...) => @handleHTTPRequest(a...))
 
     @debug "Binding HTTP/WS server on port #{@opts.port}..."
-    @http.listen @opts.port, => @debug "HTTP/WS server is listening on port #{@opts.port}!"
+    @http.listen @opts.port, => @info "HTTP/WS server is listening on port #{@opts.port}!"
 
     # create WS socket server
     @ws = new webSocketServer httpServer: @http
@@ -85,17 +86,22 @@ exports.Class = class SyncTubeServer
   debug: (msg...) ->
     return unless @opts.debug
     msg.unshift new Date
-    msg.unshift "[ST]"
+    msg.unshift "[ST-DEBUG]"
     console.debug.apply(@, msg)
+
+  info: (msg...) ->
+    msg.unshift new Date
+    msg.unshift "[ST-INFO] "
+    console.log.apply(@, msg)
 
   warn: (msg...) ->
     msg.unshift new Date
-    msg.unshift "[ST]"
+    msg.unshift "[ST-WARN] "
     console.warn.apply(@, msg)
 
   error: (msg...) ->
     msg.unshift new Date
-    msg.unshift "[ST]"
+    msg.unshift "[ST-ERROR]"
     console.error.apply(@, msg)
 
   # ===================

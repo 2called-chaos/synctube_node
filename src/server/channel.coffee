@@ -1,5 +1,6 @@
 COLORS = require("./colors.js")
 UTIL = require("./util.js")
+Client = require("./client.js").Class
 
 exports.Class = class SyncTubeServerChannel
   debug: (a...) -> @server.debug("[#{@name}]", a...)
@@ -152,6 +153,8 @@ exports.Class = class SyncTubeServerChannel
     else
       null
 
+  findClient: (client, who) -> Client.find(client, who, @subscribers, "channel")
+
   # ====================
   # = Channel commands =
   # ====================
@@ -177,34 +180,6 @@ exports.Class = class SyncTubeServerChannel
       @broadcast(client, msg, null, @clientColor(client))
       return client.ack()
 
-  permissionDenied: (client, context) ->
-    msg = "You don't have the required permissions to perform this action"
-    msg += " (#{context})" if context
-    client.sendSystemMessage(msg)
-    return client.ack()
-
-  findClient: (client, who) ->
-    return client unless who
-
-    # exact match?
-    for sub in @subscribers
-      return sub if sub.name.toLowerCase?() == who.toLowerCase?()
-
-    # regex search
-    who = "^#{who}" unless who.charAt(0) == "^"
-    try
-      for sub in @subscribers
-        return sub if sub.name.match(new RegExp(who, "i"))
-    catch e
-      client.sendSystemMessage(e.message)
-      client.ack()
-      return false
-
-
-    client.sendSystemMessage("Couldn't find the target in channel")
-    client.ack()
-    return false
-
   CHSCMD_retry: (client) ->
     return unless ch = client.subscribed
     ch.revokeControl(client)
@@ -213,25 +188,25 @@ exports.Class = class SyncTubeServerChannel
     return client.ack()
 
   CHSCMD_pause: (client) ->
-    return @permissionDenied(client, "pause") unless @control.indexOf(client) > -1
+    return client.permissionDenied("pause") unless @control.indexOf(client) > -1
     @desired.state = "pause"
     @broadcastCode(false, "desired", @desired)
     return client.ack()
 
   CHSCMD_resume: (client) ->
-    return @permissionDenied(client, "resume") unless @control.indexOf(client) > -1
+    return client.permissionDenied("resume") unless @control.indexOf(client) > -1
     @desired.state = "play"
     @broadcastCode(false, "desired", @desired)
     return client.ack()
 
   CHSCMD_toggle: (client) ->
-    return @permissionDenied(client, "toggle") unless @control.indexOf(client) > -1
+    return client.permissionDenied("toggle") unless @control.indexOf(client) > -1
     @desired.state = if @desired.state == "play" then "pause" else "play"
     @broadcastCode(false, "desired", @desired)
     return client.ack()
 
   CHSCMD_seek: (client, to) ->
-    return @permissionDenied(client, "seek") unless @control.indexOf(client) > -1
+    return client.permissionDenied("seek") unless @control.indexOf(client) > -1
     if to?.charAt(0) == "-"
       to = @desired.seek - UTIL.timestamp2Seconds(to.slice(1))
     else if to?.charAt(0) == "+"
@@ -256,7 +231,7 @@ exports.Class = class SyncTubeServerChannel
     return client.ack()
 
   CHSCMD_play: (client, url) ->
-    return @permissionDenied(client, "play") unless @control.indexOf(client) > -1
+    return client.permissionDenied("play") unless @control.indexOf(client) > -1
     if m = url.match(/([A-Za-z0-9_\-]{11})/)
       @liveVideo(m[1])
     else
@@ -266,7 +241,7 @@ exports.Class = class SyncTubeServerChannel
 
   CHSCMD_loop: (client, what) ->
     if what || @control.indexOf(client) > -1
-      return @permissionDenied(client, "loop") unless @control.indexOf(client) > -1
+      return client.permissionDenied("loop") unless @control.indexOf(client) > -1
       what = UTIL.strbool(what, !@desired.loop)
       if @desired.loop == what
         client.sendSystemMessage("Loop is already #{if @desired.loop then "enabled" else "disabled"}!")
@@ -280,7 +255,7 @@ exports.Class = class SyncTubeServerChannel
     return client.ack()
 
   CHSCMD_browse: (client, url, ctype = "frame") ->
-    return @permissionDenied(client, "browse-#{ctype}") unless @control.indexOf(client) > -1
+    return client.permissionDenied("browse-#{ctype}") unless @control.indexOf(client) > -1
     @liveUrl(url, ctype)
     return client.ack()
 
@@ -293,7 +268,7 @@ exports.Class = class SyncTubeServerChannel
     return client.ack()
 
   CHSCMD_host: (client, who) ->
-    return @permissionDenied(client, "host") unless @control.indexOf(client) > -1
+    return client.permissionDenied("host") unless @control.indexOf(client) > -1
     return false unless who = @findClient(client, who)
 
     if who == @control[@host]
@@ -313,7 +288,7 @@ exports.Class = class SyncTubeServerChannel
     return client.ack()
 
   CHSCMD_grantControl: (client, who) ->
-    return @permissionDenied(client, "grantControl") unless @control.indexOf(client) > -1
+    return client.permissionDenied("grantControl") unless @control.indexOf(client) > -1
     return true unless who = @findClient(client, who)
 
     if @control.indexOf(who) > -1
@@ -325,7 +300,7 @@ exports.Class = class SyncTubeServerChannel
     return client.ack()
 
   CHSCMD_revokeControl: (client, who) ->
-    return @permissionDenied(client, "revokeControl") unless @control.indexOf(client) > -1
+    return client.permissionDenied("revokeControl") unless @control.indexOf(client) > -1
     return true unless who = @findClient(client, who)
 
     if @control.indexOf(who) > -1

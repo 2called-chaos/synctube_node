@@ -7,6 +7,48 @@
   UTIL = require("./util.js");
 
   exports.Class = SyncTubeServerClient = class SyncTubeServerClient {
+    static find(client, who, collection = this.server.clients, context) {
+      var base, e, i, j, len, len1, sub;
+      if (!who) {
+        return client;
+      }
+// exact match?
+      for (i = 0, len = collection.length; i < len; i++) {
+        sub = collection[i];
+        if ((typeof (base = sub.name).toLowerCase === "function" ? base.toLowerCase() : void 0) === (typeof who.toLowerCase === "function" ? who.toLowerCase() : void 0)) {
+          return sub;
+        }
+      }
+      if (who.charAt(0) !== "^") {
+        // regex search
+        who = `^${who}`;
+      }
+      try {
+        for (j = 0, len1 = collection.length; j < len1; j++) {
+          sub = collection[j];
+          if (sub.name.match(new RegExp(who, "i"))) {
+            return sub;
+          }
+        }
+      } catch (error) {
+        e = error;
+        if (client != null) {
+          client.sendSystemMessage(e.message);
+        }
+        if (client != null) {
+          client.ack();
+        }
+        return false;
+      }
+      if (client != null) {
+        client.sendSystemMessage(`Couldn't find the target${(context ? ` in ${context}` : "")}`);
+      }
+      if (client != null) {
+        client.ack();
+      }
+      return false;
+    }
+
     debug(...a) {
       return this.server.debug(`[#${this.index}]`, ...a);
     }
@@ -35,14 +77,14 @@
 
     accept(request) {
       this.request = request;
-      this.debug(`Accepting connection from origin ${this.request.origin}`);
+      this.info(`Accepting connection from origin ${this.request.origin}`);
       this.connection = this.request.accept(null, this.request.origin);
       this.ip = this.connection.remoteAddress;
       this.index = this.server.clients.push(this) - 1;
       this.connection.on("close", () => {
         return this.disconnect();
       });
-      this.debug(`Connection accepted (${this.index}): ${this.ip}`);
+      this.info(`Connection accepted (${this.index}): ${this.ip}`);
       this.sendCode("session_index", {
         index: this.index
       });
@@ -74,7 +116,7 @@
 
     disconnect() {
       var ref, ref1;
-      this.debug(`Peer ${this.ip} disconnected.`);
+      this.info(`Peer ${this.ip} disconnected.`);
       if ((ref = this.control) != null) {
         if (typeof ref.revokeControl === "function") {
           ref.revokeControl(this);
@@ -101,6 +143,16 @@
       });
       this.debug(`Reindexed client session from ${was_index} to ${this.index}`);
       return this;
+    }
+
+    permissionDenied(context) {
+      var msg;
+      msg = "You don't have the required permissions to perform this action";
+      if (context) {
+        msg += ` (${context})`;
+      }
+      this.sendSystemMessage(msg);
+      return this.ack();
     }
 
     sendCode(type, data = {}) {

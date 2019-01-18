@@ -2,6 +2,27 @@ COLORS = require("./colors.js")
 UTIL = require("./util.js")
 
 exports.Class = class SyncTubeServerClient
+  @find: (client, who, collection = @server.clients, context) ->
+    return client unless who
+
+    # exact match?
+    for sub in collection
+      return sub if sub.name.toLowerCase?() == who.toLowerCase?()
+
+    # regex search
+    who = "^#{who}" unless who.charAt(0) == "^"
+    try
+      for sub in collection
+        return sub if sub.name.match(new RegExp(who, "i"))
+    catch e
+      client?.sendSystemMessage(e.message)
+      client?.ack()
+      return false
+
+    client?.sendSystemMessage("Couldn't find the target#{if context then " in #{context}" else ""}")
+    client?.ack()
+    return false
+
   debug: (a...) -> @server.debug("[##{@index}]", a...)
   info: (a...) -> @server.info("[##{@index}]", a...)
   warn: (a...) -> @server.warn("[##{@index}]", a...)
@@ -14,12 +35,12 @@ exports.Class = class SyncTubeServerClient
     @subscribed = null
 
   accept: (@request) ->
-    @debug "Accepting connection from origin #{@request.origin}"
+    @info "Accepting connection from origin #{@request.origin}"
     @connection = @request.accept(null, @request.origin)
     @ip = @connection.remoteAddress
     @index = @server.clients.push(this) - 1
     @connection.on("close", => @disconnect())
-    @debug "Connection accepted (#{@index}): #{@ip}"
+    @info "Connection accepted (#{@index}): #{@ip}"
     @sendCode "session_index", index: @index
     @sendCode "server_settings", packetInterval: @server.opts.packetInterval, maxDrift: @server.opts.maxDrift
     @sendCode "require_username"
@@ -39,10 +60,10 @@ exports.Class = class SyncTubeServerClient
       else
         @setUsername(msg)
 
-    this
+    return this
 
   disconnect: ->
-    @debug "Peer #{@ip} disconnected."
+    @info "Peer #{@ip} disconnected."
     @control?.revokeControl?(this)
     @subscribed?.unsubscribe?(this)
     @server.nullSession(this)
@@ -54,6 +75,12 @@ exports.Class = class SyncTubeServerClient
     @subscribed? && @sendCode("subscriber_list", channel: @subscribed.name, subscribers: @subscribed.getSubscriberList(this))
     @debug "Reindexed client session from #{was_index} to #{@index}"
     return this
+
+  permissionDenied: (context) ->
+    msg = "You don't have the required permissions to perform this action"
+    msg += " (#{context})" if context
+    @sendSystemMessage(msg)
+    return @ack()
 
   sendCode: (type, data = {}) ->
     @connection.sendUTF JSON.stringify type: "code", data: Object.assign({}, data, { type: type })
@@ -74,7 +101,7 @@ exports.Class = class SyncTubeServerClient
 
   ack: ->
     @sendCode "ack"
-    true
+    return true
 
   setUsername: (name) ->
     @name = UTIL.htmlEntities(name)

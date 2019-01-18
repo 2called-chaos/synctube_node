@@ -92,7 +92,9 @@
         packetInterval: this.server.opts.packetInterval,
         maxDrift: this.server.opts.maxDrift
       });
-      this.sendCode("require_username");
+      this.sendCode("require_username", {
+        maxLength: this.server.opts.nameMaxLength
+      });
       return this;
     }
 
@@ -188,22 +190,45 @@
       return true;
     }
 
+    isNameProtected(name) {
+      var cname, i, len, n, ref;
+      cname = name.toLowerCase().replace(/[^a-z0-9]+/, "");
+      ref = this.server.opts.protectedNames;
+      for (i = 0, len = ref.length; i < len; i++) {
+        n = ref[i];
+        if (UTIL.isRegExp(n)) {
+          if (cname.match(n)) {
+            return true;
+          }
+        } else {
+          if (n === cname) {
+            return true;
+          }
+          cname.indexOf(cname) > -1;
+        }
+      }
+      return false;
+    }
+
     setUsername(name) {
-      var _name;
-      this.name = UTIL.htmlEntities(name);
-      if (this.server.opts.protectedNames.indexOf(this.name.toLowerCase()) > -1) {
-        this.name = null;
-        this.sendSystemMessage("This name is not allowed!", COLORS.red);
-        //@sendCode "require_username", autofill: false
-        return this.ack();
-      } else if (UTIL.startsWith(this.name, "!packet:")) {
+      var _name, nameLength;
+      nameLength = UTIL.trim(name).length;
+      this.name = UTIL.htmlEntities(UTIL.trim(name));
+      if (UTIL.startsWith(this.name, "!packet:")) {
         // ignore packets
         this.name = null;
+        return this.ack();
+      } else if (nameLength > this.server.opts.nameMaxLength) {
+        this.name = null;
+        this.sendSystemMessage(`Usernames can't be longer than ${this.server.opts.nameMaxLength} characters!`, COLORS.red);
+        return this.ack();
+      } else if (this.isNameProtected(this.name)) {
+        this.name = null;
+        this.sendSystemMessage("This name is not allowed!", COLORS.red);
         return this.ack();
       } else if (this.name.charAt(0) === "/" || this.name.charAt(0) === "!") {
         this.name = null;
         this.sendSystemMessage("Name may not start with a / or ! character", COLORS.red);
-        //@sendCode "require_username", autofill: false
         return this.ack();
       } else {
         if (this.old_name) {

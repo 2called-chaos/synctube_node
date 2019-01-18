@@ -52,6 +52,7 @@ window.SyncTubeClient_ControlCodes =
 
   CMD_require_username: (data) ->
     @enableInput()
+    @input.attr("maxLength", data.maxLength) if data.maxLength?
     @status.text("Choose name:")
 
     # check hash params
@@ -61,7 +62,8 @@ window.SyncTubeClient_ControlCodes =
 
   CMD_username: (data) ->
     @name = data.username
-    @status.text("#{@name}:") ##
+    @input.removeAttr("maxLength")
+    @status.text("#{@name}:")
 
     # check hash params
     hparams = @getHashParams()

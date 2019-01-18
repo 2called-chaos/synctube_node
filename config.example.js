@@ -1,6 +1,6 @@
 module.exports = config = {};
 
-// server control password, if falsy will autogenerate one on every start
+// Server control password, if falsy will autogenerate one on every start
 config.systemPassword = false;
 
 // If enabled, will print loads and loads of debug output to console
@@ -13,10 +13,16 @@ config.port = 1337;
 // Amount of nulled sessions before a reindexing occurs (there should be no need to change this value)
 config.sessionReindex = 250;
 
-// clients can't use these names
+// Maximum client name length
+config.nameMaxLength = 25;
+
+// Clients can't use these names
+// when comparing to string: input name will be lowercased and have all characters not a-z0-9 removed before checking
+// when comparing to regexp: raw input, match = reject
 config.protectedNames = [
-  "admin",
+  "admin", // will match ".-admin-.", "a-dmin", "Ad-Min", etc.
   "system",
+  /^[a]+$/, // will match "aaaaaaaaAAAAAAA"
 ];
 
 // ====================

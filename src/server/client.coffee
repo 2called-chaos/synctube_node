@@ -43,7 +43,7 @@ exports.Class = class SyncTubeServerClient
     @info "Connection accepted (#{@index}): #{@ip}"
     @sendCode "session_index", index: @index
     @sendCode "server_settings", packetInterval: @server.opts.packetInterval, maxDrift: @server.opts.maxDrift
-    @sendCode "require_username"
+    @sendCode "require_username", maxLength: @server.opts.nameMaxLength
     return this
 
   listen: ->
@@ -103,21 +103,34 @@ exports.Class = class SyncTubeServerClient
     @sendCode "ack"
     return true
 
+  isNameProtected: (name) ->
+    cname = name.toLowerCase().replace(/[^a-z0-9]+/, "")
+    for n in @server.opts.protectedNames
+      if UTIL.isRegExp(n)
+        return true if cname.match(n)
+      else
+        return true if n == cname
+        cname.indexOf(cname) > -1
+    return false
+
   setUsername: (name) ->
-    @name = UTIL.htmlEntities(name)
-    if @server.opts.protectedNames.indexOf(@name.toLowerCase()) > -1
-      @name = null
-      @sendSystemMessage "This name is not allowed!", COLORS.red
-      #@sendCode "require_username", autofill: false
-      return @ack()
-    else if UTIL.startsWith(@name, "!packet:")
+    nameLength = UTIL.trim(name).length
+    @name = UTIL.htmlEntities(UTIL.trim(name))
+    if UTIL.startsWith(@name, "!packet:")
       # ignore packets
       @name = null
+      return @ack()
+    else if nameLength > @server.opts.nameMaxLength
+      @name = null
+      @sendSystemMessage "Usernames can't be longer than #{@server.opts.nameMaxLength} characters!", COLORS.red
+      return @ack()
+    else if @isNameProtected(@name)
+      @name = null
+      @sendSystemMessage "This name is not allowed!", COLORS.red
       return @ack()
     else if @name.charAt(0) == "/" || @name.charAt(0) == "!"
       @name = null
       @sendSystemMessage "Name may not start with a / or ! character", COLORS.red
-      #@sendCode "require_username", autofill: false
       return @ack()
     else
       if @old_name

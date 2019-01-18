@@ -47,6 +47,14 @@
     return false;
   };
 
+  exports.trim = function(str) {
+    return String(str).replace(/^\s+|\s+$/g, "");
+  };
+
+  exports.isRegExp = function(input) {
+    return input && typeof input === "object" && input.constructor === RegExp;
+  };
+
   exports.secondsToArray = function(sec) {
     var j, len, r, ref, x;
     r = [];

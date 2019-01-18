@@ -83,6 +83,9 @@
     CMD_require_username: function(data) {
       var hparams, p;
       this.enableInput();
+      if (data.maxLength != null) {
+        this.input.attr("maxLength", data.maxLength);
+      }
       this.status.text("Choose name:");
       // check hash params
       if (data.autofill === false) {
@@ -96,10 +99,8 @@
     CMD_username: function(data) {
       var ch, cmd, hparams;
       this.name = data.username;
-      this.status.text(`${this.name
-      //#
-}:`);
-      
+      this.input.removeAttr("maxLength");
+      this.status.text(`${this.name}:`);
       // check hash params
       hparams = this.getHashParams();
       if (ch = hparams.channel || hparams.join) {

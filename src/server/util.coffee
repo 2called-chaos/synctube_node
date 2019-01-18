@@ -21,6 +21,10 @@ exports.endsWith = (str, which...) ->
     return true if str.slice(-w.length) == w
   false
 
+exports.trim = (str) -> String(str).replace(/^\s+|\s+$/g, "")
+
+exports.isRegExp = (input) -> input && typeof input == "object" && input.constructor == RegExp
+
 exports.secondsToArray = (sec) ->
   r = []
   for x in [60*60, 60]

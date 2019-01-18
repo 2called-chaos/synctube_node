@@ -271,6 +271,7 @@
 
     SCMD_rename(client) {
       client.sendCode("require_username", {
+        maxLength: this.opts.nameMaxLength,
         autofill: false
       });
       client.old_name = client.name;

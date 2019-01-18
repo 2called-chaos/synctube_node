@@ -176,7 +176,7 @@ exports.Class = class SyncTubeServer
     return client.ack()
 
   SCMD_rename: (client) ->
-    client.sendCode "require_username", autofill: false
+    client.sendCode "require_username", maxLength: @opts.nameMaxLength, autofill: false
     client.old_name = client.name
     client.name = null
     client.sendSystemMessage "Tell me your new username!"

@@ -35,7 +35,7 @@ DEV =
 
   compileClient: (ev, f) ->
     console.log ">>>> compile client (#{if f then "#{f} changed" else "init"})"
-    DEV.exec "cat $(find ./src/client -type f -name '*.coffee' -print0 | xargs -0 echo) src/client.coffee | coffee -c --stdio > ./dist/client.js"
+    DEV.exec "cat $(find ./src/client -type f -name '*.coffee' -not -path '*/example.coffee' -print0 | xargs -0 echo) src/client.coffee | coffee -c --stdio > ./dist/client.js"
 
   runServer: (f) ->
     server_process = child_process.spawn("node",  ["./dist/server.js"])

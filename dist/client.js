@@ -658,13 +658,6 @@
 
   }).call(this);
 
-  // when -0 then "unstarted"
-  // when 0 then "ended"
-  // when 1 then "playing"
-  // when 2 then "paused"
-  // when 3 then "buffering"
-  // when 5 then "cued"
-  // else "ready"
   window.SyncTubeClient_Player_HtmlVideo = SyncTubeClient_Player_HtmlVideo = (function() {
     class SyncTubeClient_Player_HtmlVideo {
       constructor(client1) {
@@ -833,22 +826,24 @@
       }
 
       getLoadedFraction() {
-        var cur, end, j, maxbuf, n, ref1;
-        if (!this.video.get(0).seekable.length || this.video.get(0).seekable.end(0) === 0) {
-          return 0;
-        }
+        var cur, dur, end, j, maxbuf, n, ref1, start;
         maxbuf = 0;
         cur = this.getCurrentTime();
+        dur = this.getDuration();
+        if (!dur) {
+          return 0;
+        }
         for (n = j = 0, ref1 = this.video.get(0).buffered.length; (0 <= ref1 ? j < ref1 : j > ref1); n = 0 <= ref1 ? ++j : --j) {
+          start = this.video.get(0).buffered.start(n);
           end = this.video.get(0).buffered.end(n);
-          if (cur >= this.video.get(0).buffered.start(n) && cur <= end) {
+          if (cur >= start && cur <= end) {
             maxbuf = end;
             break;
           } else if (end > maxbuf) {
             maxbuf = end;
           }
         }
-        return parseFloat(maxbuf) / parseFloat(this.video.get(0).seekable.end(0));
+        return parseFloat(maxbuf) / parseFloat(dur);
       }
 
       sendSeek(time = this.getCurrentTime()) {

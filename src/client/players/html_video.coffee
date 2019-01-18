@@ -1,10 +1,3 @@
-# when -0 then "unstarted"
-# when 0 then "ended"
-# when 1 then "playing"
-# when 2 then "paused"
-# when 3 then "buffering"
-# when 5 then "cued"
-# else "ready"
 window.SyncTubeClient_Player_HtmlVideo = class SyncTubeClient_Player_HtmlVideo
   ctype: "HtmlVideo"
 
@@ -95,18 +88,20 @@ window.SyncTubeClient_Player_HtmlVideo = class SyncTubeClient_Player_HtmlVideo
     @video.get(0).currentTime = time
 
   getLoadedFraction: ->
-    return 0 if !@video.get(0).seekable.length || @video.get(0).seekable.end(0) == 0
     maxbuf = 0
     cur = @getCurrentTime()
+    dur = @getDuration()
+    return 0 unless dur
     for n in [0...@video.get(0).buffered.length]
+      start = @video.get(0).buffered.start(n)
       end = @video.get(0).buffered.end(n)
-      if cur >= @video.get(0).buffered.start(n) && cur <= end
+      if cur >= start && cur <= end
         maxbuf = end
         break
       else if end > maxbuf
         maxbuf = end
 
-    parseFloat(maxbuf) / parseFloat(@video.get(0).seekable.end(0))
+    parseFloat(maxbuf) / parseFloat(dur)
 
   sendSeek: (time = @getCurrentTime()) ->
     @client.sendControl("/seek #{time}") unless @client.dontBroadcast

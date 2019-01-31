@@ -9,6 +9,7 @@
   "version": "1.0.0",
   "main": "dist/server.js",
   "dependencies": {
+    "shell-quote": "^1.6.1",
     "websocket": "^1.0.28"
   },
   "devDependencies": {

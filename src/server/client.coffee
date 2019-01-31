@@ -1,5 +1,6 @@
 COLORS = require("./colors.js")
 UTIL = require("./util.js")
+Commands = require("./commands.js")
 
 exports.Class = class SyncTubeServerClient
   @find: (client, who, collection = @server.clients, context) ->
@@ -7,13 +8,13 @@ exports.Class = class SyncTubeServerClient
 
     # exact match?
     for sub in collection
-      return sub if sub.name.toLowerCase?() == who.toLowerCase?()
+      return sub if sub && sub.name.toLowerCase?() == who.toLowerCase?()
 
     # regex search
     who = "^#{who}" unless who.charAt(0) == "^"
     try
       for sub in collection
-        return sub if sub.name.match(new RegExp(who, "i"))
+        return sub if sub && sub.name.match(new RegExp(who, "i"))
     catch e
       client?.sendSystemMessage(e.message)
       client?.ack()
@@ -56,7 +57,7 @@ exports.Class = class SyncTubeServerClient
       @debug "Received message from #{@ip}: #{msg}"
 
       if @name
-        @server.handleMessage(this, message, msg) || @control?.handleMessage(this, message, msg, true) || @subscribed?.handleMessage(this, message, msg)
+        Commands.handleMessage(@server, this, message, msg)
       else
         @setUsername(msg)
 
@@ -153,3 +154,7 @@ exports.Class = class SyncTubeServerClient
     @sendSystemMessage "Welcome, #{@name}!", COLORS.green
     @sendSystemMessage "To create or control a channel type <strong>/control &lt;channel&gt; [password]</strong>", COLORS.info
     @sendSystemMessage "To join an existing channel type <strong>/join &lt;channel&gt;</strong>", COLORS.info
+    if @server.pendingRestart?
+      @server.handlePendingRestart()
+      fdiff = UTIL.secondsToTimestamp((@server.pendingRestart - (new Date).getTime()) / 1000, false)
+      @sendSystemMessage "Server will restart in #{fdiff}!"

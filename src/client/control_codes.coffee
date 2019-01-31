@@ -7,11 +7,17 @@ window.SyncTubeClient_ControlCodes =
 
   CMD_ack: -> @enableInput()
 
+  CMD_session_kicked: (a...) -> @CMD_disconnected()
+
+  CMD_disconnected: (a...) ->
+    @CMD_unsubscribe()
+    @reconnect = false
+
   CMD_taken_control: -> @control = true
   CMD_lost_control: -> @control = false
 
   CMD_unsubscribe: ->
-    @clients.html("")
+    @CMD_ui_clear(component: "clients")
     @CMD_video_action(action: "destroy")
 
   CMD_desired: (data) ->
@@ -26,6 +32,12 @@ window.SyncTubeClient_ControlCodes =
         return
 
     @player.updateDesired(data)
+
+  CMD_ui_clear: (data) ->
+    switch data.component
+      when "chat" then @content.html("")
+      when "clients" then @clients.html("")
+      when "player" then @CMD_video_action(action: "destroy")
 
   CMD_video_action: (data) ->
     switch data.action

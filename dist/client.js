@@ -19,6 +19,13 @@
     CMD_ack: function() {
       return this.enableInput();
     },
+    CMD_session_kicked: function(...a) {
+      return this.CMD_disconnected();
+    },
+    CMD_disconnected: function(...a) {
+      this.CMD_unsubscribe();
+      return this.reconnect = false;
+    },
     CMD_taken_control: function() {
       return this.control = true;
     },
@@ -26,7 +33,9 @@
       return this.control = false;
     },
     CMD_unsubscribe: function() {
-      this.clients.html("");
+      this.CMD_ui_clear({
+        component: "clients"
+      });
       return this.CMD_video_action({
         action: "destroy"
       });
@@ -48,6 +57,18 @@
         }
       }
       return this.player.updateDesired(data);
+    },
+    CMD_ui_clear: function(data) {
+      switch (data.component) {
+        case "chat":
+          return this.content.html("");
+        case "clients":
+          return this.clients.html("");
+        case "player":
+          return this.CMD_video_action({
+            action: "destroy"
+          });
+      }
     },
     CMD_video_action: function(data) {
       var ref, ref1, ref2, ref3;
@@ -410,7 +431,8 @@
       if ((base2 = this.opts).wsProtocol == null) {
         base2.wsProtocol = $("meta[name=synctube-server-protocol]").attr("content") || discoveredProtocol;
       }
-      return this.dontBroadcast = false;
+      this.dontBroadcast = false;
+      return this.reconnect = true;
     },
     start: function() {
       this.openWSconnection();
@@ -448,8 +470,11 @@
         if (this.connection.readyState !== 1) {
           this.status.text("Error");
           this.disableInput().val("Unable to communicate with the WebSocket server. Please reload!");
-          return setTimeout((function() {
-            return window.location.reload();
+          this.dontBroadcast = true;
+          return setTimeout((() => {
+            if (this.reconnect) {
+              return window.location.reload();
+            }
           }), 1000);
         }
       }), 3000);
@@ -1165,7 +1190,7 @@
     },
     captureInput: function() {
       return this.input.keydown((event) => {
-        var i, m, msg, ref1, ref2;
+        var i, m, msg, ref1;
         if (event.keyCode !== 13) {
           return true;
         }
@@ -1186,16 +1211,6 @@
           } else {
             this.content.append("<p>Usage: /maxwidth [1-12]</p>");
           }
-          return;
-        } else if (m = msg.match(/^\/(?:s|sync|resync)$/i)) {
-          if ((ref2 = this.player) != null) {
-            ref2.force_resync = true;
-          }
-          this.input.val("");
-          return;
-        } else if (m = msg.match(/^\/clear$/i)) {
-          this.content.html("");
-          this.input.val("");
           return;
         }
         this.connection.send(msg);

@@ -47,12 +47,47 @@
     return false;
   };
 
+  exports.argsToStr = function(args) {
+    var a, j, len, r;
+    r = [];
+    for (j = 0, len = args.length; j < len; j++) {
+      a = args[j];
+      r.push(typeof a === "string" ? a : a.pattern);
+    }
+    return r.join(" ");
+  };
+
   exports.trim = function(str) {
     return String(str).replace(/^\s+|\s+$/g, "");
   };
 
   exports.isRegExp = function(input) {
     return input && typeof input === "object" && input.constructor === RegExp;
+  };
+
+  exports.bytesToHuman = function(bytes) {
+    var byteUnits, i;
+    bytes = parseInt(bytes);
+    i = -1;
+    byteUnits = [' KB', ' MB', ' GB', ' TB', 'PB', 'EB', 'ZB', 'YB'];
+    while (true) {
+      bytes = bytes / 1024;
+      i++;
+      if (bytes <= 1024) {
+        break;
+      }
+    }
+    return Math.max(bytes, 0.1).toFixed(1) + byteUnits[i];
+  };
+
+  exports.microToHuman = function(micro) {
+    if (micro > 1000000) {
+      return `${micro / 1000000} s`;
+    } else if (micro > 1000) {
+      return `${parseInt(micro / 1000)} ms`;
+    } else {
+      return `${micro} μs`;
+    }
   };
 
   exports.secondsToArray = function(sec) {
@@ -86,7 +121,11 @@
       r.push(i < 2 || sa[i + 1] ? `000${x}`.slice(slice * -1) : x.toString());
     }
     fraction = r.shift();
-    return r.reverse().join(":") + `.${fraction.slice(-fract)}`;
+    if (fract) {
+      return r.reverse().join(":") + `.${fraction.slice(-fract)}`;
+    } else {
+      return r.reverse().join(":");
+    }
   };
 
   exports.videoTimestamp = function(cur, max, fract = 2) {

@@ -1,6 +1,5 @@
 COLORS = require("./colors.js")
 UTIL = require("./util.js")
-Client = require("./client.js").Class
 
 exports.Class = class SyncTubeServerChannel
   debug: (a...) -> @server.debug("[#{@name}]", a...)
@@ -126,7 +125,7 @@ exports.Class = class SyncTubeServerChannel
 
   unsubscribe: (client, sendMessage = true, reason = null) ->
     return if @subscribers.indexOf(client) == -1
-    client.control.revokeControl(client) if client.control == this
+    client.control.revokeControl(client, sendMessage, reason) if client.control == this
     @subscribers.splice(@subscribers.indexOf(client), 1)
     client.subscribed = null
     client.state = {}
@@ -136,12 +135,9 @@ exports.Class = class SyncTubeServerChannel
     @updateSubscriberList(client)
     @debug "unsubscribed client ##{client.index}(#{client.ip})"
 
-  destroy: (client, sendMessage = true) ->
-    @debug "channel deleted by #{client.name}[#{client.ip}] (#{@subscribers.length} subscribers)"
-    @unsubscribe(c, true, "channel deleted") for c in @subscribers
-
-    for c in @control
-      @revokeControl(c, true, "channel deleted by #{client.name}[#{client.ip}]")
+  destroy: (client, reason) ->
+    @info "channel deleted by #{client.name}[#{client.ip}] (#{@subscribers.length} subscribers)#{if reason then ": #{reason}" else ""}"
+    @unsubscribe(c, true, "channel deleted#{if reason then " (#{reason})" else ""}") for c in @subscribers.slice(0).reverse()
 
     delete @server.channels[@name]
 
@@ -153,161 +149,6 @@ exports.Class = class SyncTubeServerChannel
     else
       null
 
-  findClient: (client, who) -> Client.find(client, who, @subscribers, "channel")
+  findClient: (client, who) ->
+    require("./client.js").Class.find(client, who, @subscribers, "channel")
 
-  # ====================
-  # = Channel commands =
-  # ====================
-  handleMessage: (client, message, msg, control = false) ->
-    if control
-      return @CHSCMD_seek(client, m[1]) if m = msg.match(/^\/(?:seek)(?:\s([0-9\-+:\.]+))?$/i)
-      return @CHSCMD_pause(client) if m = msg.match(/^\/(?:p|pause)$/i)
-      return @CHSCMD_resume(client) if m = msg.match(/^\/(?:r|resume)$/i)
-      return @CHSCMD_toggle(client) if m = msg.match(/^\/(?:t|toggle)$/i)
-      return @CHSCMD_play(client, m[1]) if m = msg.match(/^\/play\s(.+)$/i)
-      return @CHSCMD_browse(client, m[1], "HtmlFrame") if m = msg.match(/^\/(?:browse|url)\s(.+)$/i)
-      return @CHSCMD_browse(client, m[1], "HtmlImage") if m = msg.match(/^\/(?:image|img|pic(?:ture)?|gif|png|jpg)\s(.+)$/i)
-      return @CHSCMD_browse(client, m[1], "HtmlVideo") if m = msg.match(/^\/(?:video|vid|mp4|webp)\s(.+)$/i)
-      return @CHSCMD_host(client, m[1]) if m = msg.match(/^\/host(?:\s(.+))?$/i)
-      return @CHSCMD_grantControl(client, m[1]) if m = msg.match(/^\/grant(?:\s(.+))?$/i)
-      return @CHSCMD_revokeControl(client, m[1]) if m = msg.match(/^\/revoke(?:\s(.+))?$/i)
-      return @CHSCMD_loop(client, m[1]) if m = msg.match(/^\/loop(?:\s(.+))?$/i)
-      return false
-    else
-      return @CHSCMD_loop(client, m[1]) if m = msg.match(/^\/loop(?:\s(.+))?$/i)
-      return @CHSCMD_ready(client) if m = msg.match(/^\/(?:ready|rdy)$/i)
-      return @CHSCMD_retry(client) if m = msg.match(/^\/retry$/i)
-      return @CHSCMD_leave(client) if m = msg.match(/^\/leave$/i)
-      @broadcast(client, msg, null, @clientColor(client))
-      return client.ack()
-
-  CHSCMD_retry: (client) ->
-    return unless ch = client.subscribed
-    ch.revokeControl(client)
-    ch.unsubscribe(client)
-    ch.subscribe(client)
-    return client.ack()
-
-  CHSCMD_pause: (client) ->
-    return client.permissionDenied("pause") unless @control.indexOf(client) > -1
-    @desired.state = "pause"
-    @broadcastCode(false, "desired", @desired)
-    return client.ack()
-
-  CHSCMD_resume: (client) ->
-    return client.permissionDenied("resume") unless @control.indexOf(client) > -1
-    @desired.state = "play"
-    @broadcastCode(false, "desired", @desired)
-    return client.ack()
-
-  CHSCMD_toggle: (client) ->
-    return client.permissionDenied("toggle") unless @control.indexOf(client) > -1
-    @desired.state = if @desired.state == "play" then "pause" else "play"
-    @broadcastCode(false, "desired", @desired)
-    return client.ack()
-
-  CHSCMD_seek: (client, to) ->
-    return client.permissionDenied("seek") unless @control.indexOf(client) > -1
-    if to?.charAt(0) == "-"
-      to = @desired.seek - UTIL.timestamp2Seconds(to.slice(1))
-    else if to?.charAt(0) == "+"
-      to = @desired.seek + UTIL.timestamp2Seconds(to.slice(1))
-    else if to
-      to = UTIL.timestamp2Seconds(to)
-    else
-      client.sendSystemMessage("Number required (absolute or +/-)")
-      return client.ack()
-
-    @desired.seek = parseFloat(to)
-    @desired.state = "play" if @desired.state == "ended"
-    @broadcastCode(false, "desired", Object.assign({}, @desired, { force: true }))
-    return client.ack()
-
-  CHSCMD_ready: (client) ->
-    @ready.push(client)
-    if @ready.length == @subscribers.length
-      clearTimeout(@ready_timeout)
-      @desired.state = "play"
-      @broadcastCode(false, "video_action", action: "play")
-    return client.ack()
-
-  CHSCMD_play: (client, url) ->
-    return client.permissionDenied("play") unless @control.indexOf(client) > -1
-    if m = url.match(/([A-Za-z0-9_\-]{11})/)
-      @liveVideo(m[1])
-    else
-      client.sendSystemMessage("I don't recognize this URL/YTID format, sorry")
-
-    return client.ack()
-
-  CHSCMD_loop: (client, what) ->
-    if what || @control.indexOf(client) > -1
-      return client.permissionDenied("loop") unless @control.indexOf(client) > -1
-      what = UTIL.strbool(what, !@desired.loop)
-      if @desired.loop == what
-        client.sendSystemMessage("Loop is already #{if @desired.loop then "enabled" else "disabled"}!")
-      else
-        @desired.loop = what
-        @broadcastCode(false, "desired", @desired)
-        @broadcast(client, "<strong>#{if @desired.loop then "enabled" else "disabled"} loop!</strong>", COLORS.warning, @clientColor(client))
-    else
-      client.sendSystemMessage("Loop is currently #{if @desired.loop then "enabled" else "disabled"}", if @desired.loop then COLORS.green else COLORS.red)
-
-    return client.ack()
-
-  CHSCMD_browse: (client, url, ctype = "frame") ->
-    return client.permissionDenied("browse-#{ctype}") unless @control.indexOf(client) > -1
-    @liveUrl(url, ctype)
-    return client.ack()
-
-  CHSCMD_leave: (client) ->
-    if ch = client.subscribed
-      ch.unsubscribe(client)
-    else
-      client.sendSystemMessage("You are not in any channel!")
-
-    return client.ack()
-
-  CHSCMD_host: (client, who) ->
-    return client.permissionDenied("host") unless @control.indexOf(client) > -1
-    return false unless who = @findClient(client, who)
-
-    if who == @control[@host]
-      client.sendSystemMessage("#{who?.name || "Target"} is already host")
-    else if @control.indexOf(who) > -1
-      @debug "Switching host to #", who.index
-      wasHostI = @host
-      wasHost = @control[wasHostI]
-      newHostI = @control.indexOf(who)
-      newHost = @control[newHostI]
-      @control[wasHostI] = newHost
-      @control[newHostI] = wasHost
-      @updateSubscriberList(client)
-    else
-      client.sendSystemMessage("#{who?.name || "Target"} is not in control and thereby can't be host")
-    #@broadcastCode(false, "desired", @desired)
-    return client.ack()
-
-  CHSCMD_grantControl: (client, who) ->
-    return client.permissionDenied("grantControl") unless @control.indexOf(client) > -1
-    return true unless who = @findClient(client, who)
-
-    if @control.indexOf(who) > -1
-      client.sendSystemMessage("#{who?.name || "Target"} is already in control")
-    else
-      @grantControl(who)
-      client.sendSystemMessage("#{who?.name || "Target"} is now in control!", COLORS.green)
-
-    return client.ack()
-
-  CHSCMD_revokeControl: (client, who) ->
-    return client.permissionDenied("revokeControl") unless @control.indexOf(client) > -1
-    return true unless who = @findClient(client, who)
-
-    if @control.indexOf(who) > -1
-      @revokeControl(who)
-      client.sendSystemMessage("#{who?.name || "Target"} is no longer in control!", COLORS.green)
-    else
-      client.sendSystemMessage("#{who?.name || "Target"} was not in control")
-
-    return client.ack()

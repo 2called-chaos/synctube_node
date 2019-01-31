@@ -6,7 +6,6 @@ webSocketServer = require('websocket').server
 # internal
 COLORS = require("./colors.js")
 UTIL = require("./util.js")
-Channel = require("./channel.js").Class
 Client = require("./client.js").Class
 HttpRequest = require("./http_request.js").Class
 
@@ -16,6 +15,7 @@ exports.Class = class SyncTubeServer
     @loadConfig()
     @clients = []
     @channels = {}
+    @pendingRestart = null
 
     # set process title
     process.title = "synctube-server"
@@ -50,7 +50,7 @@ exports.Class = class SyncTubeServer
     @ws = new webSocketServer httpServer: @http
     @ws.on "request", (request) => @handleWSRequest(request)
 
-  eachClient: (method, args...) -> c[method]?(args...) for c in @clients
+  eachClient: (method, args...) -> c?[method]?(args...) for c in @clients
 
   nullSession: (client, forceReindex) ->
     @clients[client.index] = null
@@ -69,6 +69,36 @@ exports.Class = class SyncTubeServer
     newClients.push(c) for c in @clients when c isnt null
     @clients = newClients
     @eachClient("reindex")
+
+  handlePendingRestart: (force = false, client) ->
+    unless @pendingRestart?
+      clearTimeout(@pendingRestartTimeout)
+      return
+    msg = @pendingRestartReason
+    diff = (@pendingRestart - (new Date).getTime()) / 1000
+    fdiff = UTIL.secondsToTimestamp(diff, false)
+
+    if diff <= 0
+      if client
+        client.sendSystemMessage "Server will restart NOW#{if msg then " (#{msg})" else ""}"
+      else
+        @eachClient "sendSystemMessage", "Server will restart NOW#{if msg then " (#{msg})" else ""}"
+      throw "bye"
+    else
+      if force \
+      || parseInt(diff % 15*60) == 0 \
+      || parseInt(diff % 5*60) == 0 \
+      || parseInt(diff % 60) == 0 \
+      || parseInt(diff) == 60 \
+      || parseInt(diff) == 30 \
+      || parseInt(diff) == 15 \
+      || parseInt(diff) <= 5
+        if client
+          client.sendSystemMessage "Server will restart in #{fdiff}#{if msg then " (#{msg})" else ""}"
+        else
+          @eachClient "sendSystemMessage", "Server will restart in #{fdiff}#{if msg then " (#{msg})" else ""}"
+      return if client
+      @pendingRestartTimeout = UTIL.delay 1000, => @handlePendingRestart()
 
   handleHTTPRequest: (request, response) ->
     req = new HttpRequest(this)
@@ -104,100 +134,3 @@ exports.Class = class SyncTubeServer
     msg.unshift new Date
     msg.unshift "[ST-ERROR]"
     console.error.apply(@, msg)
-
-  # ===================
-  # = Server commands =
-  # ===================
-  handleMessage: (client, message, msg) ->
-    return @SCMD_packet(client, m[1]) if m = msg.match(/^!packet:(.+)$/i)
-    return @SCMD_join(client, m[1]) if m = msg.match(/^\/join\s([^\s]+)$/i)
-    return @SCMD_control(client, m[1], m[2]) if m = msg.match(/^\/control(?:\s([^\s]+)(?:\s(.+))?)?$/i)
-    return @SCMD_rename(client) if msg.match(/^\/rename$/i)
-    return @SCMD_restart(client) if msg.match(/^\/restart$/i)
-    return @SCMD_invoke(client, m[1], m[2]) if m = msg.match(/^\/invoke\s([^\s]+)(?:\s(.+))?$/i)
-    return @SCMD_dump(client, m[1], m[2]) if m = msg.match(/^\/dump\s([^\s]+)(?:\s(.+))?$/i)
-    return false
-
-  SCMD_packet: (client, jdata) ->
-    try
-      json = JSON.parse(jdata)
-    catch error
-      @error "Invalid JSON", jdata, error
-      return
-
-    client.lastPacket = new Date
-    ch = client.subscribed
-    if ch && (!client.state || (JSON.stringify(client.state) != jdata))
-      json.time = new Date
-      json.timestamp = UTIL.videoTimestamp(json.seek, json.playtime) if json.seek? && json.playtime?
-
-      client.state = json
-      ch.broadcastCode(client, "update_single_subscriber", channel: ch.name, data: ch.getSubscriberData(client, client, client.index))
-      if client == ch.control[ch.host] && ch.desired.url == json.url
-        seek_was = ch.desired.seek
-        ch.desired.state = json.state if json.state == "ended"
-        ch.desired.seek = json.seek
-        ch.desired.seek_update = new Date()
-        ch.broadcastCode(false, "desired", Object.assign({}, ch.desired, { force: Math.abs(ch.desired.seek - seek_was) > (@opts.packetInterval + 0.75) }))
-    else
-      client.sendCode("desired", ch.desired) if ch
-    return true
-
-  SCMD_join: (client, chname) ->
-    if channel = @channels[chname]
-      channel.subscribe(client)
-    else
-      client.sendSystemMessage("I don't know about this channel, sorry!")
-      client.sendSystemMessage("<small>You can create it with <strong>/control #{UTIL.htmlEntities(chname)} [password]</strong></small>", COLORS.info)
-
-    return client.ack()
-
-  SCMD_control: (client, name, password) ->
-    chname = UTIL.htmlEntities(name || client.subscribed?.name || "")
-    unless chname
-      client.sendSystemMessage("Channel name required", COLORS.red)
-      return client.ack()
-
-    if channel = @channels[chname]
-      if channel.control.indexOf(client) > -1 && password == "delete"
-        channel.destroy(client)
-        return client.ack()
-      else
-        if channel.password == password
-          channel.subscribe(client)
-          channel.grantControl(client)
-        else
-          client.sendSystemMessage("Password incorrect", COLORS.red)
-    else
-      @channels[chname] = new Channel(this, chname, password)
-      client.sendSystemMessage("Channel created!", COLORS.green)
-      @channels[chname].subscribe(client)
-      @channels[chname].grantControl(client)
-
-    return client.ack()
-
-  SCMD_rename: (client) ->
-    client.sendCode "require_username", maxLength: @opts.nameMaxLength, autofill: false
-    client.old_name = client.name
-    client.name = null
-    client.sendSystemMessage "Tell me your new username!"
-    return client.ack()
-
-  SCMD_restart: (client) ->
-    client.sendSystemMessage "See ya!"
-    throw "bye"
-    #UTIL.delay 1000, => client.sendCode "navigate", reload: true
-    return true
-
-  SCMD_invoke: (client, which, args) ->
-    args ||= "{}"
-    client.sendCode(which, JSON.parse(args))
-    return client.ack()
-
-  SCMD_dump: (client, what, detail) ->
-    if what == "client"
-      console.log if detail then @clients[parseInt(detail)] else client
-    else if what == "channel"
-      console.log if detail then @channels[detail] else if client.subscribed then client.subscribed else @channels
-
-    return client.ack()

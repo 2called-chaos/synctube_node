@@ -28,14 +28,6 @@ window.SyncTubeClient_UI =
         else
           @content.append """<p>Usage: /maxwidth [1-12]</p>"""
         return
-      else if m = msg.match(/^\/(?:s|sync|resync)$/i)
-        @player?.force_resync = true
-        @input.val("")
-        return
-      else if m = msg.match(/^\/clear$/i)
-        @content.html("")
-        @input.val("")
-        return
 
       @connection.send(msg)
       @disableInput()

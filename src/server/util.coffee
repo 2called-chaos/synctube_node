@@ -21,9 +21,33 @@ exports.endsWith = (str, which...) ->
     return true if str.slice(-w.length) == w
   false
 
+exports.argsToStr = (args) ->
+  r = []
+  for a in args
+    r.push(if typeof a == "string" then a else a.pattern)
+  r.join(" ")
+
 exports.trim = (str) -> String(str).replace(/^\s+|\s+$/g, "")
 
 exports.isRegExp = (input) -> input && typeof input == "object" && input.constructor == RegExp
+
+exports.bytesToHuman = (bytes) ->
+  bytes = parseInt(bytes)
+  i = -1;
+  byteUnits = [' KB', ' MB', ' GB', ' TB', 'PB', 'EB', 'ZB', 'YB']
+  loop
+    bytes = bytes / 1024
+    i++
+    break if bytes <= 1024
+  Math.max(bytes, 0.1).toFixed(1) + byteUnits[i]
+
+exports.microToHuman = (micro) ->
+  if micro > 1000000
+    "#{micro / 1000000} s"
+  else if micro > 1000
+    "#{parseInt(micro / 1000)} ms"
+  else
+    "#{micro} μs"
 
 exports.secondsToArray = (sec) ->
   r = []
@@ -49,7 +73,10 @@ exports.secondsToTimestamp = (sec, fract = 3) ->
     r.push if i < 2 || sa[i+1] then "000#{x}".slice(slice * -1) else x.toString()
 
   fraction = r.shift()
-  r.reverse().join(":") + ".#{fraction.slice(-fract)}"
+  if fract
+    r.reverse().join(":") + ".#{fraction.slice(-fract)}"
+  else
+    r.reverse().join(":")
 
 exports.videoTimestamp = (cur, max, fract = 2) ->
   [

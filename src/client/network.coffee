@@ -7,6 +7,7 @@ window.SyncTubeClient_Network =
     @opts.wsPort ?= $("meta[name=synctube-server-port]").attr("content") || discoveredPort
     @opts.wsProtocol ?= $("meta[name=synctube-server-protocol]").attr("content") || discoveredProtocol
     @dontBroadcast = false
+    @reconnect = true
 
   start: ->
     @openWSconnection()
@@ -38,7 +39,8 @@ window.SyncTubeClient_Network =
       if @connection.readyState != 1
         @status.text("Error")
         @disableInput().val("Unable to communicate with the WebSocket server. Please reload!")
-        setTimeout((-> window.location.reload()), 1000)
+        @dontBroadcast = true
+        setTimeout((=> window.location.reload() if @reconnect), 1000)
     ), 3000)
 
   listen: ->

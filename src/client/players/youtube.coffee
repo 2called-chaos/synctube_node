@@ -4,11 +4,13 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
   constructor: (@client) ->
 
   destroy: ->
+    @rememberVolume()
     @api?.destroy()
     @api = null
     @pauseEnsured()
 
   updateDesired: (data) ->
+    @rememberVolume()
     unless @api
       @loadVideo(data.url, data.state != "play", data.seek)
       @ensurePause(data)
@@ -98,6 +100,12 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
           #playerVars: controls: 0
           events:
             onReady: (ev) =>
+              # restore saved volume
+              vol = @client.history?.LSload("player_volume")
+              if vol?
+                @client.debug "Restored player volume #{vol}"
+                @api.setVolume(vol)
+
               if cue
                 @api.cueVideoById(ytid, seek)
               else
@@ -146,3 +154,11 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
     @client.debug "YT pause ensured (#{reason})"
     clearInterval(@ensurePauseInterval)
     @client.dontBroadcast = false
+
+  rememberVolume: ->
+    return unless @client.history?
+    vol = @api?.getVolume?()
+    stored = @client.history.LSload("player_volume")
+    if vol? && (!stored? || stored != vol)
+      @client.debug "Remembered player volume #{vol}"
+      @client.history.LSsave("player_volume", vol)

@@ -48,8 +48,11 @@ window.SyncTubeClient_History = class SyncTubeClient_History
     @index = -1
     @buffer = null
 
-  saveLog: -> localStorage.setItem("synctube_client_history", JSON.stringify(@log))
-  loadLog: -> try JSON.parse(localStorage.getItem("synctube_client_history")) || [] catch e then []
+  saveLog: -> @LSsave("client_history", @log)
+  loadLog: -> @LSload("client_history", [])
+
+  LSsave: (key, value) -> localStorage.setItem("synctube_#{key}", JSON.stringify(value))
+  LSload: (key, defVal) -> try JSON.parse(localStorage.getItem("synctube_#{key}")) || defVal catch e then defVal
 
 window.SyncTubeClient_History.start = ->
   @history = new SyncTubeClient_History(this, @opts.history)

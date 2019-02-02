@@ -417,16 +417,24 @@
     }
 
     saveLog() {
-      return localStorage.setItem("synctube_client_history", JSON.stringify(this.log));
+      return this.LSsave("client_history", this.log);
     }
 
     loadLog() {
+      return this.LSload("client_history", []);
+    }
+
+    LSsave(key, value) {
+      return localStorage.setItem(`synctube_${key}`, JSON.stringify(value));
+    }
+
+    LSload(key, defVal) {
       var e;
       try {
-        return JSON.parse(localStorage.getItem("synctube_client_history")) || [];
+        return JSON.parse(localStorage.getItem(`synctube_${key}`)) || defVal;
       } catch (error1) {
         e = error1;
-        return [];
+        return defVal;
       }
     }
 
@@ -714,6 +722,21 @@
           height: "100%",
           controls: true
         }).appendTo(this.client.view);
+        this.volumeRestored = false;
+        // events
+        this.video.on("loadeddata", () => {
+          var ref1, vol;
+          // restore saved volume
+          if (this.volumeRestored) {
+            return;
+          }
+          this.volumeRestored = true;
+          vol = (ref1 = this.client.history) != null ? ref1.LSload("player_volume") : void 0;
+          if (vol != null) {
+            this.client.debug(`Restored player volume ${vol / 100}`);
+            return this.video.get(0).volume = vol / 100;
+          }
+        });
         this.video.on("click", () => {
           if (!(this.client.control || !this.everPlayed)) {
             return;
@@ -752,6 +775,9 @@
         this.video.on("seeking", () => {
           return this.seeking = true;
         });
+        this.video.on("volumechange", () => {
+          return this.rememberVolume();
+        });
         this.video.on("seeked", (a) => {
           this.seeking = false;
           if (this.systemSeek) {
@@ -763,6 +789,7 @@
       }
 
       destroy() {
+        this.rememberVolume();
         return this.video.remove();
       }
 
@@ -940,6 +967,19 @@
         }
       }
 
+      rememberVolume() {
+        var ref1, stored, vol;
+        if (this.client.history == null) {
+          return;
+        }
+        vol = ((ref1 = this.video.get(0)) != null ? ref1.volume : void 0) * 100;
+        stored = this.client.history.LSload("player_volume");
+        if ((vol != null) && stored !== vol) {
+          this.client.debug(`Remembered player volume ${vol}`);
+          return this.client.history.LSsave("player_volume", vol);
+        }
+      }
+
     };
 
     SyncTubeClient_Player_HtmlVideo.prototype.ctype = "HtmlVideo";
@@ -956,6 +996,7 @@
 
       destroy() {
         var ref1;
+        this.rememberVolume();
         if ((ref1 = this.api) != null) {
           ref1.destroy();
         }
@@ -965,6 +1006,7 @@
 
       updateDesired(data) {
         var current_ytid, lastPacketDiff, ref1, ref2;
+        this.rememberVolume();
         if (!this.api) {
           this.loadVideo(data.url, data.state !== "play", data.seek);
           this.ensurePause(data);
@@ -1118,6 +1160,13 @@
               //playerVars: controls: 0
               events: {
                 onReady: (ev) => {
+                  var ref1, vol;
+                  // restore saved volume
+                  vol = (ref1 = this.client.history) != null ? ref1.LSload("player_volume") : void 0;
+                  if (vol != null) {
+                    this.client.debug(`Restored player volume ${vol}`);
+                    this.api.setVolume(vol);
+                  }
                   if (cue) {
                     this.api.cueVideoById(ytid, seek);
                   } else {
@@ -1184,6 +1233,19 @@
         this.client.debug(`YT pause ensured (${reason})`);
         clearInterval(this.ensurePauseInterval);
         return this.client.dontBroadcast = false;
+      }
+
+      rememberVolume() {
+        var ref1, stored, vol;
+        if (this.client.history == null) {
+          return;
+        }
+        vol = (ref1 = this.api) != null ? typeof ref1.getVolume === "function" ? ref1.getVolume() : void 0 : void 0;
+        stored = this.client.history.LSload("player_volume");
+        if ((vol != null) && ((stored == null) || stored !== vol)) {
+          this.client.debug(`Remembered player volume ${vol}`);
+          return this.client.history.LSsave("player_volume", vol);
+        }
       }
 
     };

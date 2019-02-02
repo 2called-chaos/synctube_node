@@ -3,6 +3,17 @@ window.SyncTubeClient_Player_HtmlVideo = class SyncTubeClient_Player_HtmlVideo
 
   constructor: (@client) ->
     @video = $("<video>", id: "view_video", width: "100%", height: "100%", controls: true).appendTo(@client.view)
+    @volumeRestored = false
+
+    # events
+    @video.on "loadeddata", =>
+      # restore saved volume
+      return if @volumeRestored
+      @volumeRestored = true
+      vol = @client.history?.LSload("player_volume")
+      if vol?
+        @client.debug "Restored player volume #{vol / 100}"
+        @video.get(0).volume = vol / 100
     @video.on "click", =>
       return unless @client.control || !@everPlayed
       if @getState() == 1 then @pause() else @play()
@@ -14,6 +25,7 @@ window.SyncTubeClient_Player_HtmlVideo = class SyncTubeClient_Player_HtmlVideo
     @video.on "timeupdate", => @lastKnownTime = @getCurrentTime() unless @seeking
     @video.on "ended", => @sendEnded() if @getCurrentTime() == @getDuration()
     @video.on "seeking", => @seeking = true
+    @video.on "volumechange", => @rememberVolume()
     @video.on "seeked", (a) =>
       @seeking = false
       if @systemSeek
@@ -21,7 +33,9 @@ window.SyncTubeClient_Player_HtmlVideo = class SyncTubeClient_Player_HtmlVideo
       else
         @sendSeek()
 
-  destroy: -> @video.remove()
+  destroy: ->
+    @rememberVolume()
+    @video.remove()
 
   updateDesired: (data) ->
     console.log data.state
@@ -133,3 +147,11 @@ window.SyncTubeClient_Player_HtmlVideo = class SyncTubeClient_Player_HtmlVideo
   sendEnded: ->
     @playing = false
     @client.broadcastState() if @everPlayed
+
+  rememberVolume: ->
+    return unless @client.history?
+    vol = @video.get(0)?.volume * 100
+    stored = @client.history.LSload("player_volume")
+    if vol? && stored != vol
+      @client.debug "Remembered player volume #{vol}"
+      @client.history.LSsave("player_volume", vol)

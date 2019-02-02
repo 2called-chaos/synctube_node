@@ -38,6 +38,10 @@ x.addCommand "Server", "clear", (client) ->
   client.sendCode("ui_clear", component: "chat")
   client.ack()
 
+x.addCommand "Server", "tc", "togglechat", (client) ->
+  client.sendCode("ui_chat_toggle")
+  client.ack()
+
 x.addCommand "Server", "packet", (client, jdata) ->
   try
     json = JSON.parse(jdata)

@@ -174,6 +174,19 @@
           });
       }
     },
+    CMD_ui_chat_show: function(data) {
+      return this.content.show(200, () => {
+        return this.content.scrollTop(this.content.prop("scrollHeight"));
+      });
+    },
+    CMD_ui_chat_hide: function(data) {
+      return this.content.hide(200);
+    },
+    CMD_ui_chat_toggle: function(data) {
+      return this.content.toggle(200, () => {
+        return this.content.scrollTop(this.content.prop("scrollHeight"));
+      });
+    },
     CMD_video_action: function(data) {
       var ref, ref1, ref2, ref3;
       switch (data.action) {
@@ -372,7 +385,7 @@
         if ((base3 = this.opts.synced).packetInterval == null) {
           base3.packetInterval = 10000; // superseded by server instructions
         }
-
+        
         // Client data
         this.index = null;
         this.name = null;

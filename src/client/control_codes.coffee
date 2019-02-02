@@ -46,6 +46,10 @@ window.SyncTubeClient_ControlCodes =
       when "clients" then @clients.html("")
       when "player" then @CMD_video_action(action: "destroy")
 
+  CMD_ui_chat_show: (data) -> @content.show 200, => @content.scrollTop(@content.prop("scrollHeight"))
+  CMD_ui_chat_hide: (data) -> @content.hide 200
+  CMD_ui_chat_toggle: (data) -> @content.toggle 200, => @content.scrollTop(@content.prop("scrollHeight"))
+
   CMD_video_action: (data) ->
     switch data.action
       when "resume" then @player?.play()

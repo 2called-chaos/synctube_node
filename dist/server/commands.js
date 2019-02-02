@@ -73,6 +73,11 @@
     return client.ack();
   });
 
+  x.addCommand("Server", "tc", "togglechat", function(client) {
+    client.sendCode("ui_chat_toggle");
+    return client.ack();
+  });
+
   x.addCommand("Server", "packet", function(client, jdata) {
     var ch, error, json, seek_was;
     try {

@@ -1471,7 +1471,8 @@
     },
     start: function() {
       this.adjustMaxWidth();
-      return this.captureInput();
+      this.captureInput();
+      return this.handleWindowResize();
     },
     adjustMaxWidth: function(i) {
       var hparams, maxWidth;
@@ -1479,6 +1480,59 @@
       maxWidth = i || hparams.maxWidth || hparams.width || hparams.mw || this.opts.maxWidth;
       return $("#page > .col").attr("class", `col col-${maxWidth}`);
     },
+    handleWindowResize: function() {
+      $(window).resize((ev) => {
+        var height_both, height_first, height_second, ref1, ref2, ref3, width_second;
+        if (!$("#page").is(":visible")) {
+          return;
+        }
+        height_first = $("#first_row").height();
+        height_second = $("#second_row").height();
+        width_second = $("#second_row").width();
+        height_both = height_first + height_second + 30;
+        //ratio = width_second / (height_both + 60)
+        //console.log width_second, height_both, window.innerHeight, ratio, window.innerHeight * ratio
+        //$("#page").css(maxWidth: window.innerHeight * ratio)
+        if (height_both > window.innerHeight && width_second > 500) {
+          if ((ref1 = this.player) != null ? ref1.hideOnResize : void 0) {
+            $("#view").hide();
+          }
+          $("#page").css({
+            maxWidth: $("#page").width() - 2
+          });
+          window.scrollTo(0, 0);
+          setTimeout((() => {
+            return $(window).resize();
+          }), 1);
+        } else if ((window.innerHeight - height_both) > 1) {
+          if ((ref2 = this.player) != null ? ref2.hideOnResize : void 0) {
+            $("#view").hide();
+          }
+          $("#page").css({
+            maxWidth: $("#page").width() + 2
+          });
+          window.scrollTo(0, 0);
+          setTimeout((() => {
+            return $(window).resize();
+          }), 1);
+        } else {
+          if ((ref3 = this.player) != null ? ref3.hideOnResize : void 0) {
+            $("#view").show();
+          }
+        }
+        if ($("#first_row").width() > 800) {
+
+        } else {
+
+        }
+      });
+      //console.log "DEATTACH playlist"
+      //$("#playlist").detach().appendTo("#playlist_ctn")
+      //console.log "ATTACH playlist"
+      //$("#playlist").detach()#.appendTo("#view_ctn")
+      return $(window).resize();
+    },
+    //setTimeout((-> $(window).resize()), 100)
     captureInput: function() {
       this.input.keydown((event) => {
         var i, m, msg, ref1;

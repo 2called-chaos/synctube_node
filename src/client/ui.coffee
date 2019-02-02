@@ -8,11 +8,44 @@ window.SyncTubeClient_UI =
   start: ->
     @adjustMaxWidth()
     @captureInput()
+    @handleWindowResize()
 
   adjustMaxWidth: (i) ->
     hparams = @getHashParams()
     maxWidth = i || hparams.maxWidth || hparams.width || hparams.mw || @opts.maxWidth
     $("#page > .col").attr("class", "col col-#{maxWidth}")
+
+  handleWindowResize: ->
+    $(window).resize (ev) =>
+      return unless $("#page").is(":visible")
+      height_first  = $("#first_row").height()
+      height_second = $("#second_row").height()
+      width_second = $("#second_row").width()
+      height_both = height_first + height_second + 30
+      #ratio = width_second / (height_both + 60)
+      #console.log width_second, height_both, window.innerHeight, ratio, window.innerHeight * ratio
+      #$("#page").css(maxWidth: window.innerHeight * ratio)
+      if height_both > window.innerHeight && width_second > 500
+        $("#view").hide() if @player?.hideOnResize
+        $("#page").css(maxWidth: $("#page").width() - 2)
+        window.scrollTo(0, 0)
+        setTimeout((=> $(window).resize()), 1)
+      else if (window.innerHeight - height_both) > 1
+        $("#view").hide() if @player?.hideOnResize
+        $("#page").css(maxWidth: $("#page").width() + 2)
+        window.scrollTo(0, 0)
+        setTimeout((=> $(window).resize()), 1)
+      else
+        $("#view").show() if @player?.hideOnResize
+
+      if $("#first_row").width() > 800
+        #console.log "ATTACH playlist"
+        #$("#playlist").detach()#.appendTo("#view_ctn")
+      else
+        #console.log "DEATTACH playlist"
+        #$("#playlist").detach().appendTo("#playlist_ctn")
+    $(window).resize()
+    #setTimeout((-> $(window).resize()), 100)
 
   captureInput: ->
     @input.keydown (event) =>

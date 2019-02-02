@@ -94,15 +94,29 @@ window.SyncTubeClient_ControlCodes =
       _el.attr("data-client-index", data.index)
       if el.length then el.replaceWith(_el) else @clients.append(_el)
       el = _el
-    el.find("[data-attr=#{k}]").html(v) for k, v of data
-    el.find("[data-attr=#{k}]").html(v) for k, v of data.state
+
+    changeHTML = (el, v) ->
+      return unless el.length
+      el.html(v) unless el.html() == v
+      el
+    changeAttr = (el, a, v) ->
+      return unless el.length
+      el.attr(a, v) unless el.attr(a) == v
+      el
+
+    changeHTML(el.find("[data-attr=#{k}]"), ""+v) for k, v of data
+    changeHTML(el.find("[data-attr=#{k}]"), ""+v) for k, v of data.state
     el.find("[data-attr=progress-bar-buffered]").css(width: "#{(data.state.loaded_fraction || 0) * 100}%")
     el.find("[data-attr=progress-bar-position]").css(left: "#{if data.state.seek <= 0 then 0 else (data.state.seek / data.state.playtime * 100)}%")
-    el.find("[data-attr=icon-ctn] i").attr("class", "fa fa-#{data.icon} #{data.icon_class}") if data.icon
-    el.find("[data-attr=admin-ctn] i").attr("class", "fa fa-shield text-info").attr("title", "ADMIN") if data.control
-    el.find("[data-attr=admin-ctn] i").attr("class", "fa fa-shield text-danger").attr("title", "HOST") if data.isHost
-    el.find("[data-attr=drift-ctn] i").attr("class", "fa fa-#{if data.drift then if data.drift > 0 then "backward" else "forward" else "circle-o-notch"} text-warning")
-    el.find("[data-attr=drift]").html(el.find("[data-attr=drift]").html().replace("-", ""))
+    changeAttr(el.find("[data-attr=icon-ctn] i"), "class", "fa fa-#{data.icon} #{data.icon_class}") if data.icon
+    if data.control
+      changeAttr(el.find("[data-attr=admin-ctn] i"), "class", "fa fa-shield text-info")
+      changeAttr(el.find("[data-attr=admin-ctn] i"), "title", "admin")
+    if data.isHost
+      changeAttr(el.find("[data-attr=admin-ctn] i"), "class", "fa fa-shield text-danger")
+      changeAttr(el.find("[data-attr=admin-ctn] i"), "title", "HOST")
+    changeAttr(el.find("[data-attr=drift-ctn] i"), "class", "fa fa-#{if data.drift then if data.drift > 0 then "backward" else "forward" else "circle-o-notch"} text-warning")
+    changeHTML(el.find("[data-attr=drift]"), el.find("[data-attr=drift]").html().replace("-", ""))
     @drift = parseFloat(data.drift) if @index? && data.index == @index
 
   CMD_subscriber_list: (data) ->

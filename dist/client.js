@@ -136,7 +136,7 @@
       }
     },
     CMD_update_single_subscriber: function(resp) {
-      var _el, data, el, k, ref, v;
+      var _el, changeAttr, changeHTML, data, el, k, ref, v;
       data = (resp != null ? resp.data : void 0) || {};
       if (data.index == null) {
         return;
@@ -152,14 +152,32 @@
         }
         el = _el;
       }
+      changeHTML = function(el, v) {
+        if (!el.length) {
+          return;
+        }
+        if (el.html() !== v) {
+          el.html(v);
+        }
+        return el;
+      };
+      changeAttr = function(el, a, v) {
+        if (!el.length) {
+          return;
+        }
+        if (el.attr(a) !== v) {
+          el.attr(a, v);
+        }
+        return el;
+      };
       for (k in data) {
         v = data[k];
-        el.find(`[data-attr=${k}]`).html(v);
+        changeHTML(el.find(`[data-attr=${k}]`), "" + v);
       }
       ref = data.state;
       for (k in ref) {
         v = ref[k];
-        el.find(`[data-attr=${k}]`).html(v);
+        changeHTML(el.find(`[data-attr=${k}]`), "" + v);
       }
       el.find("[data-attr=progress-bar-buffered]").css({
         width: `${(data.state.loaded_fraction || 0) * 100}%`
@@ -168,16 +186,18 @@
         left: `${(data.state.seek <= 0 ? 0 : data.state.seek / data.state.playtime * 100)}%`
       });
       if (data.icon) {
-        el.find("[data-attr=icon-ctn] i").attr("class", `fa fa-${data.icon} ${data.icon_class}`);
+        changeAttr(el.find("[data-attr=icon-ctn] i"), "class", `fa fa-${data.icon} ${data.icon_class}`);
       }
       if (data.control) {
-        el.find("[data-attr=admin-ctn] i").attr("class", "fa fa-shield text-info").attr("title", "ADMIN");
+        changeAttr(el.find("[data-attr=admin-ctn] i"), "class", "fa fa-shield text-info");
+        changeAttr(el.find("[data-attr=admin-ctn] i"), "title", "admin");
       }
       if (data.isHost) {
-        el.find("[data-attr=admin-ctn] i").attr("class", "fa fa-shield text-danger").attr("title", "HOST");
+        changeAttr(el.find("[data-attr=admin-ctn] i"), "class", "fa fa-shield text-danger");
+        changeAttr(el.find("[data-attr=admin-ctn] i"), "title", "HOST");
       }
-      el.find("[data-attr=drift-ctn] i").attr("class", `fa fa-${(data.drift ? data.drift > 0 ? "backward" : "forward" : "circle-o-notch")} text-warning`);
-      el.find("[data-attr=drift]").html(el.find("[data-attr=drift]").html().replace("-", ""));
+      changeAttr(el.find("[data-attr=drift-ctn] i"), "class", `fa fa-${(data.drift ? data.drift > 0 ? "backward" : "forward" : "circle-o-notch")} text-warning`);
+      changeHTML(el.find("[data-attr=drift]"), el.find("[data-attr=drift]").html().replace("-", ""));
       if ((this.index != null) && data.index === this.index) {
         return this.drift = parseFloat(data.drift);
       }

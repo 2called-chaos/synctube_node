@@ -1143,7 +1143,7 @@
           if (data.state !== "pause") {
             return this.pauseEnsured("not paused");
           }
-          if (this.getCurrentTime() === 0 && data.seek === 0) {
+          if (this.getCurrentTime() === 0 && data.seek === 0 && [1, 3].indexOf(this.getState()) === -1) {
             //return @pauseEnsured("state not 5 or -1 (#{@getState()})") unless [5, -1].indexOf(@getState()) > -1
             return this.pauseEnsured("timecode 0");
           }

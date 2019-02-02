@@ -131,7 +131,7 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
         return
       return @pauseEnsured("not paused") unless data.state == "pause"
       #return @pauseEnsured("state not 5 or -1 (#{@getState()})") unless [5, -1].indexOf(@getState()) > -1
-      return @pauseEnsured("timecode 0") if @getCurrentTime() == 0 && data.seek == 0
+      return @pauseEnsured("timecode 0") if @getCurrentTime() == 0 && data.seek == 0 && [1, 3].indexOf(@getState()) == -1
 
       if [-1, 2].indexOf(@getState()) > -1 && Math.abs(@getCurrentTime() - data.seek) <= 0.5
         @pauseEnsured("drift done after #{fails} attempts")

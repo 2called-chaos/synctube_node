@@ -1120,31 +1120,33 @@
         fails = 0;
         return this.ensurePauseInterval = setInterval((() => {
           if (this.getState() == null) {
-            return fails += 1;
+            if ((fails += 1) > 100) {
+              this.pauseEnsured(`giving up after ${fails} attempts`);
+            }
+            return;
           }
           if (data.state !== "pause") {
-            return this.pauseEnsured();
-          }
-          if (!([5, -1].indexOf(this.getState()) > -1)) {
-            return this.pauseEnsured();
+            return this.pauseEnsured("not paused");
           }
           if (this.getCurrentTime() === 0 && data.seek === 0) {
-            return this.pauseEnsured();
+            //return @pauseEnsured("state not 5 or -1 (#{@getState()})") unless [5, -1].indexOf(@getState()) > -1
+            return this.pauseEnsured("timecode 0");
           }
           if ([-1, 2].indexOf(this.getState()) > -1 && Math.abs(this.getCurrentTime() - data.seek) <= 0.5) {
-            this.pauseEnsured();
+            this.pauseEnsured(`drift done after ${fails} attempts`);
             return this.client.broadcastState();
           } else {
             this.seekTo(data.seek, true);
             this.play() && this.pause();
-            if ((fails += 1) > 40) {
-              return this.pauseEnsured();
+            if ((fails += 1) > 100) {
+              return this.pauseEnsured(`giving up after ${fails} attempts`);
             }
           }
         }), 100);
       }
 
-      pauseEnsured() {
+      pauseEnsured(reason) {
+        this.client.debug(`YT pause ensured (${reason})`);
         clearInterval(this.ensurePauseInterval);
         return this.client.dontBroadcast = false;
       }

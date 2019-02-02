@@ -24,6 +24,7 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
       @client.debug "pausing playback, state:", @getState()
       @pause()
       @seekTo(data.seek, true)
+      @ensurePause(data)
       return
 
     if @getState() != 1 && data.state == "play"
@@ -118,21 +119,25 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
     @client.dontBroadcast = true
 
     fails = 0
+    clearInterval(@ensurePauseInterval)
     @ensurePauseInterval = setInterval((=>
-      return fails += 1 unless @getState()?
-      return @pauseEnsured() unless data.state == "pause"
-      return @pauseEnsured() unless [5, -1].indexOf(@getState()) > -1
-      return @pauseEnsured() if @getCurrentTime() == 0 && data.seek == 0
+      unless @getState()?
+        @pauseEnsured("giving up after #{fails} attempts") if (fails += 1) > 100
+        return
+      return @pauseEnsured("not paused") unless data.state == "pause"
+      #return @pauseEnsured("state not 5 or -1 (#{@getState()})") unless [5, -1].indexOf(@getState()) > -1
+      return @pauseEnsured("timecode 0") if @getCurrentTime() == 0 && data.seek == 0
 
       if [-1, 2].indexOf(@getState()) > -1 && Math.abs(@getCurrentTime() - data.seek) <= 0.5
-        @pauseEnsured()
+        @pauseEnsured("drift done after #{fails} attempts")
         @client.broadcastState()
       else
         @seekTo(data.seek, true)
         @play() && @pause()
-        @pauseEnsured() if (fails += 1) > 40
+        @pauseEnsured("giving up after #{fails} attempts") if (fails += 1) > 100
     ), 100)
 
-  pauseEnsured: ->
+  pauseEnsured: (reason) ->
+    @client.debug "YT pause ensured (#{reason})"
     clearInterval(@ensurePauseInterval)
     @client.dontBroadcast = false

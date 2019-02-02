@@ -23,6 +23,7 @@ exports.Class = class SyncTubeServerChannel
       defaultUrl: @server.opts.defaultUrl
       defaultAutoplay: @server.opts.defaultAutoplay
       readyGracePeriod: 2000
+      chatMode: "public" # public, admin-only, disabled
     }
     @desired = { ctype: @options.defaultCtype, url: @options.defaultUrl, seek: 0, loop: false, seek_update: new Date, state: if @options.defaultAutoplay then "play" else "pause" }
     @persisted = {
@@ -37,6 +38,11 @@ exports.Class = class SyncTubeServerChannel
     for c in @subscribers
       continue if c == client && !sendToAuthor
       c.sendMessage(message, color, client.name, client_color || client?.color)
+
+  broadcastChat: (client, message, color, client_color, sendToAuthor = true) ->
+    if @options.chatMode == "disabled" || (@options.chatMode == "admin-only" && @control.indexOf(client) == -1)
+      return client.sendSystemMessage("chat is #{@options.chatMode}!", COLORS.muted)
+    @broadcast(client, message, color, client_color, sendToAuthor)
 
   broadcastCode: (client, type, data, sendToAuthor = true) ->
     for c in @subscribers

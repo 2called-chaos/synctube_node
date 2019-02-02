@@ -19,7 +19,7 @@ x = module.exports =
       return if cmd && @Server[cmd]?.call(server, client, chunks...)
       if ch = client.subscribed
         return if cmd && @Channel[cmd]?.call(ch, client, chunks...)
-        ch.broadcast(client, msg, null, ch.clientColor(client))
+        ch.broadcastChat(client, msg, null, ch.clientColor(client))
         return client.ack()
 
       return client.ack()

@@ -39,7 +39,7 @@
           if (cmd && ((ref2 = this.Channel[cmd]) != null ? ref2.call(ch, client, ...chunks) : void 0)) {
             return;
           }
-          ch.broadcast(client, msg, null, ch.clientColor(client));
+          ch.broadcastChat(client, msg, null, ch.clientColor(client));
           return client.ack();
         }
         return client.ack();

@@ -42,6 +42,7 @@
         defaultUrl: this.server.opts.defaultUrl,
         defaultAutoplay: this.server.opts.defaultAutoplay,
         readyGracePeriod: 2000,
+        chatMode: "public" // public, admin-only, disabled
       };
       this.desired = {
         ctype: this.options.defaultCtype,
@@ -72,6 +73,13 @@
         results.push(c.sendMessage(message, color, client.name, client_color || (client != null ? client.color : void 0)));
       }
       return results;
+    }
+
+    broadcastChat(client, message, color, client_color, sendToAuthor = true) {
+      if (this.options.chatMode === "disabled" || (this.options.chatMode === "admin-only" && this.control.indexOf(client) === -1)) {
+        return client.sendSystemMessage(`chat is ${this.options.chatMode}!`, COLORS.muted);
+      }
+      return this.broadcast(client, message, color, client_color, sendToAuthor);
     }
 
     broadcastCode(client, type, data, sendToAuthor = true) {

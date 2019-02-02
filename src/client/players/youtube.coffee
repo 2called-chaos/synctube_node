@@ -28,8 +28,13 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
       return
 
     if @getState() != 1 && data.state == "play"
-      @client.debug "starting playback, state:", @getState()
-      @play()
+      lastPacketDiff = if @client.lastPacketSent then (new Date()) - @client.lastPacketSent else null
+      if lastPacketDiff? && lastPacketDiff < 75 && @getState() == 0
+        @client.debug "ignore starting playback, stopped and we just sent packet", lastPacketDiff
+      else
+        @client.debug "starting playback, state:", @getState()
+        @pauseEnsured "starting playback"
+        @play()
       return
 
     if Math.abs(@client.drift * 1000) > @client.opts.synced.maxDrift || @force_resync || data.force

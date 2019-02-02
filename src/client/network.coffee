@@ -97,4 +97,5 @@ window.SyncTubeClient_Network =
       loaded_fraction: @player?.getLoadedFraction()
       url: @player?.getUrl()
 
+    @lastPacketSent = new Date
     @connection.send("!packet:" + JSON.stringify(packet))

@@ -558,6 +558,7 @@
         loaded_fraction: (ref3 = this.player) != null ? ref3.getLoadedFraction() : void 0,
         url: (ref4 = this.player) != null ? ref4.getUrl() : void 0
       };
+      this.lastPacketSent = new Date;
       return this.connection.send("!packet:" + JSON.stringify(packet));
     }
   };
@@ -746,6 +747,7 @@
       }
 
       updateDesired(data) {
+        var lastPacketDiff;
         console.log(data.state);
         if (data.state === "play") {
           this.video.attr("autoplay", "autoplay");
@@ -777,9 +779,14 @@
           return;
         }
         if (!this.error && this.getState() !== 1 && data.state === "play") {
-          this.client.debug("starting playback");
-          this.systemResume = true;
-          this.play();
+          lastPacketDiff = this.client.lastPacketSent ? (new Date()) - this.client.lastPacketSent : null;
+          if ((lastPacketDiff != null) && lastPacketDiff < 75 && this.getState() === 0) {
+            this.client.debug("ignore starting playback, stopped and we just sent packet", lastPacketDiff);
+          } else {
+            this.client.debug("starting playback, state:", this.getState());
+            this.systemResume = true;
+            this.play();
+          }
         }
         if (Math.abs(this.client.drift * 1000) > this.client.opts.synced.maxDrift || this.force_resync || data.force) {
           this.force_resync = false;
@@ -937,7 +944,7 @@
       }
 
       updateDesired(data) {
-        var current_ytid, ref1, ref2;
+        var current_ytid, lastPacketDiff, ref1, ref2;
         if (!this.api) {
           this.loadVideo(data.url, data.state !== "play", data.seek);
           this.ensurePause(data);
@@ -953,11 +960,18 @@
           this.client.debug("pausing playback, state:", this.getState());
           this.pause();
           this.seekTo(data.seek, true);
+          this.ensurePause(data);
           return;
         }
         if (this.getState() !== 1 && data.state === "play") {
-          this.client.debug("starting playback, state:", this.getState());
-          this.play();
+          lastPacketDiff = this.client.lastPacketSent ? (new Date()) - this.client.lastPacketSent : null;
+          if ((lastPacketDiff != null) && lastPacketDiff < 75 && this.getState() === 0) {
+            this.client.debug("ignore starting playback, stopped and we just sent packet", lastPacketDiff);
+          } else {
+            this.client.debug("starting playback, state:", this.getState());
+            this.pauseEnsured("starting playback");
+            this.play();
+          }
           return;
         }
         if (Math.abs(this.client.drift * 1000) > this.client.opts.synced.maxDrift || this.force_resync || data.force) {
@@ -1118,6 +1132,7 @@
         var fails;
         this.client.dontBroadcast = true;
         fails = 0;
+        clearInterval(this.ensurePauseInterval);
         return this.ensurePauseInterval = setInterval((() => {
           if (this.getState() == null) {
             if ((fails += 1) > 100) {

@@ -50,9 +50,13 @@ window.SyncTubeClient_Player_HtmlVideo = class SyncTubeClient_Player_HtmlVideo
       return
 
     if !@error && @getState() != 1 && data.state == "play"
-      @client.debug "starting playback"
-      @systemResume = true
-      @play()
+      lastPacketDiff = if @client.lastPacketSent then (new Date()) - @client.lastPacketSent else null
+      if lastPacketDiff? && lastPacketDiff < 75 && @getState() == 0
+        @client.debug "ignore starting playback, stopped and we just sent packet", lastPacketDiff
+      else
+        @client.debug "starting playback, state:", @getState()
+        @systemResume = true
+        @play()
 
     if Math.abs(@client.drift * 1000) > @client.opts.synced.maxDrift || @force_resync || data.force
       @force_resync = false

@@ -16,7 +16,22 @@ exports.Class = class SyncTubeServerChannel
     @ready_timeout = null
     @playlist = []
     @playlist_index = 0
-    @desired = { ctype: @server.opts.defaultCtype, url: @server.opts.defaultUrl, seek: 0, loop: false, seek_update: new Date, state: if @server.opts.defaultAutoplay then "play" else "pause" }
+    @options = {
+      maxDrift: @server.opts.maxDrift
+      packetInterval: @server.opts.packetInterval
+      defaultCtype: @server.opts.defaultCtype
+      defaultUrl: @server.opts.defaultUrl
+      defaultAutoplay: @server.opts.defaultAutoplay
+      readyGracePeriod: 2000
+    }
+    @desired = { ctype: @options.defaultCtype, url: @options.defaultUrl, seek: 0, loop: false, seek_update: new Date, state: if @options.defaultAutoplay then "play" else "pause" }
+    @persisted = {
+      queue: @queue
+      playlist: @playlist
+      playlist_index: @playlist_index
+      desired: @desired
+      options: @options
+    }
 
   broadcast: (client, message, color, client_color, sendToAuthor = true) ->
     for c in @subscribers
@@ -73,7 +88,7 @@ exports.Class = class SyncTubeServerChannel
     @broadcastCode(false, "desired", @desired)
 
     # start after grace period
-    @ready_timeout = UTIL.delay 2000, =>
+    @ready_timeout = UTIL.delay @options.readyGracePeriod, =>
       @desired.state = "play"
       @broadcastCode(false, "video_action", action: "play")
 
@@ -118,6 +133,7 @@ exports.Class = class SyncTubeServerChannel
     client.state = {}
     client.sendSystemMessage("You joined #{@name}!", COLORS.green) if sendMessage
     client.sendCode("subscribe", channel: @name)
+    client.sendCode "server_settings", packetInterval: @options.packetInterval, maxDrift: @options.maxDrift
     client.sendCode("desired", Object.assign({}, @desired, { force: true }))
     @broadcast(client, "<i>joined the party!</i>", COLORS.green, COLORS.muted, false)
     @updateSubscriberList(client)

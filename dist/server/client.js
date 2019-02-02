@@ -90,10 +90,6 @@
       this.sendCode("session_index", {
         index: this.index
       });
-      this.sendCode("server_settings", {
-        packetInterval: this.server.opts.packetInterval,
-        maxDrift: this.server.opts.maxDrift
-      });
       this.sendCode("require_username", {
         maxLength: this.server.opts.nameMaxLength
       });

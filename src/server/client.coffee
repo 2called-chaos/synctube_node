@@ -43,7 +43,6 @@ exports.Class = class SyncTubeServerClient
     @connection.on("close", => @disconnect())
     @info "Connection accepted (#{@index}): #{@ip}"
     @sendCode "session_index", index: @index
-    @sendCode "server_settings", packetInterval: @server.opts.packetInterval, maxDrift: @server.opts.maxDrift
     @sendCode "require_username", maxLength: @server.opts.nameMaxLength
     return this
 

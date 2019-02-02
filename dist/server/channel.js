@@ -35,13 +35,28 @@
       this.ready_timeout = null;
       this.playlist = [];
       this.playlist_index = 0;
+      this.options = {
+        maxDrift: this.server.opts.maxDrift,
+        packetInterval: this.server.opts.packetInterval,
+        defaultCtype: this.server.opts.defaultCtype,
+        defaultUrl: this.server.opts.defaultUrl,
+        defaultAutoplay: this.server.opts.defaultAutoplay,
+        readyGracePeriod: 2000,
+      };
       this.desired = {
-        ctype: this.server.opts.defaultCtype,
-        url: this.server.opts.defaultUrl,
+        ctype: this.options.defaultCtype,
+        url: this.options.defaultUrl,
         seek: 0,
         loop: false,
         seek_update: new Date,
-        state: this.server.opts.defaultAutoplay ? "play" : "pause"
+        state: this.options.defaultAutoplay ? "play" : "pause"
+      };
+      this.persisted = {
+        queue: this.queue,
+        playlist: this.playlist,
+        playlist_index: this.playlist_index,
+        desired: this.desired,
+        options: this.options
       };
     }
 
@@ -163,7 +178,7 @@
       this.ready = [];
       this.broadcastCode(false, "desired", this.desired);
       // start after grace period
-      return this.ready_timeout = UTIL.delay(2000, () => {
+      return this.ready_timeout = UTIL.delay(this.options.readyGracePeriod, () => {
         this.desired.state = "play";
         return this.broadcastCode(false, "video_action", {
           action: "play"
@@ -261,6 +276,10 @@
       }
       client.sendCode("subscribe", {
         channel: this.name
+      });
+      client.sendCode("server_settings", {
+        packetInterval: this.options.packetInterval,
+        maxDrift: this.options.maxDrift
       });
       client.sendCode("desired", Object.assign({}, this.desired, {
         force: true

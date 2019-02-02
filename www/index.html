@@ -16,14 +16,21 @@
     <link href="./client.css" rel="stylesheet">
   </head>
   <body>
-    <div id="page" class="row justify-content-md-center">
+    <div id="welcome" class="flexcentered" style="display: none">
+      <div class="row">
+        <div class="col-12 text-center" style="height: 150px">
+          <div class="loader"></div>
+        </div>
+      </div>
+    </div>
+    <div id="page" class="row justify-content-md-center" style="display: none">
       <div class="col">
-        <div class="row">
+        <div class="row" id="first_row">
           <div class="col col-12">
             <div id="view_ctn" class="r16_9"><div id="view"></div></div>
           </div>
         </div>
-        <div class="row">
+        <div class="row" id="second_row">
           <div class="col col-12 col-sm-8 col-md-8 col-lg-9 col-xl-10" style="padding-right: 0">
             <div id="content"></div>
             <div class="row">
@@ -36,8 +43,8 @@
           </div>
           <div class="col col-12 col-sm-4 col-md-4 col-lg-3 col-xl-2"><div id="clients"></div></div>
         </div>
-        <div class="row">
-          <div class="col col-12">
+        <div class="row" id="third_row" style="display: none">
+          <div class="col col-12" id="playlist_ctn">
             <div id="playlist">
             </div>
           </div>

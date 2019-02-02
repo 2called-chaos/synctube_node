@@ -1,6 +1,6 @@
 window.SyncTubeClient_UI =
   init: ->
-    @refocus = true
+    @refocus = false
     @opts.maxWidth ?= 12
     @opts[x] ?= $("##{x}") for x in @VIEW_COMPONENTS
     @[x] = $(@opts[x]) for x in @VIEW_COMPONENTS

@@ -474,6 +474,9 @@
     var ch;
     if (ch = client.subscribed) {
       ch.unsubscribe(client);
+      client.sendCode("desired", {
+        ctype: "StuiCreateForm"
+      });
     } else {
       client.sendSystemMessage("You are not in any channel!");
     }

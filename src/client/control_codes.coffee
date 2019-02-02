@@ -7,7 +7,14 @@ window.SyncTubeClient_ControlCodes =
 
   CMD_ack: -> @enableInput()
 
-  CMD_session_kicked: (a...) -> @CMD_disconnected()
+  CMD_session_kicked: (info) ->
+    @CMD_disconnected()
+    @CMD_desired(ctype: "StuiKicked", info: info)
+
+  CMD_kicked: (info) ->
+    setTimeout((=>
+      @CMD_desired(ctype: "StuiKicked", info: info)
+    ), 100) # timeout because reasons (YT restoring view? but we destroyed it already... dunno)
 
   CMD_disconnected: (a...) ->
     @CMD_unsubscribe()
@@ -64,6 +71,7 @@ window.SyncTubeClient_ControlCodes =
 
   CMD_require_username: (data) ->
     @enableInput()
+    @CMD_desired(ctype: "StuiCreateForm")
     @input.attr("maxLength", data.maxLength) if data.maxLength?
     @status.text("Choose name:")
 

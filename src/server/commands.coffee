@@ -319,6 +319,7 @@ x.addCommand "Channel", "vid", "video", "mp4", "webp", (client, url) -> module.e
 x.addCommand "Channel", "leave", "quit", (client) ->
   if ch = client.subscribed
     ch.unsubscribe(client)
+    client.sendCode("desired", ctype: "StuiCreateForm")
   else
     client.sendSystemMessage("You are not in any channel!")
 

@@ -39,8 +39,17 @@ window.SyncTubeClient = class SyncTubeClient
 
     inc.init?.apply(this) for inc in @included
 
+  welcome: (done) ->
+    $("#page").hide()
+    $("#welcome").show 200, ->
+      setTimeout(done, 250)
+
   start: ->
     inc.start?.apply(this) for inc in @included
+    $("#page").css(maxWidth: 500)
+    $("#page").fadeIn 1250
+    setTimeout((-> $(window).resize() ), 50)
+    setTimeout((-> $("#welcome").hide 750 ), 1250)
     @listen()
 
   # ===========

@@ -3,4 +3,4 @@
 $ ->
   client = new SyncTubeClient
     debug: true
-  client.start()
+  client.welcome => client.start()

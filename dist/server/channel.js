@@ -92,7 +92,7 @@
     }
 
     getSubscriberData(client, sub, index) {
-      var data, leader, ref, ref1, ref2, ref3, seekdiff;
+      var data, leader, ref, ref1, ref2, ref3, ref4, seekdiff;
       data = {
         index: sub.index,
         name: sub.name || sub.old_name,
@@ -106,7 +106,7 @@
       leader = this.control[0];
       if (((ref = sub.state) != null ? ref.seek : void 0) && ((leader != null ? (ref1 = leader.state) != null ? ref1.seek : void 0 : void 0) != null)) {
         seekdiff = (leader != null ? (ref2 = leader.state) != null ? ref2.seek : void 0 : void 0) - client.state.seek;
-        if (leader.lastPacket && client.lastPacket) {
+        if (leader.lastPacket && client.lastPacket && (leader != null ? (ref3 = leader.state) != null ? ref3.state : void 0 : void 0) === "playing") {
           seekdiff -= (leader.lastPacket - client.lastPacket) / 1000;
         }
         data.drift = seekdiff.toFixed(3);
@@ -115,7 +115,7 @@
         }
       }
       data.progress = data.state.state || "uninitialized";
-      switch ((ref3 = data.state) != null ? ref3.state : void 0) {
+      switch ((ref4 = data.state) != null ? ref4.state : void 0) {
         case "unstarted":
           data.icon = "cog";
           data.icon_class = "text-muted";

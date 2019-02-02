@@ -1,5 +1,5 @@
 window.SyncTubeClient = class SyncTubeClient
-  VIEW_COMPONENTS: ["content", "view", "input", "status", "queue", "playlist", "clients"]
+  VIEW_COMPONENTS: ["content", "view", "input", "input_nofocus", "status", "queue", "playlist", "clients"]
   included: []
 
   @include: (obj, into) ->

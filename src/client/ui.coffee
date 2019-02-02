@@ -1,5 +1,6 @@
 window.SyncTubeClient_UI =
   init: ->
+    @refocus = true
     @opts.maxWidth ?= 12
     @opts[x] ?= $("##{x}") for x in @VIEW_COMPONENTS
     @[x] = $(@opts[x]) for x in @VIEW_COMPONENTS
@@ -32,14 +33,19 @@ window.SyncTubeClient_UI =
       @connection.send(msg)
       @disableInput()
 
+    @input.parent().click (event) => @input_nofocus.focus() if @input.is(":disabled")
+    @input_nofocus.blur (event) => @refocus = false
+    @input_nofocus.focus (event) => @refocus = true
+
   enableInput: (focus = true, clear = true) ->
     @input.val("") if clear && @input.is(":disabled")
     @input.removeAttr("disabled")
-    @input.focus() if focus
+    @input.focus() if @refocus && focus
     @input
 
   disableInput: ->
     @input.attr("disabled", "disabled")
+    @input_nofocus.focus()
     @input
 
   addError: (error) ->

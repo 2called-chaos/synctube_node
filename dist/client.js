@@ -330,7 +330,7 @@
 
     };
 
-    SyncTubeClient.prototype.VIEW_COMPONENTS = ["content", "view", "input", "status", "queue", "playlist", "clients"];
+    SyncTubeClient.prototype.VIEW_COMPONENTS = ["content", "view", "input", "input_nofocus", "status", "queue", "playlist", "clients"];
 
     SyncTubeClient.prototype.included = [];
 
@@ -1259,6 +1259,7 @@
   window.SyncTubeClient_UI = {
     init: function() {
       var base, base1, j, l, len, len1, ref1, ref2, results, x;
+      this.refocus = true;
       if ((base = this.opts).maxWidth == null) {
         base.maxWidth = 12;
       }
@@ -1288,7 +1289,7 @@
       return $("#page > .col").attr("class", `col col-${maxWidth}`);
     },
     captureInput: function() {
-      return this.input.keydown((event) => {
+      this.input.keydown((event) => {
         var i, m, msg, ref1;
         if (event.keyCode !== 13) {
           return true;
@@ -1315,19 +1316,31 @@
         this.connection.send(msg);
         return this.disableInput();
       });
+      this.input.parent().click((event) => {
+        if (this.input.is(":disabled")) {
+          return this.input_nofocus.focus();
+        }
+      });
+      this.input_nofocus.blur((event) => {
+        return this.refocus = false;
+      });
+      return this.input_nofocus.focus((event) => {
+        return this.refocus = true;
+      });
     },
     enableInput: function(focus = true, clear = true) {
       if (clear && this.input.is(":disabled")) {
         this.input.val("");
       }
       this.input.removeAttr("disabled");
-      if (focus) {
+      if (this.refocus && focus) {
         this.input.focus();
       }
       return this.input;
     },
     disableInput: function() {
       this.input.attr("disabled", "disabled");
+      this.input_nofocus.focus();
       return this.input;
     },
     addError: function(error) {

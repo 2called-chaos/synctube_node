@@ -1169,6 +1169,16 @@
             $("<div class=\"invalid-feedback\">choose a name</div>").insertAfter(this.vp.find("input[name=name]").addClass("is-invalid"));
             return false;
           }
+          // space in name
+          if ((data.name + "").match(/\s+/)) {
+            $("<div class=\"invalid-feedback\">may not contain white spaces</div>").appendTo(this.vp.find("input[name=name]").addClass("is-invalid").parent());
+            return false;
+          }
+          // space in channel
+          if ((data.channel + "").match(/\s+/)) {
+            $("<div class=\"invalid-feedback\">may not contain white spaces</div>").appendTo(this.vp.find("input[name=channel]").addClass("is-invalid").parent());
+            return false;
+          }
           // space in pw
           if ((data.channel_password + "").match(/\s+/)) {
             $("<div class=\"invalid-feedback\">may not contain white spaces</div>").appendTo(this.vp.find("input[name=channel_password]").addClass("is-invalid").parent());
@@ -1195,7 +1205,7 @@
       }
 
       buildForm() {
-        return this.vp.append("<div class=\"flexcentered\" style=\"color: rgba(255, 255, 255, 0.88);\">\n  <div style=\"max-width: 800px\">\n    <div style=\"margin-bottom: 50px\"><h1>Welcome to Sync<span style=\"color: #ff0201\">Tube</span></h1></div>\n    <form class=\"form-horizontal\" id=\"optform\" style=\"max-width: 400px; margin: 0px auto\">\n      <div class=\"form-group\"><input type=\"text\" class=\"form-control outline-danger\" placeholder=\"username\" name=\"name\" autofocus=\"autofocus\"></div>\n      <div class=\"form-group text-center\">and join</div>\n      <div class=\"form-group input-group\">\n        <input type=\"text\" class=\"form-control\" placeholder=\"channel\" name=\"channel\">\n        <div class=\"input-group-append\">\n          <button class=\"btn btn-outline-inverse btn-success\" name=\"channel\" type=\"submit\" value=\"join\">join</button>\n        </div>\n      </div>\n      <div class=\"form-group text-center\">or be a host</div>\n      <div class=\"form-group input-group text-center\">\n        <input type=\"password\" class=\"form-control\" placeholder=\"channel password (optional)\" name=\"channel_password\">\n        <div class=\"input-group-append\">\n          <button class=\"btn btn-outline-inverse btn-primary\" type=\"submit\" name=\"channel_password\" value=\"control\">create/control</button>\n        </div>\n      </div>\n    </form>\n  </div>\n</div>");
+        return this.vp.append("<div class=\"flexcentered\" style=\"color: rgba(255, 255, 255, 0.88);\">\n  <div style=\"max-width: 800px\">\n    <div style=\"margin-bottom: 50px\"><h1>Welcome to Sync<span style=\"color: #ff0201\">Tube</span></h1></div>\n    <form class=\"form-horizontal\" id=\"optform\" style=\"max-width: 400px; margin: 0px auto\">\n      <div class=\"form-group\"><input type=\"text\" class=\"form-control outline-danger\" placeholder=\"tell me your name (no spaces)\" name=\"name\" autofocus=\"autofocus\"></div>\n      <div class=\"form-group text-center\">and join a</div>\n      <div class=\"form-group input-group\">\n        <input type=\"text\" class=\"form-control\" placeholder=\"channel (no spaces)\" name=\"channel\">\n        <div class=\"input-group-append\">\n          <button class=\"btn btn-outline-inverse btn-success\" name=\"channel\" type=\"submit\" value=\"join\">join</button>\n        </div>\n      </div>\n      <div class=\"form-group text-center\">or be a host</div>\n      <div class=\"form-group input-group text-center\">\n        <input type=\"password\" class=\"form-control\" placeholder=\"channel password (optional)\" name=\"channel_password\">\n        <div class=\"input-group-append\">\n          <button class=\"btn btn-outline-inverse btn-primary\" type=\"submit\" name=\"channel_password\" value=\"control\">create/control</button>\n        </div>\n      </div>\n    </form>\n  </div>\n</div>");
       }
 
       clientUpdate() {
@@ -1619,9 +1629,6 @@
         //console.log width_second, height_both, window.innerHeight, ratio, window.innerHeight * ratio
         //$("#page").css(maxWidth: window.innerHeight * ratio)
         if (height_both > window.innerHeight && width_second > 500) {
-          if ((ref1 = this.player) != null ? ref1.hideOnResize : void 0) {
-            $("#view").hide();
-          }
           $("#page").css({
             maxWidth: $("#page").width() - 2
           });
@@ -1630,9 +1637,6 @@
             return $(window).resize();
           }), 1);
         } else if ((window.innerHeight - height_both) > 1) {
-          if ((ref2 = this.player) != null ? ref2.hideOnResize : void 0) {
-            $("#view").hide();
-          }
           $("#page").css({
             maxWidth: $("#page").width() + 2
           });
@@ -1640,10 +1644,6 @@
           setTimeout((() => {
             return $(window).resize();
           }), 1);
-        } else {
-          if ((ref3 = this.player) != null ? ref3.hideOnResize : void 0) {
-            $("#view").show();
-          }
         }
         if ($("#first_row").width() > 800) {
 

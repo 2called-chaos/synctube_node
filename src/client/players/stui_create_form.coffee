@@ -24,6 +24,20 @@ window.SyncTubeClient_Player_StuiCreateForm = class SyncTubeClient_Player_StuiCr
         ).insertAfter @vp.find("input[name=name]").addClass("is-invalid")
         return false
 
+      # space in name
+      if (data.name+"").match(/\s+/)
+        $(
+          """<div class="invalid-feedback">may not contain white spaces</div>"""
+        ).appendTo @vp.find("input[name=name]").addClass("is-invalid").parent()
+        return false
+
+      # space in channel
+      if (data.channel+"").match(/\s+/)
+        $(
+          """<div class="invalid-feedback">may not contain white spaces</div>"""
+        ).appendTo @vp.find("input[name=channel]").addClass("is-invalid").parent()
+        return false
+
       # space in pw
       if (data.channel_password+"").match(/\s+/)
         $(
@@ -49,10 +63,10 @@ window.SyncTubeClient_Player_StuiCreateForm = class SyncTubeClient_Player_StuiCr
       <div style="max-width: 800px">
         <div style="margin-bottom: 50px"><h1>Welcome to Sync<span style="color: #ff0201">Tube</span></h1></div>
         <form class="form-horizontal" id="optform" style="max-width: 400px; margin: 0px auto">
-          <div class="form-group"><input type="text" class="form-control outline-danger" placeholder="username" name="name" autofocus="autofocus"></div>
-          <div class="form-group text-center">and join</div>
+          <div class="form-group"><input type="text" class="form-control outline-danger" placeholder="tell me your name (no spaces)" name="name" autofocus="autofocus"></div>
+          <div class="form-group text-center">and join a</div>
           <div class="form-group input-group">
-            <input type="text" class="form-control" placeholder="channel" name="channel">
+            <input type="text" class="form-control" placeholder="channel (no spaces)" name="channel">
             <div class="input-group-append">
               <button class="btn btn-outline-inverse btn-success" name="channel" type="submit" value="join">join</button>
             </div>

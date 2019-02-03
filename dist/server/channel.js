@@ -128,9 +128,9 @@
       // calculcate drift
       leader = this.control[0];
       if (((ref = sub.state) != null ? ref.seek : void 0) && ((leader != null ? (ref1 = leader.state) != null ? ref1.seek : void 0 : void 0) != null)) {
-        seekdiff = (leader != null ? (ref2 = leader.state) != null ? ref2.seek : void 0 : void 0) - client.state.seek;
-        if (leader.lastPacket && client.lastPacket && (leader != null ? (ref3 = leader.state) != null ? ref3.state : void 0 : void 0) === "playing") {
-          seekdiff -= (leader.lastPacket - client.lastPacket) / 1000;
+        seekdiff = (leader != null ? (ref2 = leader.state) != null ? ref2.seek : void 0 : void 0) - sub.state.seek;
+        if (leader.lastPacket && sub.lastPacket && (leader != null ? (ref3 = leader.state) != null ? ref3.state : void 0 : void 0) === "playing") {
+          seekdiff -= (leader.lastPacket - sub.lastPacket) / 1000;
         }
         data.drift = seekdiff.toFixed(3);
         if (data.drift === "0.000") {

@@ -70,8 +70,8 @@ exports.Class = class SyncTubeServerChannel
     # calculcate drift
     leader = @control[0]
     if sub.state?.seek && leader?.state?.seek?
-      seekdiff = leader?.state?.seek - client.state.seek
-      seekdiff -= (leader.lastPacket - client.lastPacket) / 1000 if leader.lastPacket && client.lastPacket && leader?.state?.state == "playing"
+      seekdiff = leader?.state?.seek - sub.state.seek
+      seekdiff -= (leader.lastPacket - sub.lastPacket) / 1000 if leader.lastPacket && sub.lastPacket && leader?.state?.state == "playing"
       data.drift = seekdiff.toFixed(3)
       data.drift = 0 if data.drift == "0.000"
 

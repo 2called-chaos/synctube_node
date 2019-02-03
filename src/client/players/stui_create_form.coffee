@@ -4,7 +4,7 @@ window.SyncTubeClient_Player_StuiCreateForm = class SyncTubeClient_Player_StuiCr
   constructor: (@client) ->
     @vp = $("<div>", id: "view_stui_create_form", width: "100%", height: "100%").fadeIn(3000).appendTo(@client.view)
     @buildForm()
-    @vp.find("input[name=name]").val(@client.name) if @client.name
+    @clientUpdate()
     @vp.on "focus", "input,button", (ev) =>
       return if $(ev.target).attr("name") == "name"
       @vp.find("input,button").attr("data-last-focused", false)
@@ -68,6 +68,9 @@ window.SyncTubeClient_Player_StuiCreateForm = class SyncTubeClient_Player_StuiCr
       </div>
     </div>
     """
+
+  clientUpdate: ->
+    @vp.find("input[name=name]").val(@client.name) if @client.name
 
   # null api functions
   updateDesired: (data) ->

@@ -91,6 +91,7 @@ window.SyncTubeClient_ControlCodes =
     @name = data.username
     @input.removeAttr("maxLength")
     @status.text("#{@name}:")
+    @player?.clientUpdate?()
 
     # check hash params
     hparams = @getHashParams()

@@ -243,10 +243,15 @@
       }
     },
     CMD_username: function(data) {
-      var ch, cmd, hparams;
+      var ch, cmd, hparams, ref;
       this.name = data.username;
       this.input.removeAttr("maxLength");
       this.status.text(`${this.name}:`);
+      if ((ref = this.player) != null) {
+        if (typeof ref.clientUpdate === "function") {
+          ref.clientUpdate();
+        }
+      }
       // check hash params
       hparams = this.getHashParams();
       if (ch = hparams.channel || hparams.join) {
@@ -1141,9 +1146,7 @@
           height: "100%"
         }).fadeIn(3000).appendTo(this.client.view);
         this.buildForm();
-        if (this.client.name) {
-          this.vp.find("input[name=name]").val(this.client.name);
-        }
+        this.clientUpdate();
         this.vp.on("focus", "input,button", (ev) => {
           if ($(ev.target).attr("name") === "name") {
             return;
@@ -1193,6 +1196,12 @@
 
       buildForm() {
         return this.vp.append("<div class=\"flexcentered\" style=\"color: rgba(255, 255, 255, 0.88);\">\n  <div style=\"max-width: 800px\">\n    <div style=\"margin-bottom: 50px\"><h1>Welcome to Sync<span style=\"color: #ff0201\">Tube</span></h1></div>\n    <form class=\"form-horizontal\" id=\"optform\" style=\"max-width: 400px; margin: 0px auto\">\n      <div class=\"form-group\"><input type=\"text\" class=\"form-control outline-danger\" placeholder=\"username\" name=\"name\" autofocus=\"autofocus\"></div>\n      <div class=\"form-group text-center\">and join</div>\n      <div class=\"form-group input-group\">\n        <input type=\"text\" class=\"form-control\" placeholder=\"channel\" name=\"channel\">\n        <div class=\"input-group-append\">\n          <button class=\"btn btn-outline-inverse btn-success\" name=\"channel\" type=\"submit\" value=\"join\">join</button>\n        </div>\n      </div>\n      <div class=\"form-group text-center\">or be a host</div>\n      <div class=\"form-group input-group text-center\">\n        <input type=\"password\" class=\"form-control\" placeholder=\"channel password (optional)\" name=\"channel_password\">\n        <div class=\"input-group-append\">\n          <button class=\"btn btn-outline-inverse btn-primary\" type=\"submit\" name=\"channel_password\" value=\"control\">create/control</button>\n        </div>\n      </div>\n    </form>\n  </div>\n</div>");
+      }
+
+      clientUpdate() {
+        if (this.client.name) {
+          return this.vp.find("input[name=name]").val(this.client.name);
+        }
       }
 
       // null api functions

@@ -337,13 +337,18 @@
       this.clients.html("");
       // get ordered list
       subs = data.subscribers.sort(function(a, b) {
-        if (a.isHost) {
+        if (a.isHost && !b.isHost) {
           return -1;
-        }
-        if (!a.control) {
+        } else {
           return 1;
         }
-        return 0;
+      });
+      subs = subs.sort(function(a, b) {
+        if (a.control && !b.control) {
+          return -1;
+        } else {
+          return 1;
+        }
       });
       ref = data.subscribers;
       results = [];

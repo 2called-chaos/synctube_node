@@ -139,10 +139,8 @@ window.SyncTubeClient_ControlCodes =
     @clients.html("")
 
     # get ordered list
-    subs = data.subscribers.sort (a, b) ->
-      return -1 if a.isHost
-      return 1 unless a.control
-      return 0
+    subs = data.subscribers.sort (a, b) -> if a.isHost && !b.isHost then -1 else 1
+    subs = subs.sort (a, b) -> if a.control && !b.control then -1 else 1
 
     @CMD_update_single_subscriber(data: sub) for sub in data.subscribers
 

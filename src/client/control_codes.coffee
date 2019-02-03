@@ -20,8 +20,13 @@ window.SyncTubeClient_ControlCodes =
     @CMD_unsubscribe()
     @reconnect = false
 
-  CMD_taken_control: -> @control = true
-  CMD_lost_control: -> @control = false
+  CMD_taken_control: ->
+    @control = true
+    @commandBar?.show()
+
+  CMD_lost_control: ->
+    @control = false
+    @commandBar?.hide()
 
   CMD_unsubscribe: ->
     @CMD_ui_clear(component: "clients")
@@ -39,6 +44,7 @@ window.SyncTubeClient_ControlCodes =
         return
 
     @player.updateDesired(data)
+    @commandBar?.updateDesired(data)
 
   CMD_ui_clear: (data) ->
     switch data.component

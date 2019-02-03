@@ -1158,6 +1158,9 @@
           var cmd, control, data, fd, fdata, j, len;
           fdata = $(ev.target).serializeArray();
           control = this.vp.find("input[data-last-focused=true],button[data-last-focused=true]").attr("name") === "channel_password";
+          if (this.vp.find("input[name=channel_password]").val()) {
+            control = true;
+          }
           data = {};
           for (j = 0, len = fdata.length; j < len; j++) {
             fd = fdata[j];
@@ -1209,8 +1212,16 @@
       }
 
       clientUpdate() {
+        var hparams, x;
+        hparams = this.client.getHashParams();
         if (this.client.name) {
-          return this.vp.find("input[name=name]").val(this.client.name);
+          this.vp.find("input[name=name]").val(this.client.name);
+        }
+        if (x = hparams.control || hparams.channel || hparams.join) {
+          this.vp.find("input[name=channel]").val(x);
+        }
+        if (x = hparams.password) {
+          return this.vp.find("input[name=channel_password]").val(x);
         }
       }
 

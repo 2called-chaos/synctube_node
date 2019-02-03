@@ -12,6 +12,7 @@ window.SyncTubeClient_Player_StuiCreateForm = class SyncTubeClient_Player_StuiCr
     @vp.on "submit", "form", (ev) =>
       fdata = $(ev.target).serializeArray()
       control = @vp.find("input[data-last-focused=true],button[data-last-focused=true]").attr("name") == "channel_password"
+      control = true if @vp.find("input[name=channel_password]").val()
       data = {}
       data[fd.name] = fd.value for fd in fdata
       @vp.find(".invalid-feedback").remove()
@@ -84,7 +85,10 @@ window.SyncTubeClient_Player_StuiCreateForm = class SyncTubeClient_Player_StuiCr
     """
 
   clientUpdate: ->
+    hparams = @client.getHashParams()
     @vp.find("input[name=name]").val(@client.name) if @client.name
+    @vp.find("input[name=channel]").val(x) if x = hparams.control || hparams.channel || hparams.join
+    @vp.find("input[name=channel_password]").val(x) if x = hparams.password
 
   # null api functions
   updateDesired: (data) ->

@@ -174,6 +174,11 @@
           });
       }
     },
+    CMD_ui_clipboard_poll: function(data) {
+      if (data.action === "permission") {
+        return navigator.clipboard.readText();
+      }
+    },
     CMD_ui_chat_show: function(data) {
       return this.content.show(200, () => {
         return this.content.scrollTop(this.content.prop("scrollHeight"));

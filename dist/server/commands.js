@@ -66,6 +66,13 @@
     Channel: {}
   };
 
+  x.addCommand("Server", "clip", function(client) {
+    client.sendCode("ui_clipboard_poll", {
+      action: "permission"
+    });
+    return client.ack();
+  });
+
   x.addCommand("Server", "clear", function(client) {
     client.sendCode("ui_clear", {
       component: "chat"

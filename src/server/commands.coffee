@@ -34,6 +34,10 @@ x = module.exports =
   Server: {}
   Channel: {}
 
+x.addCommand "Server", "clip", (client) ->
+  client.sendCode("ui_clipboard_poll", action: "permission")
+  client.ack()
+
 x.addCommand "Server", "clear", (client) ->
   client.sendCode("ui_clear", component: "chat")
   client.ack()

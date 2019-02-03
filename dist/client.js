@@ -1166,6 +1166,11 @@
             $("<div class=\"invalid-feedback\">choose a name</div>").insertAfter(this.vp.find("input[name=name]").addClass("is-invalid"));
             return false;
           }
+          // space in pw
+          if ((data.channel_password + "").match(/\s+/)) {
+            $("<div class=\"invalid-feedback\">may not contain white spaces</div>").appendTo(this.vp.find("input[name=channel_password]").addClass("is-invalid").parent());
+            return false;
+          }
           cmd = `/${(control ? "control" : "join")} ${data.channel}`;
           if (control && data.channel_password) {
             cmd += ` ${data.channel_password}`;

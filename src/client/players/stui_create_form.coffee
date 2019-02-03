@@ -24,6 +24,13 @@ window.SyncTubeClient_Player_StuiCreateForm = class SyncTubeClient_Player_StuiCr
         ).insertAfter @vp.find("input[name=name]").addClass("is-invalid")
         return false
 
+      # space in pw
+      if (data.channel_password+"").match(/\s+/)
+        $(
+          """<div class="invalid-feedback">may not contain white spaces</div>"""
+        ).appendTo @vp.find("input[name=channel_password]").addClass("is-invalid").parent()
+        return false
+
       cmd = "/#{if control then "control" else "join"} #{data.channel}"
       cmd += " #{data.channel_password}" if control && data.channel_password
       if !@client.name

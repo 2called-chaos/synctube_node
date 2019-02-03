@@ -5,6 +5,8 @@ config.systemPassword = false;
 
 // If enabled, will print loads and loads of debug output to console
 config.debug = false;
+config.debug_packets = false; // log all incoming packets
+config.debug_codes = false;   // log all outgoing control codes (MUCH DATA!)
 
 // Port on which to bind the HTTP/WS server to.
 // Client will autodiscover from document.location, otherwise edit index.html

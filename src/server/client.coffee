@@ -53,7 +53,8 @@ exports.Class = class SyncTubeServerClient
         @warn "Received non-utf8 data", message
         return
 
-      @debug "Received message from #{@ip}: #{msg}"
+      if !UTIL.startsWith(msg, "!packet") || @server.opts.debug_packets
+        @debug "<<< from #{@ip}: #{msg}"
 
       if @name
         Commands.handleMessage(@server, this, message, msg)
@@ -82,12 +83,20 @@ exports.Class = class SyncTubeServerClient
     @sendSystemMessage(msg)
     return @ack()
 
+  send: (message) ->
+    @debug ">>> to #{@ip}: #{message}" if @server.opts.debug_codes
+    @connection.send(message)
+
+  sendUTF: (message) ->
+    @debug ">>> to #{@ip}: #{message}" if @server.opts.debug_codes
+    @connection.sendUTF(message)
+
   sendCode: (type, data = {}) ->
-    @connection.sendUTF JSON.stringify type: "code", data: Object.assign({}, data, { type: type })
+    @sendUTF JSON.stringify type: "code", data: Object.assign({}, data, { type: type })
     return this
 
   sendMessage: (message, color, author, author_color) ->
-    @connection.sendUTF JSON.stringify
+    @sendUTF JSON.stringify
       type: "message"
       data:
         author: author

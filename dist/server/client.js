@@ -104,7 +104,9 @@
           this.warn("Received non-utf8 data", message);
           return;
         }
-        this.debug(`Received message from ${this.ip}: ${msg}`);
+        if (!UTIL.startsWith(msg, "!packet") || this.server.opts.debug_packets) {
+          this.debug(`<<< from ${this.ip}: ${msg}`);
+        }
         if (this.name) {
           return Commands.handleMessage(this.server, this, message, msg);
         } else {
@@ -155,8 +157,22 @@
       return this.ack();
     }
 
+    send(message) {
+      if (this.server.opts.debug_codes) {
+        this.debug(`>>> to ${this.ip}: ${message}`);
+      }
+      return this.connection.send(message);
+    }
+
+    sendUTF(message) {
+      if (this.server.opts.debug_codes) {
+        this.debug(`>>> to ${this.ip}: ${message}`);
+      }
+      return this.connection.sendUTF(message);
+    }
+
     sendCode(type, data = {}) {
-      this.connection.sendUTF(JSON.stringify({
+      this.sendUTF(JSON.stringify({
         type: "code",
         data: Object.assign({}, data, {
           type: type
@@ -166,7 +182,7 @@
     }
 
     sendMessage(message, color, author, author_color) {
-      this.connection.sendUTF(JSON.stringify({
+      this.sendUTF(JSON.stringify({
         type: "message",
         data: {
           author: author,

@@ -86,6 +86,9 @@
       this.connection.on("close", () => {
         return this.disconnect();
       });
+      if (this.server.guardBanned(this)) {
+        return this;
+      }
       this.info(`Connection accepted (${this.index}): ${this.ip}`);
       this.sendCode("session_index", {
         index: this.index

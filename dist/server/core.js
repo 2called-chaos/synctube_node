@@ -23,6 +23,7 @@
       this.opts = opts;
       this.root = process.env.ST_ROOT || process.cwd();
       this.loadConfig();
+      this.banned = {};
       this.clients = [];
       this.channels = {};
       this.pendingRestart = null;
@@ -162,6 +163,50 @@
       var client;
       client = new Client(this);
       return client.accept(request).listen();
+    }
+
+    banIp(ip, duration, reason) {
+      var client, end, i, len, ref, results;
+      end = duration === -1 ? null : new Date((new Date).getTime() + duration * 1000);
+      this.banned[ip] = end;
+      ref = this.clients;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        client = ref[i];
+        if (!client) {
+          continue;
+        }
+        results.push(this.guardBanned(client, reason));
+      }
+      return results;
+    }
+
+    guardBanned(client, reason) {
+      var match;
+      if (!client) {
+        return false;
+      }
+      if (!this.banned.hasOwnProperty(client.ip)) {
+        return false;
+      }
+      match = this.banned[client.ip];
+      // check expired
+      if (match && (new Date) > match) {
+        this.debug(`Purge expired ban for ${client.ip} which expired ${match}`);
+        delete this.banned[client.ip];
+        return false;
+      }
+      client.info(`closing connection for ${client.ip}, banned until ${match}`);
+      client.sendCode("banned", {
+        banned_until: match,
+        reason: reason
+      });
+      client.sendSystemMessage(`You got banned from the server ${(match ? `until ${match}` : "permanently")}!`);
+      if (reason) {
+        client.sendSystemMessage(`Reason: ${reason}`);
+      }
+      client.connection.close();
+      return true;
     }
 
     // ===========

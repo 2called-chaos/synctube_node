@@ -41,6 +41,7 @@ exports.Class = class SyncTubeServerClient
     @ip = @connection.remoteAddress
     @index = @server.clients.push(this) - 1
     @connection.on("close", => @disconnect())
+    return this if @server.guardBanned(this)
     @info "Connection accepted (#{@index}): #{@ip}"
     @sendCode "session_index", index: @index
     @sendCode "require_username", maxLength: @server.opts.nameMaxLength

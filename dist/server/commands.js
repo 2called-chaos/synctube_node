@@ -190,7 +190,7 @@
   });
 
   x.addCommand("Server", "system", function(client, subaction, ...args) {
-    var amsg, c, ch, channel, detail, i, iargs, j, len, m, msg, nulled, reason, ref, target, time, what, which, who;
+    var amsg, b, c, ch, channel, detail, dur, e, i, iargs, ip, j, k, len, len1, m, msg, nulled, reason, ref, ref1, seconds, stamp, success, target, time, what, which, who;
     if (!client.isSystemAdmin) {
       if (subaction === "auth") {
         if (UTIL.argsToStr(args) === this.opts.systemPassword) {
@@ -224,11 +224,21 @@
             client.sendSystemMessage("No pending restart");
           }
         } else {
-          time = new Date((new Date).getTime() + UTIL.timestamp2Seconds(args.shift()) * 1000);
-          clearTimeout(this.pendingRestartTimeout);
-          this.pendingRestart = time;
-          this.pendingRestartReason = UTIL.argsToStr(args);
-          this.handlePendingRestart(true);
+          success = true;
+          try {
+            dur = UTIL.parseEasyDuration(args.shift());
+            time = new Date((new Date).getTime() + UTIL.timestamp2Seconds(dur) * 1000);
+          } catch (error1) {
+            e = error1;
+            success = false;
+            client.sendSystemMessage("Invalid duration format (timestamp or EasyDuration)");
+          }
+          if (success) {
+            clearTimeout(this.pendingRestartTimeout);
+            this.pendingRestart = time;
+            this.pendingRestartReason = UTIL.argsToStr(args);
+            this.handlePendingRestart(true);
+          }
         }
         break;
       case "message":
@@ -263,11 +273,55 @@
             nulled += 1;
           }
         }
-        client.sendSystemMessage(`Running with pid ${process.pid} since ${UTIL.secondsToTimestamp(process.uptime())} (on ${process.platform})`);
+        client.sendSystemMessage(`Running with pid ${process.pid} for ${UTIL.secondsToTimestamp(process.uptime())} (on ${process.platform})`);
         client.sendSystemMessage(`${this.clients.length - nulled} active sessions (${this.clients.length} total, ${nulled}/${this.opts.sessionReindex} nulled)`);
         client.sendSystemMessage(`${UTIL.microToHuman(process.cpuUsage().user)}/${UTIL.microToHuman(process.cpuUsage().system)} CPU (usr/sys)`);
         client.sendSystemMessage(`${UTIL.bytesToHuman(process.memoryUsage().rss)} memory (RSS)`);
         client.sendSystemMessage("======================");
+        break;
+      case "clients":
+        client.sendSystemMessage("======================");
+        ref1 = this.clients;
+        for (k = 0, len1 = ref1.length; k < len1; k++) {
+          c = ref1[k];
+          if (!c) {
+            continue;
+          }
+          client.sendSystemMessage(`<span class="soft_elli" style="min-width: 45px">[#${c.index}]</span>\n<span class="elli" style="width: 100px; margin-bottom: -4px">${c.name || "<em>unnamed</em>"}</span>\n<span>${c.ip}</span>`);
+        }
+        client.sendSystemMessage("======================");
+        break;
+      case "banip":
+        ip = args.shift();
+        dur = args.shift();
+        reason = args.join(" ");
+        if (dur === "permanent") {
+          dur = -1;
+        }
+        dur = UTIL.parseEasyDuration(dur);
+        seconds = (function() {
+          try {
+            return UTIL.timestamp2Seconds(`${dur}`);
+          } catch (error1) {
+            e = error1;
+            return UTIL.timestamp2Seconds("1:00:00");
+          }
+        })();
+        stamp = dur === -1 ? "eternity" : UTIL.secondsToTimestamp(seconds, false);
+        this.banIp(ip, dur, reason);
+        amsg = `Banned IP ${ip} (${reason || "no reason"}) for ${stamp}`;
+        this.info(amsg);
+        client.sendSystemMessage(amsg);
+        break;
+      case "unbanip":
+        ip = args[0];
+        if (this.banned.hasOwnProperty(ip)) {
+          b = this.banned[ip];
+          client.sendSystemMessage(`Removed ban for IP ${ip} with expiry ${(b ? b : "never")}`);
+          delete this.banned[ip];
+        } else {
+          client.sendSystemMessage(`No ban found for IP ${ip}`);
+        }
         break;
       case "invoke":
         target = client;

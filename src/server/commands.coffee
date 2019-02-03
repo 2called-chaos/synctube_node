@@ -151,11 +151,19 @@ x.addCommand "Server", "system", (client, subaction, args...) ->
         else
           client.sendSystemMessage("No pending restart")
       else
-        time = new Date((new Date).getTime() + UTIL.timestamp2Seconds(args.shift()) * 1000)
-        clearTimeout(@pendingRestartTimeout)
-        @pendingRestart = time
-        @pendingRestartReason = UTIL.argsToStr(args)
-        @handlePendingRestart(true)
+        success = true
+        try
+          dur = UTIL.parseEasyDuration(args.shift())
+          time = new Date((new Date).getTime() + UTIL.timestamp2Seconds(dur) * 1000)
+        catch e
+          success = false
+          client.sendSystemMessage("Invalid duration format (timestamp or EasyDuration)")
+
+        if success
+          clearTimeout(@pendingRestartTimeout)
+          @pendingRestart = time
+          @pendingRestartReason = UTIL.argsToStr(args)
+          @handlePendingRestart(true)
     when "message"
       @eachClient "sendSystemMessage", "#{UTIL.argsToStr(args)}"
     when "chmessage"
@@ -175,11 +183,42 @@ x.addCommand "Server", "system", (client, subaction, args...) ->
       client.sendSystemMessage "======================"
       nulled = 0
       nulled += 1 for c in @clients when c is null
-      client.sendSystemMessage "Running with pid #{process.pid} since #{UTIL.secondsToTimestamp(process.uptime())} (on #{process.platform})"
+      client.sendSystemMessage "Running with pid #{process.pid} for #{UTIL.secondsToTimestamp(process.uptime())} (on #{process.platform})"
       client.sendSystemMessage "#{@clients.length - nulled} active sessions (#{@clients.length} total, #{nulled}/#{@opts.sessionReindex} nulled)"
       client.sendSystemMessage "#{UTIL.microToHuman(process.cpuUsage().user)}/#{UTIL.microToHuman(process.cpuUsage().system)} CPU (usr/sys)"
       client.sendSystemMessage "#{UTIL.bytesToHuman process.memoryUsage().rss} memory (RSS)"
       client.sendSystemMessage "======================"
+    when "clients"
+      client.sendSystemMessage "======================"
+      for c in @clients
+        continue unless c
+        client.sendSystemMessage """
+          <span class="soft_elli" style="min-width: 45px">[##{c.index}]</span>
+          <span class="elli" style="width: 100px; margin-bottom: -4px">#{c.name || "<em>unnamed</em>"}</span>
+          <span>#{c.ip}</span>
+        """
+      client.sendSystemMessage "======================"
+    when "banip"
+      ip = args.shift()
+      dur = args.shift()
+      reason = args.join(" ")
+      dur = -1 if dur == "permanent"
+      dur = UTIL.parseEasyDuration(dur)
+      seconds = try UTIL.timestamp2Seconds("#{dur}") catch e then UTIL.timestamp2Seconds("1:00:00")
+      stamp = if dur == -1 then "eternity" else UTIL.secondsToTimestamp(seconds, false)
+      @banIp(ip, dur, reason)
+
+      amsg = "Banned IP #{ip} (#{reason || "no reason"}) for #{stamp}"
+      @info amsg
+      client.sendSystemMessage(amsg)
+    when "unbanip"
+      ip = args[0]
+      if @banned.hasOwnProperty(ip)
+        b = @banned[ip]
+        client.sendSystemMessage("Removed ban for IP #{ip} with expiry #{if b then b else "never"}")
+        delete @banned[ip]
+      else
+        client.sendSystemMessage("No ban found for IP #{ip}")
     when "invoke"
       target = client
       if (i = args.indexOf("-t")) > -1 || (i = args.indexOf("--target")) > -1

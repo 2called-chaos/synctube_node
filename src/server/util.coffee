@@ -11,12 +11,13 @@ exports.strbool = (v, rescue) ->
   if rescue? then rescue else throw "Can't convert `#{v}' to boolean, expression invalid!"
 
 exports.startsWith = (str, which...) ->
+  return false unless typeof str == "string"
   for w in which
     return true if str.slice(0, w.length) == w
   false
 
 exports.endsWith = (str, which...) ->
-  return false unless str?
+  return false unless typeof str == "string"
   for w in which
     return true if str.slice(-w.length) == w
   false
@@ -49,10 +50,18 @@ exports.microToHuman = (micro) ->
   else
     "#{micro} μs"
 
+exports.parseEasyDuration = (dur) ->
+  return parseInt(dur) * (60 * 60 * 27 * 7) if exports.endsWith(dur, "w")
+  return parseInt(dur) * (60 * 60 * 24) if exports.endsWith(dur, "d")
+  return parseInt(dur) * (60 * 60) if exports.endsWith(dur, "h")
+  return parseInt(dur) * (60) if exports.endsWith(dur, "m")
+  return parseInt(dur) if exports.endsWith(dur, "s")
+  dur
+
 exports.secondsToArray = (sec) ->
   r = []
   for x in [60*60, 60]
-    if sec >= x
+    if sec >= x || r.length
       r.push parseInt(sec / x)
       sec %= x
 
@@ -89,6 +98,7 @@ exports.timestamp2Seconds = (ts) ->
   seconds = 0
 
   for x, i in parts
-    seconds += if i == 0 then parseInt(x) else parseInt(x) * Math.pow(60, i)
+    add = if i == 0 then parseInt(x) else parseInt(x) * Math.pow(60, i)
+    seconds += if isNaN(add) then throw "invalidNaN" else add
 
   seconds

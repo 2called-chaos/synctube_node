@@ -71,6 +71,17 @@ body {
   justify-content: center;
 }
 
+.soft_elli {
+  display: inline-block;
+  white-space: nowrap;
+}
+.elli {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 #welcome {
   color: rgba(255, 255, 255, 0.88);
   position: fixed;

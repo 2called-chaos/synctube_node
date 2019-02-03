@@ -13,6 +13,7 @@ exports.Class = class SyncTubeServer
   constructor: (@opts = {}) ->
     @root = process.env.ST_ROOT || process.cwd()
     @loadConfig()
+    @banned = {}
     @clients = []
     @channels = {}
     @pendingRestart = null
@@ -110,6 +111,31 @@ exports.Class = class SyncTubeServer
   handleWSRequest: (request) ->
     client = new Client(this)
     client.accept(request).listen()
+
+  banIp: (ip, duration, reason) ->
+    end = if duration == -1 then null else new Date((new Date).getTime() + duration * 1000)
+    @banned[ip] = end
+    for client in @clients
+      continue unless client
+      @guardBanned(client, reason)
+
+  guardBanned: (client, reason) ->
+    return false if !client
+    return false unless @banned.hasOwnProperty(client.ip)
+    match = @banned[client.ip]
+
+    # check expired
+    if match && (new Date) > match
+      @debug "Purge expired ban for #{client.ip} which expired #{match}"
+      delete @banned[client.ip]
+      return false
+
+    client.info "closing connection for #{client.ip}, banned until #{match}"
+    client.sendCode("banned", banned_until: match, reason: reason)
+    client.sendSystemMessage "You got banned from the server #{if match then "until #{match}" else "permanently"}!"
+    client.sendSystemMessage "Reason: #{reason}" if reason
+    client.connection.close()
+    return true
 
   # ===========
   # = Logging =

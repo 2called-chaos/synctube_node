@@ -24,6 +24,9 @@
 
   exports.startsWith = function(str, ...which) {
     var j, len, w;
+    if (typeof str !== "string") {
+      return false;
+    }
     for (j = 0, len = which.length; j < len; j++) {
       w = which[j];
       if (str.slice(0, w.length) === w) {
@@ -35,7 +38,7 @@
 
   exports.endsWith = function(str, ...which) {
     var j, len, w;
-    if (str == null) {
+    if (typeof str !== "string") {
       return false;
     }
     for (j = 0, len = which.length; j < len; j++) {
@@ -90,13 +93,32 @@
     }
   };
 
+  exports.parseEasyDuration = function(dur) {
+    if (exports.endsWith(dur, "w")) {
+      return parseInt(dur) * (60 * 60 * 27 * 7);
+    }
+    if (exports.endsWith(dur, "d")) {
+      return parseInt(dur) * (60 * 60 * 24);
+    }
+    if (exports.endsWith(dur, "h")) {
+      return parseInt(dur) * (60 * 60);
+    }
+    if (exports.endsWith(dur, "m")) {
+      return parseInt(dur) * 60;
+    }
+    if (exports.endsWith(dur, "s")) {
+      return parseInt(dur);
+    }
+    return dur;
+  };
+
   exports.secondsToArray = function(sec) {
     var j, len, r, ref, x;
     r = [];
     ref = [60 * 60, 60];
     for (j = 0, len = ref.length; j < len; j++) {
       x = ref[j];
-      if (sec >= x) {
+      if (sec >= x || r.length) {
         r.push(parseInt(sec / x));
         sec %= x;
       }
@@ -133,12 +155,19 @@
   };
 
   exports.timestamp2Seconds = function(ts) {
-    var i, j, len, parts, seconds, x;
+    var add, i, j, len, parts, seconds, x;
     parts = ts.replace(/\.[0-9]+$/, "").split(":").reverse();
     seconds = 0;
     for (i = j = 0, len = parts.length; j < len; i = ++j) {
       x = parts[i];
-      seconds += i === 0 ? parseInt(x) : parseInt(x) * Math.pow(60, i);
+      add = i === 0 ? parseInt(x) : parseInt(x) * Math.pow(60, i);
+      seconds += (function() {
+        if (isNaN(add)) {
+          throw "invalidNaN";
+        } else {
+          return add;
+        }
+      })();
     }
     return seconds;
   };

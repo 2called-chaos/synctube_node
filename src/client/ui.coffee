@@ -28,11 +28,11 @@ window.SyncTubeClient_UI =
       if height_both > window.innerHeight && width_second > 500
         $("#page").css(maxWidth: $("#page").width() - 2)
         window.scrollTo(0, 0)
-        setTimeout((=> $(window).resize()), 1)
+        @delay 1, => $(window).resize()
       else if (window.innerHeight - height_both) > 1
         $("#page").css(maxWidth: $("#page").width() + 2)
         window.scrollTo(0, 0)
-        setTimeout((=> $(window).resize()), 1)
+        @delay 1, => $(window).resize()
 
       if $("#first_row").width() > 800
         #console.log "ATTACH playlist"

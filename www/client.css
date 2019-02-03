@@ -3,6 +3,17 @@ body {
   font-family: tahoma;
   font-size: 12px;
 }
+
+/* scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px;}
+::-webkit-scrollbar-button {  background-color: #666; }
+::-webkit-scrollbar-track {  background-color: #646464; border-radius: 4px; }
+::-webkit-scrollbar-track-piece { background-color: #646464; border-radius: 4px;}
+::-webkit-scrollbar-thumb { height: 25px; background-color: #c2c2c2; border-radius: 4px;}
+::-webkit-scrollbar-corner { background-color: inherit;}
+::-webkit-resizer { background-color: #666; }
+
+/* loader animation */
 .loader {
   display: block;
   position: relative;
@@ -48,29 +59,34 @@ body {
   0% { transform: rotate(0deg); }
   100% {transform: rotate(360deg); }
 }
+
+/* custom style */
+
 .flexcentered {
-  /*margin: -15px 0 0 -15px;*/
-  min-height: 100%;  /* Fallback for vh unit */
-  min-height: 100%; /* You might also want to use */
+  min-height: 100%;
+  min-height: 100%;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 #welcome {
   color: rgba(255, 255, 255, 0.88);
   position: fixed;
   z-index: 100;
 }
+
 #page {
   margin: 0px auto;
   padding: 15px 0;
 }
+
 #content {
   padding: 5px;
   background: #232323;
   border-radius: 5px;
-  overflow-y: scroll;
+  overflow: auto;
   border: 1px solid #333;
   color: rgba(255, 255, 255, 0.88);
   margin-top: 15px;
@@ -79,7 +95,10 @@ body {
 #content p {
   margin: 0;
   line-height: 18px;
+  max-width: 100%;
+  overflow-wrap: break-word;
 }
+
 #input {
   border-radius: 2px;
   border: 1px solid #333;
@@ -89,6 +108,7 @@ body {
   color: rgba(255, 255, 255, 0.88);
   background: #121212;
 }
+
 #input_nofocus {
   position: absolute;
   width: 0px;
@@ -97,6 +117,7 @@ body {
   border: none;
   opacity: 0;
 }
+
 #status {
   width: 100%;
   display: block;
@@ -105,6 +126,7 @@ body {
   text-align: right;
   color: rgba(255, 255, 255, 0.88);
 }
+
 #view_ctn {
   overflow: auto;
   min-height: 200px;
@@ -116,6 +138,7 @@ body {
 #view_ctn.r3_2  { padding-top: 66.66%; }
 #view_ctn.r8_5  { padding-top: 65.5%; }
 #view_ctn.r16_9 { padding-top: 56.25%; }
+
 #view {
   /*background: lime;*/
   position: absolute;
@@ -126,10 +149,13 @@ body {
   text-align: center;
   overflow: hidden;
 }
+
 #clients {
+  background: #232323;
   color: #f26638;
-  min-height: 200px;
+  height: 200px;
   margin-top: 15px;
+  overflow: auto;
 }
 #clients > div {
   padding: 3px;
@@ -143,7 +169,7 @@ body {
   background: #2a2a2a ;
 }
 #clients [data-client-index]:nth-child(n+1) {
-  margin-top: 4px;
+  margin-top: 0px;
 }
 #clients div.first * {
   font-size: 14px;
@@ -164,7 +190,6 @@ body {
   right: 0;
   overflow: hidden;
 }
-
 #clients [data-attr=progress-bar-buffered] {
   background: #888;
   height: 100%;
@@ -175,7 +200,6 @@ body {
   right: 0;
   transition: width 2.0s  cubic-bezier(1.0, 0, 0, 1.0);
 }
-
 #clients [data-attr=progress-bar-position] {
   background: red;
   border-left: 3px solid yellow;

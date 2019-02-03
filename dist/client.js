@@ -423,9 +423,7 @@
 
       welcome(done) {
         $("#page").hide();
-        return $("#welcome").show(200, function() {
-          return setTimeout(done, 250);
-        });
+        return typeof done === "function" ? done() : void 0;
       }
 
       start() {
@@ -438,15 +436,17 @@
           }
         }
         $("#page").css({
-          maxWidth: 500
+          maxWidth: 500,
+          opacity: 0
         });
         $("#page").fadeIn(1250);
-        setTimeout((function() {
+        this.delay(50, function() {
           return $(window).resize();
-        }), 50);
-        setTimeout((function() {
-          return $("#welcome").hide(750);
-        }), 1250);
+        });
+        this.delay(2250, function() {
+          $("#welcome").hide(750);
+          return $("#page").fadeTo(500, 1);
+        });
         return this.listen();
       }
 
@@ -647,11 +647,11 @@
           this.status.text("Error");
           this.disableInput().val("Unable to communicate with the WebSocket server. Please reload!");
           this.dontBroadcast = true;
-          return setTimeout((() => {
+          return this.delay(1000, () => {
             if (this.reconnect) {
               return window.location.reload();
             }
-          }), 1000);
+          });
         }
       }), 3000);
     },
@@ -1628,7 +1628,7 @@
     },
     handleWindowResize: function() {
       $(window).resize((ev) => {
-        var height_both, height_first, height_second, ref1, ref2, ref3, width_second;
+        var height_both, height_first, height_second, width_second;
         if (!$("#page").is(":visible")) {
           return;
         }
@@ -1644,17 +1644,17 @@
             maxWidth: $("#page").width() - 2
           });
           window.scrollTo(0, 0);
-          setTimeout((() => {
+          this.delay(1, () => {
             return $(window).resize();
-          }), 1);
+          });
         } else if ((window.innerHeight - height_both) > 1) {
           $("#page").css({
             maxWidth: $("#page").width() + 2
           });
           window.scrollTo(0, 0);
-          setTimeout((() => {
+          this.delay(1, () => {
             return $(window).resize();
-          }), 1);
+          });
         }
         if ($("#first_row").width() > 800) {
 
@@ -1762,6 +1762,9 @@
         }
       }
       return result;
+    },
+    delay: function(ms, func) {
+      return setTimeout(func, ms);
     }
   };
 

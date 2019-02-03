@@ -9,4 +9,4 @@ window.SyncTubeClient_Util =
         result[key] = kvp.join("=")
     result
 
-
+  delay: (ms, func) -> setTimeout(func, ms)

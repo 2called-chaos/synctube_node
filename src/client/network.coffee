@@ -40,7 +40,7 @@ window.SyncTubeClient_Network =
         @status.text("Error")
         @disableInput().val("Unable to communicate with the WebSocket server. Please reload!")
         @dontBroadcast = true
-        setTimeout((=> window.location.reload() if @reconnect), 1000)
+        @delay(1000, => window.location.reload() if @reconnect)
     ), 3000)
 
   listen: ->

@@ -12,21 +12,34 @@ DEV =
     else
       # compile and watch server
       DEV.compileServer()
-      fs.watch(closely, DEV.compileServer) for closely in ["./src/server.coffee", "./src/server"]
+      @watchRecursive(closely, DEV.compileServer) for closely in ["./src/server.coffee", "./src/server"]
 
       # compile and watch client
       DEV.compileClient()
-      fs.watch(closely, DEV.compileClient) for closely in ["./src/client.coffee", "./src/client", "./src/client/players"]
+      @watchRecursive(closely, DEV.compileClient) for closely in ["./src/client.coffee", "./src/client"]
 
       # run server in loop
       setTimeout (=> DEV.runServer(DEV.runServer)), 1000
 
-  compileServer: (ev, f) ->
+  watchRecursive: (dirOrFile, callback) ->
+    if fs.lstatSync(dirOrFile).isDirectory()
+      fs.watch(dirOrFile, (ev, f) -> callback(ev, dirOrFile, f))
+      for _x in fs.readdirSync(dirOrFile)
+        ((x) =>
+          xx = "#{dirOrFile}/#{x}"
+          @watchRecursive(xx, callback) if fs.lstatSync(xx).isDirectory()
+        )(_x)
+    else
+      fs.watch(dirOrFile, (ev, f) -> callback(ev, dirOrFile.split("/").slice(0, -1).join("/"), f))
+
+  compileServer: (ev, d, f) ->
+    return if d && f && !fs.existsSync("#{d}/#{f}")
     console.log ">>>> compile server file: #{f || "init"}"
     if f
-      d = if f == "server.coffee" then "dist" else "dist/server"
-      f = if f == "server.coffee" then "src/#{f}" else "src/server/#{f}"
-      cmd = "coffee -o #{d} -c #{f}"
+      sf = "#{d}/#{f}"
+      dd = d.replace("./src", "./dist")
+      console.log ">>>>>> #{sf}  >>  #{dd}"
+      cmd = "coffee -o #{dd} -c #{sf}"
       console.log ">>>>>> #{cmd}"
       DEV.exec cmd, -> server_process?.kill('SIGHUP')
     else

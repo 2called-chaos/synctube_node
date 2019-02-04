@@ -190,8 +190,7 @@ x.addCommand "Server", "system", (client, subaction, args...) ->
       client.sendSystemMessage "======================"
     when "clients"
       client.sendSystemMessage "======================"
-      for c in @clients
-        continue unless c
+      for c in @clients when c?
         client.sendSystemMessage """
           <span class="soft_elli" style="min-width: 45px">[##{c.index}]</span>
           <span class="elli" style="width: 100px; margin-bottom: -4px">#{c.name || "<em>unnamed</em>"}</span>

@@ -284,10 +284,9 @@
         ref1 = this.clients;
         for (k = 0, len1 = ref1.length; k < len1; k++) {
           c = ref1[k];
-          if (!c) {
-            continue;
+          if (c != null) {
+            client.sendSystemMessage(`<span class="soft_elli" style="min-width: 45px">[#${c.index}]</span>\n<span class="elli" style="width: 100px; margin-bottom: -4px">${c.name || "<em>unnamed</em>"}</span>\n<span>${c.ip}</span>`);
           }
-          client.sendSystemMessage(`<span class="soft_elli" style="min-width: 45px">[#${c.index}]</span>\n<span class="elli" style="width: 100px; margin-bottom: -4px">${c.name || "<em>unnamed</em>"}</span>\n<span>${c.ip}</span>`);
         }
         client.sendSystemMessage("======================");
         break;

@@ -1,7 +1,6 @@
 window.SyncTubeClient_ControlCodes =
   CMD_server_settings: (data) ->
-    for k, v of data
-      continue if k == "type"
+    for k, v of data when k isnt "type"
       @debug "Accepting server controlled setting", k, "was", @opts.synced[k], "new", v
       @opts.synced[k] = v
 

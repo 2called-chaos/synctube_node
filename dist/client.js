@@ -173,7 +173,7 @@
       results = [];
       for (k in data) {
         v = data[k];
-        if (k === "type") {
+        if (!(k !== "type")) {
           continue;
         }
         this.debug("Accepting server controlled setting", k, "was", this.opts.synced[k], "new", v);

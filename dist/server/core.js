@@ -31,6 +31,8 @@
       process.title = "synctube-server";
     }
 
+    // load plugins
+    // if @opts.plugins
     loadConfig() {
       if (!fs.existsSync(`${this.root}/config.js`)) {
         fs.copyFileSync(`${this.root}/config.example.js`, `${this.root}/config.js`);
@@ -173,10 +175,9 @@
       results = [];
       for (i = 0, len = ref.length; i < len; i++) {
         client = ref[i];
-        if (!client) {
-          continue;
+        if (client != null) {
+          results.push(this.guardBanned(client, reason));
         }
-        results.push(this.guardBanned(client, reason));
       }
       return results;
     }

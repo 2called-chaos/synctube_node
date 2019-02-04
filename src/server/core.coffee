@@ -115,9 +115,7 @@ exports.Class = class SyncTubeServer
   banIp: (ip, duration, reason) ->
     end = if duration == -1 then null else new Date((new Date).getTime() + duration * 1000)
     @banned[ip] = end
-    for client in @clients
-      continue unless client
-      @guardBanned(client, reason)
+    @guardBanned(client, reason) for client in @clients when client?
 
   guardBanned: (client, reason) ->
     return false if !client

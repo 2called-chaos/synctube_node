@@ -404,9 +404,9 @@ x.addCommand "Channel", "kick", (client, who, args...) ->
       @info amsg
       client.sendSystemMessage(amsg)
       msg = "You got kicked from the channel#{if m = UTIL.argsToStr(args) then " (#{m})" else ""}"
+      ch.unsubscribe(target)
       target.sendCode("kicked", reason: msg)
       target.sendSystemMessage(msg)
-      ch.unsubscribe(target)
     else
       client.sendSystemMessage("You are not in control!")
   else
@@ -431,7 +431,7 @@ x.addCommand "Channel", "host", (client, who) ->
     @updateSubscriberList(client)
   else
     client.sendSystemMessage("#{who?.name || "Target"} is not in control and thereby can't be host")
-  #@broadcastCode(false, "desired", @desired)
+
   return client.ack()
 
 x.addCommand "Channel", "grant", (client, who) ->

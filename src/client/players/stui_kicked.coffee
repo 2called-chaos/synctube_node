@@ -2,7 +2,6 @@ window.SyncTubeClient_Player_StuiKicked = class SyncTubeClient_Player_StuiKicked
   ctype: "StuiKicked"
 
   constructor: (@client) ->
-    console.log @client.view
     @vp = $("<div>", id: "view_stui_kicked", width: "100%", height: "100%").fadeIn(3000).appendTo(@client.view)
     @buildView()
     @vp.on "click", "a", =>

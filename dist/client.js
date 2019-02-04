@@ -185,29 +185,23 @@
       return this.enableInput();
     },
     CMD_session_kicked: function(info) {
-      return this.delay(100, () => { // timeout because reasons (YT restoring view? but we destroyed it already... dunno)
-        this.CMD_disconnected();
-        return this.CMD_desired({
-          ctype: "StuiKicked",
-          info: info
-        });
+      this.CMD_disconnected();
+      return this.CMD_desired({
+        ctype: "StuiKicked",
+        info: info
       });
     },
     CMD_banned: function(info) {
-      return this.delay(100, () => { // timeout because reasons (YT restoring view? but we destroyed it already... dunno)
-        this.CMD_disconnected();
-        return this.CMD_desired({
-          ctype: "StuiBanned",
-          info: info
-        });
+      this.CMD_disconnected();
+      return this.CMD_desired({
+        ctype: "StuiBanned",
+        info: info
       });
     },
     CMD_kicked: function(info) {
-      return this.delay(100, () => { // timeout because reasons (YT restoring view? but we destroyed it already... dunno)
-        return this.CMD_desired({
-          ctype: "StuiKicked",
-          info: info
-        });
+      return this.CMD_desired({
+        ctype: "StuiKicked",
+        info: info
       });
     },
     CMD_disconnected: function(...a) {
@@ -1422,7 +1416,6 @@
     class SyncTubeClient_Player_StuiKicked {
       constructor(client1) {
         this.client = client1;
-        console.log(this.client.view);
         this.vp = $("<div>", {
           id: "view_stui_kicked",
           width: "100%",
@@ -1498,7 +1491,7 @@
           ref1.destroy();
         }
         this.api = null;
-        return this.pauseEnsured();
+        return this.pauseEnsured("player destroy");
       }
 
       updateDesired(data) {

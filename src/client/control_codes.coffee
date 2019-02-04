@@ -8,18 +8,15 @@ window.SyncTubeClient_ControlCodes =
   CMD_ack: -> @enableInput()
 
   CMD_session_kicked: (info) ->
-    @delay 100, => # timeout because reasons (YT restoring view? but we destroyed it already... dunno)
-      @CMD_disconnected()
-      @CMD_desired(ctype: "StuiKicked", info: info)
+    @CMD_disconnected()
+    @CMD_desired(ctype: "StuiKicked", info: info)
 
   CMD_banned: (info) ->
-    @delay 100, => # timeout because reasons (YT restoring view? but we destroyed it already... dunno)
-      @CMD_disconnected()
-      @CMD_desired(ctype: "StuiBanned", info: info)
+    @CMD_disconnected()
+    @CMD_desired(ctype: "StuiBanned", info: info)
 
   CMD_kicked: (info) ->
-    @delay 100, => # timeout because reasons (YT restoring view? but we destroyed it already... dunno)
-      @CMD_desired(ctype: "StuiKicked", info: info)
+    @CMD_desired(ctype: "StuiKicked", info: info)
 
   CMD_disconnected: (a...) ->
     @CMD_unsubscribe()

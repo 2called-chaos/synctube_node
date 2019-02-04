@@ -7,7 +7,7 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
     @rememberVolume()
     @api?.destroy()
     @api = null
-    @pauseEnsured()
+    @pauseEnsured("player destroy")
 
   updateDesired: (data) ->
     @rememberVolume()

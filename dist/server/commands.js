@@ -595,11 +595,11 @@
         this.info(amsg);
         client.sendSystemMessage(amsg);
         msg = `You got kicked from the channel${((m = UTIL.argsToStr(args)) ? ` (${m})` : "")}`;
+        ch.unsubscribe(target);
         target.sendCode("kicked", {
           reason: msg
         });
         target.sendSystemMessage(msg);
-        ch.unsubscribe(target);
       } else {
         client.sendSystemMessage("You are not in control!");
       }
@@ -631,7 +631,6 @@
     } else {
       client.sendSystemMessage(`${(who != null ? who.name : void 0) || "Target"} is not in control and thereby can't be host`);
     }
-    //@broadcastCode(false, "desired", @desired)
     return client.ack();
   });
 

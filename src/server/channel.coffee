@@ -33,6 +33,9 @@ exports.Class = class SyncTubeServerChannel
       desired: @desired
       options: @options
     }
+    @init()
+
+  init: -> # plugin hook
 
   broadcast: (client, message, color, client_color, sendToAuthor = true) ->
     for c in @subscribers

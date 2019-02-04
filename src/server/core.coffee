@@ -7,6 +7,8 @@ webSocketServer = require('websocket').server
 COLORS = require("./colors.js")
 UTIL = require("./util.js")
 Client = require("./client.js").Class
+Commands = require("./commands.js")
+Channel = require("./channel.js").Class
 HttpRequest = require("./http_request.js").Class
 
 exports.Class = class SyncTubeServer
@@ -20,6 +22,20 @@ exports.Class = class SyncTubeServer
 
     # set process title
     process.title = "synctube-server"
+
+    @loadPlugin(plugin) for plugin in @opts.plugins if @opts.plugins
+
+  loadPlugin: (plugin) ->
+    try
+      plugin.setup this,
+        Channel: Channel
+        Client: Client
+        Commands: Commands
+        HttpRequest: HttpRequest
+        COLORS: COLORS
+        UTIL: UTIL
+    catch err
+      @error "Failed to setup plugin #{plugin?._module?.filename}: #{err}"
 
   loadConfig: () ->
     unless fs.existsSync("#{@root}/config.js")

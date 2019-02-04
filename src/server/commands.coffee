@@ -2,7 +2,6 @@ COLORS = require("./colors.js")
 UTIL = require("./util.js")
 Channel = require("./channel.js").Class
 Client = require("./client.js").Class
-XClient = require("./client.js").Class
 ShellQuote = require("shell-quote")
 
 x = module.exports =
@@ -29,7 +28,10 @@ x = module.exports =
       return client.ack()
 
   addCommand: (parent, cmds..., proc) ->
-    ((cmd)-> x[parent][cmd] = proc)(_cmd) for _cmd in cmds
+    for cmd in cmds
+      do (cmd) =>
+        console.warn("[ST-WARN] ", new Date, "Overwriting handler for existing command #{parent}.#{cmd}") if x[parent][cmd]
+        x[parent][cmd] = proc
 
   Server: {}
   Channel: {}

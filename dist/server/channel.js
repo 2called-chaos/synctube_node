@@ -59,7 +59,10 @@
         desired: this.desired,
         options: this.options
       };
+      this.init();
     }
+
+    init() {} // plugin hook
 
     broadcast(client, message, color, client_color, sendToAuthor = true) {
       var c, j, len, ref, results;

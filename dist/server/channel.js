@@ -36,11 +36,11 @@
       this.playlist = [];
       this.playlist_index = 0;
       this.options = {
-        maxDrift: this.server.opts.maxDrift,
-        packetInterval: this.server.opts.packetInterval,
         defaultCtype: this.server.opts.defaultCtype,
         defaultUrl: this.server.opts.defaultUrl,
         defaultAutoplay: this.server.opts.defaultAutoplay,
+        maxDrift: this.server.opts.maxDrift,
+        packetInterval: this.server.opts.packetInterval,
         readyGracePeriod: 2000,
         chatMode: "public" // public, admin-only, disabled
       };
@@ -92,6 +92,20 @@
           continue;
         }
         results.push(c.sendCode(type, data));
+      }
+      return results;
+    }
+
+    sendSettings(client) {
+      var clients, j, len, results, sub;
+      clients = client ? [client] : this.subscribers;
+      results = [];
+      for (j = 0, len = clients.length; j < len; j++) {
+        sub = clients[j];
+        results.push(sub.sendCode("server_settings", {
+          packetInterval: this.options.packetInterval,
+          maxDrift: this.options.maxDrift
+        }));
       }
       return results;
     }
@@ -285,10 +299,7 @@
       client.sendCode("subscribe", {
         channel: this.name
       });
-      client.sendCode("server_settings", {
-        packetInterval: this.options.packetInterval,
-        maxDrift: this.options.maxDrift
-      });
+      this.sendSettings(client);
       client.sendCode("desired", Object.assign({}, this.desired, {
         force: true
       }));

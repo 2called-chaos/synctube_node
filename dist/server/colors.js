@@ -10,4 +10,8 @@
 
   exports.muted = "#7a8288";
 
+  exports.magenta = "#fe8cff";
+
+  exports.white = "rgba(255, 255, 255, 0.88)";
+
 }).call(this);

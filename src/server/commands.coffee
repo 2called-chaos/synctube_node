@@ -457,3 +457,54 @@ x.addCommand "Channel", "revoke", (client, who) ->
     client.sendSystemMessage("#{who?.name || "Target"} was not in control")
 
   return client.ack()
+
+x.addCommand "Channel", "copt", (client, opt, value) ->
+  return client.permissionDenied("copt") unless @control.indexOf(client) > -1
+  return true unless who = @findClient(client, who)
+
+  if opt
+    if @options.hasOwnProperty(opt)
+      ok = opt
+      ov = @options[opt]
+      ot = typeof ov
+      if value?
+        try
+          if ot == "number"
+            nv = if !isNaN(x = Number(value)) then x else throw "value must be a number"
+          else if ot == "boolean"
+            nv = if (x = UTIL.strbool(value, null))? then x else throw "value must be a boolean(like)"
+          else if ot == "string"
+            nv = value
+          else
+            throw "unknown option value type (#{ot})"
+
+          throw "value hasn't changed" if nv == ov
+          @options[opt] = nv
+          @sendSettings()
+
+          c.sendSystemMessage("""
+            <span style="color: #{COLORS.warning}">CHANGED</span> channel option
+            <span style="color: #{COLORS.info}">#{ok}</span>
+            from <span style="color: #{COLORS.magenta}">#{ov}</span>
+            to <span style="color: #{COLORS.magenta}">#{nv}</span>
+          """, COLORS.white) for c in @control
+        catch err
+          client.sendSystemMessage("Failed to change channel option: #{err}")
+      else
+        client.sendSystemMessage("""
+          <span style="color: #{COLORS.info}">#{ok}</span>
+          is currently set to <span style="color: #{COLORS.magenta}">#{ov}</span>
+          <em style="color: #{COLORS.muted}">(#{ot})</em>
+        """, COLORS.white)
+    else
+      client.sendSystemMessage("Unknown option!")
+  else
+    cols = ["The following channel options are available:"]
+    for ok, ov of @options
+      cols.push """
+        <span style="color: #{COLORS.info}">#{ok}</span>
+        <span style="color: #{COLORS.magenta}">#{ov}</span>
+        <em style="color: #{COLORS.muted}">#{typeof ov}</em>
+      """
+    client.sendSystemMessage(cols.join("<br>"), COLORS.white)
+  return client.ack()

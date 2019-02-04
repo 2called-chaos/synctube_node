@@ -17,11 +17,11 @@ exports.Class = class SyncTubeServerChannel
     @playlist = []
     @playlist_index = 0
     @options = {
-      maxDrift: @server.opts.maxDrift
-      packetInterval: @server.opts.packetInterval
       defaultCtype: @server.opts.defaultCtype
       defaultUrl: @server.opts.defaultUrl
       defaultAutoplay: @server.opts.defaultAutoplay
+      maxDrift: @server.opts.maxDrift
+      packetInterval: @server.opts.packetInterval
       readyGracePeriod: 2000
       chatMode: "public" # public, admin-only, disabled
     }
@@ -48,6 +48,11 @@ exports.Class = class SyncTubeServerChannel
     for c in @subscribers
       continue if c == client && !sendToAuthor
       c.sendCode(type, data)
+
+  sendSettings: (client) ->
+    clients = if client then [client] else @subscribers
+    for sub in clients
+      sub.sendCode "server_settings", packetInterval: @options.packetInterval, maxDrift: @options.maxDrift
 
   updateSubscriberList: (client) ->
     @broadcastCode(client, "subscriber_list", channel: @name, subscribers: @getSubscriberList(client))
@@ -139,7 +144,7 @@ exports.Class = class SyncTubeServerChannel
     client.state = {}
     client.sendSystemMessage("You joined #{@name}!", COLORS.green) if sendMessage
     client.sendCode("subscribe", channel: @name)
-    client.sendCode "server_settings", packetInterval: @options.packetInterval, maxDrift: @options.maxDrift
+    @sendSettings(client)
     client.sendCode("desired", Object.assign({}, @desired, { force: true }))
     @broadcast(client, "<i>joined the party!</i>", COLORS.green, COLORS.muted, false)
     @updateSubscriberList(client)

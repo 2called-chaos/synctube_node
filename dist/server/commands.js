@@ -666,4 +666,72 @@
     return client.ack();
   });
 
+  x.addCommand("Channel", "copt", function(client, opt, value) {
+    var c, cols, err, j, len, nv, ok, ot, ov, ref, ref1, who;
+    if (!(this.control.indexOf(client) > -1)) {
+      return client.permissionDenied("copt");
+    }
+    if (!(who = this.findClient(client, who))) {
+      return true;
+    }
+    if (opt) {
+      if (this.options.hasOwnProperty(opt)) {
+        ok = opt;
+        ov = this.options[opt];
+        ot = typeof ov;
+        if (value != null) {
+          try {
+            if (ot === "number") {
+              nv = (function() {
+                if (!isNaN(x = Number(value))) {
+                  return x;
+                } else {
+                  throw "value must be a number";
+                }
+              })();
+            } else if (ot === "boolean") {
+              nv = (function() {
+                if ((x = UTIL.strbool(value, null)) != null) {
+                  return x;
+                } else {
+                  throw "value must be a boolean(like)";
+                }
+              })();
+            } else if (ot === "string") {
+              nv = value;
+            } else {
+              throw `unknown option value type (${ot})`;
+            }
+            if (nv === ov) {
+              throw "value hasn't changed";
+            }
+            this.options[opt] = nv;
+            this.sendSettings();
+            ref = this.control;
+            for (j = 0, len = ref.length; j < len; j++) {
+              c = ref[j];
+              c.sendSystemMessage(`<span style="color: ${COLORS.warning}">CHANGED</span> channel option\n<span style="color: ${COLORS.info}">${ok}</span>\nfrom <span style="color: ${COLORS.magenta}">${ov}</span>\nto <span style="color: ${COLORS.magenta}">${nv}</span>`, COLORS.white);
+            }
+          } catch (error1) {
+            err = error1;
+            client.sendSystemMessage(`Failed to change channel option: ${err}`);
+          }
+        } else {
+          client.sendSystemMessage(`<span style="color: ${COLORS.info}">${ok}</span>\nis currently set to <span style="color: ${COLORS.magenta}">${ov}</span>\n<em style="color: ${COLORS.muted}">(${ot})</em>`, COLORS.white);
+        }
+      } else {
+        client.sendSystemMessage("Unknown option!");
+      }
+    } else {
+      cols = ["The following channel options are available:"];
+      ref1 = this.options;
+      for (ok in ref1) {
+        ov = ref1[ok];
+        cols.push(`<span style="color: ${COLORS.info}">${ok}</span>\n<span style="color: ${COLORS.magenta}">${ov}</span>\n<em style="color: ${COLORS.muted}">${typeof ov}</em>`);
+      }
+      client.sendSystemMessage(cols.join("<br>"), COLORS.white);
+    }
+    return client.ack();
+  });
+
 }).call(this);

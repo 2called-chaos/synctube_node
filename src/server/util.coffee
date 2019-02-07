@@ -1,3 +1,22 @@
+exports.shellQuote = (array) -> require("shell-quote").quote(array)
+
+exports.shellSplit = (str, env, cleaned = true) ->
+  r = []
+  _env = env || {}
+  if cleaned
+    env ||= (k) -> if _env[k]? then _env[k] else "${#{k}}"
+  for x in require("shell-quote").parse(str, env || _env)
+    if cleaned && typeof x != "string"
+      if x.op?
+        r.push(x.op)
+      else if x.pattern?
+        r.push(x.pattern)
+      else
+        console.warn "unrecognized shell quote object", x
+    else
+      r.push(x)
+  r
+
 exports.htmlEntities = (str) ->
   String(str)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -31,6 +50,8 @@ exports.argsToStr = (args) ->
 exports.trim = (str) -> String(str).replace(/^\s+|\s+$/g, "")
 
 exports.isRegExp = (input) -> input && typeof input == "object" && input.constructor == RegExp
+
+exports.escapeRegExp = (str) -> str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 exports.bytesToHuman = (bytes) ->
   bytes = parseInt(bytes)

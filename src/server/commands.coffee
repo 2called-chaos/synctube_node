@@ -2,7 +2,6 @@ COLORS = require("./colors.js")
 UTIL = require("./util.js")
 Channel = require("./channel.js").Class
 Client = require("./client.js").Class
-ShellQuote = require("shell-quote")
 
 x = module.exports =
   handleMessage: (server, client, message, msg) ->
@@ -11,8 +10,7 @@ x = module.exports =
       chunks = []
       cmd = null
       if msg && msg.charAt(0) == "/"
-        for x in ShellQuote.parse(msg.substr(1))
-          chunks.push(if typeof x == "string" then x else x.pattern)
+        chunks = UTIL.shellSplit(msg.substr(1))
         cmd = chunks.shift()
 
       return if cmd && @Server[cmd]?.call(server, client, chunks...)

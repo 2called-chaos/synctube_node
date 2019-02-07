@@ -2,9 +2,14 @@ fs             = require "fs"
 coffee         = require "coffeescript"
 child_process  = require "child_process"
 server_process = null
+useDebugger    = false
 
 DEV =
   run: (args...) ->
+    if "debugger" in args
+      useDebugger = true
+      args.splice(args.indexOf("debugger"), 1)
+
     if args[args.length - 1] == "build"
       DEV.compileServer()
       DEV.compileClient()
@@ -51,7 +56,9 @@ DEV =
     DEV.exec "cat $(find ./src/client -type f -name '*.coffee' -not -path '*/example.coffee' -print0 | xargs -0 echo) src/client.coffee | coffee -c --stdio > ./dist/client.js"
 
   runServer: (f) ->
-    server_process = child_process.spawn("node",  ["./dist/server.js"])
+    pargs = ["./dist/server.js"]
+    pargs.unshift("inspect") if useDebugger
+    server_process = child_process.spawn("node",  pargs)
     server_process.stdout.on "data", (data) -> process.stdout.write data.toString()
     server_process.stderr.on "data", (data) -> process.stderr.write data.toString()
     server_process.on "close", ->

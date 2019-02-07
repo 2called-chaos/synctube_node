@@ -2,7 +2,8 @@
   "scripts": {
     "start": "node ./dist/server.js",
     "build": "coffee ./src/dev.coffee -n build",
-    "dev": "coffee ./src/dev.coffee -n"
+    "dev": "coffee ./src/dev.coffee -n",
+    "debugger": "coffee ./src/dev.coffee -n debugger"
   },
   "name": "synctube",
   "description": "SyncTube (Node) is a simple node.js server (and web client) to watch YouTube videos together. This is my first node experience. The project is written in CoffeeScript, the dist folder contains up2date JS",

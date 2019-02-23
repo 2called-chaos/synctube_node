@@ -30,6 +30,17 @@ config.protectedNames = [
   /^[a]+$/, // will match "aaaaaaaaAAAAAAA"
 ];
 
+
+// ===========
+// = Plugins =
+// ===========
+config.plugins = [
+  // Allows admin users to define channel alias commands
+  // e.g. /alias /music
+  //require("./dist/server/channel/aliases/main.js")
+]
+
+
 // ====================
 // = Channel defaults =
 // ====================

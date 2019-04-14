@@ -1427,10 +1427,10 @@
         this.include(SyncTubeClient_Player_HtmlImage);
         this.include(SyncTubeClient_Player_HtmlVideo);
         this.include(SyncTubeClient_History);
-        this.include(SyncTubeClient_ClipboardPoll);
         ref1 = this.included;
         for (j = 0, len = ref1.length; j < len; j++) {
           inc = ref1[j];
+          //@include SyncTubeClient_ClipboardPoll
           if ((ref2 = inc.init) != null) {
             ref2.apply(this);
           }

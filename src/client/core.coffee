@@ -37,7 +37,7 @@ window.SyncTubeClient = class SyncTubeClient
     @include SyncTubeClient_Player_HtmlImage
     @include SyncTubeClient_Player_HtmlVideo
     @include SyncTubeClient_History
-    @include SyncTubeClient_ClipboardPoll
+    #@include SyncTubeClient_ClipboardPoll
 
     inc.init?.apply(this) for inc in @included
 

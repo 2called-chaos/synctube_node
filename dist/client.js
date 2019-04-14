@@ -2,24 +2,690 @@
 (function() {
   var SyncTubeClient, SyncTubeClient_ClipboardPoll, SyncTubeClient_CommandBar, SyncTubeClient_History, SyncTubeClient_Player_HtmlFrame, SyncTubeClient_Player_HtmlImage, SyncTubeClient_Player_HtmlVideo, SyncTubeClient_Player_StuiBanned, SyncTubeClient_Player_StuiCreateForm, SyncTubeClient_Player_StuiKicked, SyncTubeClient_Player_Youtube, ref;
 
-  window.SyncTubeClient_Util = {
-    getHashParams: function() {
-      var j, key, kv, kvp, len, parts, result;
-      result = {};
-      if (window.location.hash) {
-        parts = window.location.hash.substr(1).split("&");
-        for (j = 0, len = parts.length; j < len; j++) {
-          kv = parts[j];
-          kvp = kv.split("=");
-          key = kvp.shift();
-          result[key] = kvp.join("=");
+  window.SyncTubeClient_ClipboardPoll = SyncTubeClient_ClipboardPoll = class SyncTubeClient_ClipboardPoll {
+    constructor(client1, opts = {}) {
+      var base, base1;
+      this.client = client1;
+      this.opts = opts;
+      if ((base = this.opts).pollrate == null) {
+        base.pollrate = 1000;
+      }
+      if ((base1 = this.opts).autostartIfGranted == null) {
+        base1.autostartIfGranted = true;
+      }
+      this.running = false;
+      this.lastValue = null;
+      this.detectAutostart();
+    }
+
+    detectAutostart() {
+      return navigator.permissions.query({
+        name: 'clipboard-read'
+      }).then((status) => {
+        if (this.opts.autostartIfGranted && status.state === "granted") {
+          this.start();
+        }
+        return status.onchange = () => {
+          if (status.state === "granted") {
+            return this.start();
+          } else {
+            return this.stop();
+          }
+        };
+      });
+    }
+
+    start() {
+      this.run = true;
+      this.client.debug("Started clipboard polling");
+      return this.tick();
+    }
+
+    async stop(wait = true) {
+      var promise;
+      this.run = false;
+      this.client.debug("Stopping clipboard polling...");
+      promise = new Promise((resolve, reject) => {
+        return this.stopped = resolve;
+      });
+      if (!this.running) {
+        this.stopped();
+      }
+      if (wait) {
+        await promise;
+        this.client.debug("Stopped clipboard polling");
+      }
+      return promise;
+    }
+
+    async tick() {
+      var err, text;
+      if (!this.run) {
+        this.running = false;
+        if (typeof this.stopped === "function") {
+          this.stopped();
+        }
+        return;
+      }
+      this.running = true;
+      try {
+        text = (await navigator.clipboard.readText());
+        if (text !== this.lastValue) {
+          this.process(text);
+          return this.lastValue = text;
+        }
+      } catch (error1) {
+        err = error1;
+      } finally {
+        // nothing we can do about it :D
+        setTimeout((() => {
+          return this.tick();
+        }), this.opts.pollrate);
+      }
+    }
+
+    process(val) {
+      return this.client.debug("Processing", val);
+    }
+
+  };
+
+  window.SyncTubeClient_ClipboardPoll.start = function() {
+    return this.clipboardPoll = new SyncTubeClient_ClipboardPoll(this, this.opts.clipboardPoll);
+  };
+
+  window.SyncTubeClient_CommandBar = SyncTubeClient_CommandBar = class SyncTubeClient_CommandBar {
+    constructor(client1, opts = {}) {
+      this.client = client1;
+      this.opts = opts;
+      this.buildDom();
+      this.captureInput();
+    }
+
+    captureInput() {
+      $(document).on("keydown keypress keyup", function(ev) {
+        return $("[data-alt-class]").each(function(i, el) {
+          if (ev.altKey && !$(el).data("isAlted")) {
+            $(el).attr("data-was-class", $(el).attr("class"));
+            $(el).attr("class", $(el).data("altClass"));
+            return $(el).data("isAlted", true);
+          } else if (!ev.altKey && $(el).data("isAlted")) {
+            $(el).attr("class", $(el).attr("data-was-class"));
+            $(el).removeAttr("data-was-class");
+            return $(el).data("isAlted", false);
+          }
+        });
+      });
+      return $("#command_bar [data-command]").click((event) => {
+        var cmd, el;
+        el = $(event.currentTarget);
+        cmd = el.data("command");
+        if (event.altKey && el.data("altCommand")) {
+          cmd = el.data("altCommand");
+        }
+        this.client.connection.send("/" + cmd);
+        return false;
+      });
+    }
+
+    updateDesired(data) {
+      if (data.state === "play") {
+        $("#command_bar [data-command=toggle]").removeClass("btn-success").addClass("btn-warning");
+        $("#command_bar [data-command=toggle] i").removeClass("fa-play").addClass("fa-pause");
+      } else {
+        $("#command_bar [data-command=toggle]").removeClass("btn-warning").addClass("btn-success");
+        $("#command_bar [data-command=toggle] i").removeClass("fa-pause").addClass("fa-play");
+      }
+      if (data.loop) {
+        $("#command_bar [data-command='loop toggle']").addClass("btn-warning");
+        return $("#command_bar [data-command='loop toggle'] i + i").removeClass("fa-toggle-off").addClass("fa-toggle-on");
+      } else {
+        $("#command_bar [data-command='loop toggle']").removeClass("btn-warning");
+        return $("#command_bar [data-command='loop toggle'] i + i").removeClass("fa-toggle-on").addClass("fa-toggle-off");
+      }
+    }
+
+    buildDom() {
+      return $("#second_row").prepend("<div class=\"col col-12\" id=\"command_bar\" style=\"margin-top: 10px; margin-bottom: -5px; opacity: 0.8; display: none\">\n  <div class=\"btn-group btn-group-sm\">\n    <button type=\"button\" data-command=\"seek 0\" title=\"start from 0\" class=\"btn btn-secondary\"><i class=\"fa fa-step-backward\"></i></button>\n    <button type=\"button\" data-command=\"seek -60\" data-alt-command=\"seek --slowmo -60\" title=\"go back(+alt=slowmo) 60 seconds\" class=\"btn btn-secondary\"><i class=\"fa fa-fw fa-backward\" data-alt-class=\"fa fa-fw fa-history\"></i> <small>60</small></button>\n    <button type=\"button\" data-command=\"seek -30\" data-alt-command=\"seek --slowmo -30\" title=\"go back(+alt=slowmo) 30 seconds\" class=\"btn btn-secondary\"><i class=\"fa fa-fw fa-backward\" data-alt-class=\"fa fa-fw fa-history\"></i> <small>30</small></button>\n    <button type=\"button\" data-command=\"seek -10\" data-alt-command=\"seek --slowmo -10\" title=\"go back(+alt=slowmo) 10 seconds\" class=\"btn btn-secondary\"><i class=\"fa fa-fw fa-backward\" data-alt-class=\"fa fa-fw fa-history\"></i> <small>10</small></button>\n  </div>\n\n  <button type=\"button\" data-command=\"toggle\" class=\"btn btn-sm btn-success\" style=\"padding-left: 15px; padding-right: 15px\"><i class=\"fa fa-fw fa-play\"></i></button>\n\n  <div class=\"btn-group btn-group-sm\">\n    <button type=\"button\" data-command=\"seek +10\" title=\"go forward 60 seconds\" class=\"btn btn-secondary\"><i class=\"fa fa-forward\"></i> <small>10</small></button>\n    <button type=\"button\" data-command=\"next\" title=\"next in playlist\" class=\"btn btn-info\" style=\"display: none\"><i class=\"fa fa-step-forward\"></i></button>\n    <button type=\"button\" data-command=\"seek +30\" title=\"go forward 30 seconds\" class=\"btn btn-secondary\"><i class=\"fa fa-forward\"></i> <small>30</small></button>\n    <button type=\"button\" data-command=\"seek +60\" title=\"go forward 10 seconds\" class=\"btn btn-secondary\"><i class=\"fa fa-forward\"></i> <small>60</small></button>\n  </div>\n\n  <button title=\"toggle loop\" type=\"button\" data-command=\"loop toggle\" class=\"btn btn-secondary btn-sm\"><i class=\"fa fa-refresh\"></i> <i class=\"fa fa-toggle-on\"></i></button>\n</div>");
+    }
+
+    show() {
+      return $("#command_bar").show(200, function() {
+        return $(window).resize();
+      });
+    }
+
+    hide() {
+      return $("#command_bar").hide(200, function() {
+        return $(window).resize();
+      });
+    }
+
+  };
+
+  window.SyncTubeClient_CommandBar.start = function() {
+    return this.commandBar = new SyncTubeClient_CommandBar(this, this.opts.command_bar);
+  };
+
+  window.SyncTubeClient_ControlCodes = {
+    CMD_server_settings: function(data) {
+      var k, results, v;
+      results = [];
+      for (k in data) {
+        v = data[k];
+        if (k === "type") {
+          continue;
+        }
+        this.debug("Accepting server controlled setting", k, "was", this.opts.synced[k], "new", v);
+        results.push(this.opts.synced[k] = v);
+      }
+      return results;
+    },
+    CMD_ack: function() {
+      return this.enableInput();
+    },
+    CMD_session_kicked: function(info) {
+      return this.delay(100, () => { // timeout because reasons (YT restoring view? but we destroyed it already... dunno)
+        this.CMD_disconnected();
+        return this.CMD_desired({
+          ctype: "StuiKicked",
+          info: info
+        });
+      });
+    },
+    CMD_banned: function(info) {
+      return this.delay(100, () => { // timeout because reasons (YT restoring view? but we destroyed it already... dunno)
+        this.CMD_disconnected();
+        return this.CMD_desired({
+          ctype: "StuiBanned",
+          info: info
+        });
+      });
+    },
+    CMD_kicked: function(info) {
+      return this.delay(100, () => { // timeout because reasons (YT restoring view? but we destroyed it already... dunno)
+        return this.CMD_desired({
+          ctype: "StuiKicked",
+          info: info
+        });
+      });
+    },
+    CMD_disconnected: function(...a) {
+      this.CMD_unsubscribe();
+      this.CMD_lost_control();
+      return this.reconnect = false;
+    },
+    CMD_taken_control: function() {
+      var ref;
+      this.control = true;
+      return (ref = this.commandBar) != null ? ref.show() : void 0;
+    },
+    CMD_lost_control: function() {
+      var ref;
+      this.control = false;
+      return (ref = this.commandBar) != null ? ref.hide() : void 0;
+    },
+    CMD_unsubscribe: function() {
+      this.CMD_ui_clear({
+        component: "clients"
+      });
+      return this.CMD_video_action({
+        action: "destroy"
+      });
+    },
+    CMD_desired: function(data) {
+      var e, klass, ref, ref1;
+      if (data.ctype !== ((ref = this.player) != null ? ref.ctype : void 0)) {
+        this.CMD_video_action({
+          action: "destroy"
+        });
+        klass = `SyncTubeClient_Player_${data.ctype}`;
+        try {
+          this.player = new window[klass](this);
+        } catch (error1) {
+          e = error1;
+          this.addError(`Failed to load player ${data.ctype}! ${e.toString().replace("window[klass]", klass)}`);
+          throw e;
+          return;
         }
       }
-      return result;
+      this.player.updateDesired(data);
+      return (ref1 = this.commandBar) != null ? ref1.updateDesired(data) : void 0;
     },
-    delay: function(ms, func) {
-      return setTimeout(func, ms);
+    CMD_ui_clear: function(data) {
+      switch (data.component) {
+        case "chat":
+          return this.content.html("");
+        case "clients":
+          return this.clients.html("");
+        case "player":
+          return this.CMD_video_action({
+            action: "destroy"
+          });
+      }
+    },
+    CMD_ui_clipboard_poll: function(data) {
+      if (data.action === "permission") {
+        return navigator.clipboard.readText();
+      }
+    },
+    CMD_ui_chat_show: function(data) {
+      return this.content.show(200, () => {
+        return this.content.scrollTop(this.content.prop("scrollHeight"));
+      });
+    },
+    CMD_ui_chat_hide: function(data) {
+      return this.content.hide(200);
+    },
+    CMD_ui_chat_toggle: function(data) {
+      return this.content.toggle(200, () => {
+        return this.content.scrollTop(this.content.prop("scrollHeight"));
+      });
+    },
+    CMD_video_action: function(data) {
+      var ref, ref1, ref2, ref3;
+      switch (data.action) {
+        case "resume":
+          return (ref = this.player) != null ? ref.play() : void 0;
+        case "pause":
+          return (ref1 = this.player) != null ? ref1.pause() : void 0;
+        case "sync":
+          return (ref2 = this.player) != null ? ref2.force_resync = true : void 0;
+        case "seek":
+          return (ref3 = this.player) != null ? ref3.seekTo(data.to, data.paused) : void 0;
+        case "destroy":
+          this.dontBroadcast = false;
+          this.stopBroadcast();
+          if (this.player) {
+            this.player.destroy();
+            this.player = null;
+            return this.broadcastState(-666);
+          }
+      }
+    },
+    CMD_navigate: function(data) {
+      if (data.reload) {
+        return window.location.reload();
+      } else if (data.location) {
+        return window.location.href = data.location;
+      }
+    },
+    CMD_session_index: function(data) {
+      return this.index = data.index;
+    },
+    CMD_require_username: function(data) {
+      var hparams, p;
+      this.enableInput();
+      this.CMD_desired({
+        ctype: "StuiCreateForm"
+      });
+      if (data.maxLength != null) {
+        this.input.attr("maxLength", data.maxLength);
+      }
+      this.status.text("Choose name:");
+      // check hash params
+      if (data.autofill === false) {
+        return;
+      }
+      hparams = this.getHashParams();
+      if (p = hparams.user || hparams.username || hparams.name) {
+        return this.connection.send(p);
+      }
+    },
+    CMD_username: function(data) {
+      var ch, cmd, hparams, ref;
+      this.name = data.username;
+      this.input.removeAttr("maxLength");
+      this.status.text(`${this.name}:`);
+      if ((ref = this.player) != null) {
+        if (typeof ref.clientUpdate === "function") {
+          ref.clientUpdate();
+        }
+      }
+      // check hash params
+      hparams = this.getHashParams();
+      if (ch = hparams.channel || hparams.join) {
+        this.connection.send(`/join ${ch}`);
+      }
+      if (hparams.control) {
+        cmd = `/control ${hparams.control}`;
+        if (hparams.password != null) {
+          cmd += ` ${hparams.password}`;
+        }
+        return this.connection.send(cmd);
+      }
+    },
+    CMD_update_single_subscriber: function(resp) {
+      var _el, changeAttr, changeHTML, data, el, k, ref, v;
+      data = (resp != null ? resp.data : void 0) || {};
+      if (data.index == null) {
+        return;
+      }
+      el = this.clients.find(`[data-client-index=${data.index}]`);
+      if (!el.length || data.state.istate === -666) {
+        _el = $(this.buildSubscriberElement());
+        _el.attr("data-client-index", data.index);
+        if (el.length) {
+          el.replaceWith(_el);
+        } else {
+          this.clients.append(_el);
+        }
+        el = _el;
+      }
+      changeHTML = function(el, v) {
+        if (!el.length) {
+          return;
+        }
+        if (el.html() !== v) {
+          el.html(v);
+        }
+        return el;
+      };
+      changeAttr = function(el, a, v) {
+        if (!el.length) {
+          return;
+        }
+        if (el.attr(a) !== v) {
+          el.attr(a, v);
+        }
+        return el;
+      };
+      for (k in data) {
+        v = data[k];
+        changeHTML(el.find(`[data-attr=${k}]`), "" + v);
+      }
+      ref = data.state;
+      for (k in ref) {
+        v = ref[k];
+        changeHTML(el.find(`[data-attr=${k}]`), "" + v);
+      }
+      el.find("[data-attr=progress-bar-buffered]").css({
+        width: `${(data.state.loaded_fraction || 0) * 100}%`
+      });
+      el.find("[data-attr=progress-bar-position]").css({
+        left: `${(data.state.seek <= 0 ? 0 : data.state.seek / data.state.playtime * 100)}%`
+      });
+      if (data.icon) {
+        changeAttr(el.find("[data-attr=icon-ctn] i"), "class", `fa fa-${data.icon} ${data.icon_class}`);
+      }
+      if (data.control) {
+        changeAttr(el.find("[data-attr=admin-ctn] i"), "class", "fa fa-shield text-info");
+        changeAttr(el.find("[data-attr=admin-ctn] i"), "title", "admin");
+      }
+      if (data.isHost) {
+        changeAttr(el.find("[data-attr=admin-ctn] i"), "class", "fa fa-shield text-danger");
+        changeAttr(el.find("[data-attr=admin-ctn] i"), "title", "HOST");
+      }
+      changeAttr(el.find("[data-attr=drift-ctn] i"), "class", `fa fa-${(data.drift ? data.drift > 0 ? "backward" : "forward" : "circle-o-notch")} text-warning`);
+      changeHTML(el.find("[data-attr=drift]"), el.find("[data-attr=drift]").html().replace("-", ""));
+      if ((this.index != null) && data.index === this.index) {
+        return this.drift = parseFloat(data.drift);
+      }
+    },
+    CMD_subscriber_list: function(data) {
+      var j, len, ref, results, sub, subs;
+      this.clients.html("");
+      // get ordered list
+      subs = data.subscribers.sort(function(a, b) {
+        if (a.isHost && !b.isHost) {
+          return -1;
+        } else {
+          return 1;
+        }
+      });
+      subs = subs.sort(function(a, b) {
+        if (a.control && !b.control) {
+          return -1;
+        } else {
+          return 1;
+        }
+      });
+      ref = data.subscribers;
+      results = [];
+      for (j = 0, len = ref.length; j < len; j++) {
+        sub = ref[j];
+        results.push(this.CMD_update_single_subscriber({
+          data: sub
+        }));
+      }
+      return results;
     }
+  };
+
+  window.SyncTubeClient = SyncTubeClient = (function() {
+    class SyncTubeClient {
+      static include(obj, into) {
+        var key, ref, value;
+        for (key in obj) {
+          value = obj[key];
+          if (key !== "included" && key !== "start" && key !== "init") {
+            this.prototype[key] = value;
+          }
+        }
+        return (ref = obj.included) != null ? ref.call(this, into) : void 0;
+      }
+
+      include(addon) {
+        this.included.push(addon);
+        return this.constructor.include(addon, this);
+      }
+
+      constructor(opts = {}) {
+        var base, base1, base2, base3, inc, j, len, ref, ref1;
+        this.opts = opts;
+        // options
+        if ((base = this.opts).debug == null) {
+          base.debug = false;
+        }
+        if (this.opts.debug) {
+          window.client = this;
+        }
+        // synced settings (controlled by server)
+        if ((base1 = this.opts).synced == null) {
+          base1.synced = {};
+        }
+        if ((base2 = this.opts.synced).maxDrift == null) {
+          base2.maxDrift = 60000; // superseded by server instructions
+        }
+        if ((base3 = this.opts.synced).packetInterval == null) {
+          base3.packetInterval = 10000; // superseded by server instructions
+        }
+        
+        // Client data
+        this.index = null;
+        this.name = null;
+        this.control = false;
+        this.drift = 0;
+        // modules
+        this.include(SyncTubeClient_Util);
+        this.include(SyncTubeClient_ControlCodes);
+        this.include(SyncTubeClient_Network);
+        this.include(SyncTubeClient_UI);
+        this.include(SyncTubeClient_CommandBar);
+        this.include(SyncTubeClient_Player_Youtube);
+        this.include(SyncTubeClient_Player_HtmlFrame);
+        this.include(SyncTubeClient_Player_HtmlImage);
+        this.include(SyncTubeClient_Player_HtmlVideo);
+        this.include(SyncTubeClient_History);
+        this.include(SyncTubeClient_ClipboardPoll);
+        ref = this.included;
+        for (j = 0, len = ref.length; j < len; j++) {
+          inc = ref[j];
+          if ((ref1 = inc.init) != null) {
+            ref1.apply(this);
+          }
+        }
+      }
+
+      welcome(done) {
+        $("#page").hide();
+        return typeof done === "function" ? done() : void 0;
+      }
+
+      start() {
+        var inc, j, len, ref, ref1;
+        ref = this.included;
+        for (j = 0, len = ref.length; j < len; j++) {
+          inc = ref[j];
+          if ((ref1 = inc.start) != null) {
+            ref1.apply(this);
+          }
+        }
+        $("#page").css({
+          maxWidth: 500,
+          opacity: 0
+        });
+        $("#page").fadeIn(1250);
+        this.delay(50, function() {
+          return $(window).resize();
+        });
+        this.delay(2250, function() {
+          $("#welcome").hide(750);
+          return $("#page").fadeTo(500, 1);
+        });
+        return this.listen();
+      }
+
+      // ===========
+      // = Logging =
+      // ===========
+      debug(...msg) {
+        if (!this.opts.debug) {
+          return;
+        }
+        msg.unshift(`[ST ${(new Date).toISOString()}]`);
+        return console.debug.apply(this, msg);
+      }
+
+      info(...msg) {
+        msg.unshift(`[ST ${(new Date).toISOString()}]`);
+        return console.log.apply(this, msg);
+      }
+
+      warn(...msg) {
+        msg.unshift(`[ST ${(new Date).toISOString()}]`);
+        return console.warn.apply(this, msg);
+      }
+
+      error(...msg) {
+        msg.unshift(`[ST ${(new Date).toISOString()}]`);
+        return console.error.apply(this, msg);
+      }
+
+    };
+
+    SyncTubeClient.prototype.VIEW_COMPONENTS = ["content", "view", "input", "input_nofocus", "status", "queue", "playlist", "clients"];
+
+    SyncTubeClient.prototype.included = [];
+
+    return SyncTubeClient;
+
+  }).call(this);
+
+  window.SyncTubeClient_History = SyncTubeClient_History = class SyncTubeClient_History {
+    constructor(client1, opts = {}) {
+      var base, base1;
+      this.client = client1;
+      this.opts = opts;
+      if ((base = this.opts).limit == null) {
+        base.limit = 100;
+      }
+      if ((base1 = this.opts).save == null) {
+        base1.save = true; // @todo set to false
+      }
+      this.log = this.opts.save ? this.loadLog() : [];
+      this.index = -1;
+      this.buffer = null;
+      this.captureInput();
+    }
+
+    captureInput() {
+      return this.client.input.keydown((event) => {
+        if (event.keyCode === 27) { // ESC
+          if (this.index !== -1) {
+            this.index = -1;
+            if (this.buffer != null) {
+              this.client.input.val(this.buffer);
+            }
+            this.buffer = null;
+          }
+          return true;
+        }
+        if (event.keyCode === 38) { // ArrowUp
+          if (this.log[this.index + 1] == null) {
+            return false;
+          }
+          if (this.index === -1) {
+            this.buffer = this.client.input.val();
+          }
+          this.index++;
+          this.client.input.val(this.log[this.index]);
+          return false;
+        }
+        if (event.keyCode === 40) { // ArrowDown
+          if (this.index === 0) {
+            this.index = -1;
+            this.restoreBuffer();
+            return false;
+          }
+          if (this.log[this.index - 1] == null) {
+            return false;
+          }
+          this.index--;
+          this.client.input.val(this.log[this.index]);
+          return false;
+        }
+        return true;
+      });
+    }
+
+    restoreBuffer() {
+      if (this.buffer != null) {
+        this.client.input.val(this.buffer);
+      }
+      return this.buffer = null;
+    }
+
+    append(cmd) {
+      if (cmd && (!this.log.length || this.log[0] !== cmd)) {
+        this.log.unshift(cmd);
+      }
+      while (this.log.length > this.opts.limit) {
+        this.log.pop();
+      }
+      if (this.opts.save) {
+        this.saveLog();
+      }
+      this.index = -1;
+      return this.buffer = null;
+    }
+
+    saveLog() {
+      return this.LSsave("client_history", this.log);
+    }
+
+    loadLog() {
+      return this.LSload("client_history", []);
+    }
+
+    LSsave(key, value) {
+      return localStorage.setItem(`synctube_${key}`, JSON.stringify(value));
+    }
+
+    LSload(key, defVal) {
+      var e;
+      try {
+        return JSON.parse(localStorage.getItem(`synctube_${key}`)) || defVal;
+      } catch (error1) {
+        e = error1;
+        return defVal;
+      }
+    }
+
+  };
+
+  window.SyncTubeClient_History.start = function() {
+    return this.history = new SyncTubeClient_History(this, this.opts.history);
   };
 
   window.SyncTubeClient_Network = {
@@ -169,290 +835,126 @@
     }
   };
 
-  window.SyncTubeClient_ControlCodes = {
-    CMD_server_settings: function(data) {
-      var k, results, v;
-      results = [];
-      for (k in data) {
-        v = data[k];
-        if (k === "type") {
-          continue;
-        }
-        this.debug("Accepting server controlled setting", k, "was", this.opts.synced[k], "new", v);
-        results.push(this.opts.synced[k] = v);
-      }
-      return results;
-    },
-    CMD_ack: function() {
-      return this.enableInput();
-    },
-    CMD_session_kicked: function(info) {
-      return this.delay(100, () => { // timeout because reasons (YT restoring view? but we destroyed it already... dunno)
-        this.CMD_disconnected();
-        return this.CMD_desired({
-          ctype: "StuiKicked",
-          info: info
+  window.SyncTubeClient_Player_HtmlFrame = SyncTubeClient_Player_HtmlFrame = (function() {
+    class SyncTubeClient_Player_HtmlFrame {
+      constructor(client1) {
+        this.client = client1;
+        this.state = -1;
+        this.loaded = 0;
+        this.frame = $("<iframe>", {
+          id: "view_frame",
+          width: "100%",
+          height: "100%"
+        }).appendTo(this.client.view);
+        this.frame.on("load", () => {
+          this.state = this.loaded = 1;
+          return this.client.broadcastState();
         });
-      });
-    },
-    CMD_banned: function(info) {
-      return this.delay(100, () => { // timeout because reasons (YT restoring view? but we destroyed it already... dunno)
-        this.CMD_disconnected();
-        return this.CMD_desired({
-          ctype: "StuiBanned",
-          info: info
+      }
+
+      destroy() {
+        return this.frame.remove();
+      }
+
+      updateDesired(data) {
+        if (data.url !== this.frame.attr("src")) {
+          this.loaded = 0;
+          this.state = 3;
+          this.frame.attr("src", data.url);
+          return this.client.broadcastState();
+        }
+      }
+
+      getUrl() {
+        return this.frame.attr("src");
+      }
+
+      getState() {
+        return this.state;
+      }
+
+      getLoadedFraction() {
+        return this.loaded;
+      }
+
+      // null api functions
+      play() {}
+
+      pause() {}
+
+      seekTo(time, paused = false) {}
+
+      getCurrentTime() {}
+
+      getDuration() {}
+
+    };
+
+    SyncTubeClient_Player_HtmlFrame.prototype.ctype = "HtmlFrame";
+
+    return SyncTubeClient_Player_HtmlFrame;
+
+  }).call(this);
+
+  window.SyncTubeClient_Player_HtmlImage = SyncTubeClient_Player_HtmlImage = (function() {
+    class SyncTubeClient_Player_HtmlImage {
+      constructor(client1) {
+        this.client = client1;
+        this.state = -1;
+        this.loaded = 0;
+        this.image = $("<img>", {
+          id: "view_image",
+          height: "100%"
+        }).appendTo(this.client.view);
+        this.image.on("load", () => {
+          this.state = this.loaded = 1;
+          return this.client.broadcastState();
         });
-      });
-    },
-    CMD_kicked: function(info) {
-      return this.delay(100, () => { // timeout because reasons (YT restoring view? but we destroyed it already... dunno)
-        return this.CMD_desired({
-          ctype: "StuiKicked",
-          info: info
-        });
-      });
-    },
-    CMD_disconnected: function(...a) {
-      this.CMD_unsubscribe();
-      this.CMD_lost_control();
-      return this.reconnect = false;
-    },
-    CMD_taken_control: function() {
-      var ref1;
-      this.control = true;
-      return (ref1 = this.commandBar) != null ? ref1.show() : void 0;
-    },
-    CMD_lost_control: function() {
-      var ref1;
-      this.control = false;
-      return (ref1 = this.commandBar) != null ? ref1.hide() : void 0;
-    },
-    CMD_unsubscribe: function() {
-      this.CMD_ui_clear({
-        component: "clients"
-      });
-      return this.CMD_video_action({
-        action: "destroy"
-      });
-    },
-    CMD_desired: function(data) {
-      var e, klass, ref1, ref2;
-      if (data.ctype !== ((ref1 = this.player) != null ? ref1.ctype : void 0)) {
-        this.CMD_video_action({
-          action: "destroy"
-        });
-        klass = `SyncTubeClient_Player_${data.ctype}`;
-        try {
-          this.player = new window[klass](this);
-        } catch (error1) {
-          e = error1;
-          this.addError(`Failed to load player ${data.ctype}! ${e.toString().replace("window[klass]", klass)}`);
-          throw e;
-          return;
+      }
+
+      destroy() {
+        return this.image.remove();
+      }
+
+      updateDesired(data) {
+        if (data.url !== this.image.attr("src")) {
+          this.loaded = 0;
+          this.state = 3;
+          this.image.attr("src", data.url);
+          return this.client.broadcastState();
         }
       }
-      this.player.updateDesired(data);
-      return (ref2 = this.commandBar) != null ? ref2.updateDesired(data) : void 0;
-    },
-    CMD_ui_clear: function(data) {
-      switch (data.component) {
-        case "chat":
-          return this.content.html("");
-        case "clients":
-          return this.clients.html("");
-        case "player":
-          return this.CMD_video_action({
-            action: "destroy"
-          });
+
+      getUrl() {
+        return this.image.attr("src");
       }
-    },
-    CMD_ui_clipboard_poll: function(data) {
-      if (data.action === "permission") {
-        return navigator.clipboard.readText();
+
+      getState() {
+        return this.state;
       }
-    },
-    CMD_ui_chat_show: function(data) {
-      return this.content.show(200, () => {
-        return this.content.scrollTop(this.content.prop("scrollHeight"));
-      });
-    },
-    CMD_ui_chat_hide: function(data) {
-      return this.content.hide(200);
-    },
-    CMD_ui_chat_toggle: function(data) {
-      return this.content.toggle(200, () => {
-        return this.content.scrollTop(this.content.prop("scrollHeight"));
-      });
-    },
-    CMD_video_action: function(data) {
-      var ref1, ref2, ref3, ref4;
-      switch (data.action) {
-        case "resume":
-          return (ref1 = this.player) != null ? ref1.play() : void 0;
-        case "pause":
-          return (ref2 = this.player) != null ? ref2.pause() : void 0;
-        case "sync":
-          return (ref3 = this.player) != null ? ref3.force_resync = true : void 0;
-        case "seek":
-          return (ref4 = this.player) != null ? ref4.seekTo(data.to, data.paused) : void 0;
-        case "destroy":
-          this.dontBroadcast = false;
-          this.stopBroadcast();
-          if (this.player) {
-            this.player.destroy();
-            this.player = null;
-            return this.broadcastState(-666);
-          }
+
+      getLoadedFraction() {
+        return this.loaded;
       }
-    },
-    CMD_navigate: function(data) {
-      if (data.reload) {
-        return window.location.reload();
-      } else if (data.location) {
-        return window.location.href = data.location;
-      }
-    },
-    CMD_session_index: function(data) {
-      return this.index = data.index;
-    },
-    CMD_require_username: function(data) {
-      var hparams, p;
-      this.enableInput();
-      this.CMD_desired({
-        ctype: "StuiCreateForm"
-      });
-      if (data.maxLength != null) {
-        this.input.attr("maxLength", data.maxLength);
-      }
-      this.status.text("Choose name:");
-      // check hash params
-      if (data.autofill === false) {
-        return;
-      }
-      hparams = this.getHashParams();
-      if (p = hparams.user || hparams.username || hparams.name) {
-        return this.connection.send(p);
-      }
-    },
-    CMD_username: function(data) {
-      var ch, cmd, hparams, ref1;
-      this.name = data.username;
-      this.input.removeAttr("maxLength");
-      this.status.text(`${this.name}:`);
-      if ((ref1 = this.player) != null) {
-        if (typeof ref1.clientUpdate === "function") {
-          ref1.clientUpdate();
-        }
-      }
-      // check hash params
-      hparams = this.getHashParams();
-      if (ch = hparams.channel || hparams.join) {
-        this.connection.send(`/join ${ch}`);
-      }
-      if (hparams.control) {
-        cmd = `/control ${hparams.control}`;
-        if (hparams.password != null) {
-          cmd += ` ${hparams.password}`;
-        }
-        return this.connection.send(cmd);
-      }
-    },
-    CMD_update_single_subscriber: function(resp) {
-      var _el, changeAttr, changeHTML, data, el, k, ref1, v;
-      data = (resp != null ? resp.data : void 0) || {};
-      if (data.index == null) {
-        return;
-      }
-      el = this.clients.find(`[data-client-index=${data.index}]`);
-      if (!el.length || data.state.istate === -666) {
-        _el = $(this.buildSubscriberElement());
-        _el.attr("data-client-index", data.index);
-        if (el.length) {
-          el.replaceWith(_el);
-        } else {
-          this.clients.append(_el);
-        }
-        el = _el;
-      }
-      changeHTML = function(el, v) {
-        if (!el.length) {
-          return;
-        }
-        if (el.html() !== v) {
-          el.html(v);
-        }
-        return el;
-      };
-      changeAttr = function(el, a, v) {
-        if (!el.length) {
-          return;
-        }
-        if (el.attr(a) !== v) {
-          el.attr(a, v);
-        }
-        return el;
-      };
-      for (k in data) {
-        v = data[k];
-        changeHTML(el.find(`[data-attr=${k}]`), "" + v);
-      }
-      ref1 = data.state;
-      for (k in ref1) {
-        v = ref1[k];
-        changeHTML(el.find(`[data-attr=${k}]`), "" + v);
-      }
-      el.find("[data-attr=progress-bar-buffered]").css({
-        width: `${(data.state.loaded_fraction || 0) * 100}%`
-      });
-      el.find("[data-attr=progress-bar-position]").css({
-        left: `${(data.state.seek <= 0 ? 0 : data.state.seek / data.state.playtime * 100)}%`
-      });
-      if (data.icon) {
-        changeAttr(el.find("[data-attr=icon-ctn] i"), "class", `fa fa-${data.icon} ${data.icon_class}`);
-      }
-      if (data.control) {
-        changeAttr(el.find("[data-attr=admin-ctn] i"), "class", "fa fa-shield text-info");
-        changeAttr(el.find("[data-attr=admin-ctn] i"), "title", "admin");
-      }
-      if (data.isHost) {
-        changeAttr(el.find("[data-attr=admin-ctn] i"), "class", "fa fa-shield text-danger");
-        changeAttr(el.find("[data-attr=admin-ctn] i"), "title", "HOST");
-      }
-      changeAttr(el.find("[data-attr=drift-ctn] i"), "class", `fa fa-${(data.drift ? data.drift > 0 ? "backward" : "forward" : "circle-o-notch")} text-warning`);
-      changeHTML(el.find("[data-attr=drift]"), el.find("[data-attr=drift]").html().replace("-", ""));
-      if ((this.index != null) && data.index === this.index) {
-        return this.drift = parseFloat(data.drift);
-      }
-    },
-    CMD_subscriber_list: function(data) {
-      var j, len, ref1, results, sub, subs;
-      this.clients.html("");
-      // get ordered list
-      subs = data.subscribers.sort(function(a, b) {
-        if (a.isHost && !b.isHost) {
-          return -1;
-        } else {
-          return 1;
-        }
-      });
-      subs = subs.sort(function(a, b) {
-        if (a.control && !b.control) {
-          return -1;
-        } else {
-          return 1;
-        }
-      });
-      ref1 = data.subscribers;
-      results = [];
-      for (j = 0, len = ref1.length; j < len; j++) {
-        sub = ref1[j];
-        results.push(this.CMD_update_single_subscriber({
-          data: sub
-        }));
-      }
-      return results;
-    }
-  };
+
+      // null api functions
+      play() {}
+
+      pause() {}
+
+      seekTo(time, paused = false) {}
+
+      getCurrentTime() {}
+
+      getDuration() {}
+
+    };
+
+    SyncTubeClient_Player_HtmlImage.prototype.ctype = "HtmlImage";
+
+    return SyncTubeClient_Player_HtmlImage;
+
+  }).call(this);
 
   window.SyncTubeClient_Player_HtmlVideo = SyncTubeClient_Player_HtmlVideo = (function() {
     class SyncTubeClient_Player_HtmlVideo {
@@ -730,23 +1232,16 @@
 
   }).call(this);
 
-  window.SyncTubeClient_Player_StuiKicked = SyncTubeClient_Player_StuiKicked = (function() {
-    class SyncTubeClient_Player_StuiKicked {
+  window.SyncTubeClient_Player_StuiBanned = SyncTubeClient_Player_StuiBanned = (function() {
+    class SyncTubeClient_Player_StuiBanned {
       constructor(client1) {
         this.client = client1;
-        console.log(this.client.view);
         this.vp = $("<div>", {
-          id: "view_stui_kicked",
+          id: "view_stui_banned",
           width: "100%",
           height: "100%"
         }).fadeIn(3000).appendTo(this.client.view);
         this.buildView();
-        this.vp.on("click", "a", () => {
-          this.client.CMD_desired({
-            ctype: "StuiCreateForm"
-          });
-          return false;
-        });
       }
 
       destroy() {
@@ -754,15 +1249,19 @@
       }
 
       buildView() {
-        return this.vp.append("<div class=\"flexcentered\" style=\"color: rgba(255, 255, 255, 0.88);\">\n  <div style=\"max-width: 800px\">\n    <div class=\"alert alert-danger\">\n      <h1 class=\"alert-heading\"><i class=\"fa fa-warning\"></i> You got kicked!</h1>\n      <big><strong data-reason>you got kicked by a channel or server admin</strong></big>\n    </div>\n    <a href=\"#\" class=\"btn btn-primary\" style=\"display: none\">got it</a>\n  </div>\n</div>");
+        return this.vp.append("<div class=\"flexcentered\" style=\"color: rgba(255, 255, 255, 0.88);\">\n  <div style=\"max-width: 800px\">\n    <div class=\"alert alert-danger\">\n      <h1 class=\"alert-heading\"><i class=\"fa fa-warning\"></i> You have been banned!</h1>\n      <big><strong data-reason></strong></big>\n      <big><strong>banned <span data-until></span></strong></big>\n    </div>\n  </div>\n</div>");
       }
 
       updateDesired(data) {
-        if (data.info.reason) {
-          this.vp.find("[data-reason]").html(data.info.reason);
+        var banned_until, reason;
+        if (reason = data.info.reason) {
+          this.vp.find("[data-reason]").html(`<i class="fa fa-comment fa-flip-horizontal"></i> ${reason}<hr>`);
         }
-        if (data.info.type !== "session_kicked") {
-          return this.vp.find("a").show();
+        if (data.info.banned_until) {
+          banned_until = new Date(data.info.banned_until);
+          return this.vp.find("[data-until]").html(`until<br>${banned_until.toString()}`);
+        } else {
+          return this.vp.find("[data-until]").html("permanently");
         }
       }
 
@@ -791,9 +1290,9 @@
 
     };
 
-    SyncTubeClient_Player_StuiKicked.prototype.ctype = "StuiKicked";
+    SyncTubeClient_Player_StuiBanned.prototype.ctype = "StuiBanned";
 
-    return SyncTubeClient_Player_StuiKicked;
+    return SyncTubeClient_Player_StuiBanned;
 
   }).call(this);
 
@@ -919,49 +1418,55 @@
 
   }).call(this);
 
-  window.SyncTubeClient_Player_HtmlFrame = SyncTubeClient_Player_HtmlFrame = (function() {
-    class SyncTubeClient_Player_HtmlFrame {
+  window.SyncTubeClient_Player_StuiKicked = SyncTubeClient_Player_StuiKicked = (function() {
+    class SyncTubeClient_Player_StuiKicked {
       constructor(client1) {
         this.client = client1;
-        this.state = -1;
-        this.loaded = 0;
-        this.frame = $("<iframe>", {
-          id: "view_frame",
+        console.log(this.client.view);
+        this.vp = $("<div>", {
+          id: "view_stui_kicked",
           width: "100%",
           height: "100%"
-        }).appendTo(this.client.view);
-        this.frame.on("load", () => {
-          this.state = this.loaded = 1;
-          return this.client.broadcastState();
+        }).fadeIn(3000).appendTo(this.client.view);
+        this.buildView();
+        this.vp.on("click", "a", () => {
+          this.client.CMD_desired({
+            ctype: "StuiCreateForm"
+          });
+          return false;
         });
       }
 
       destroy() {
-        return this.frame.remove();
+        return this.vp.remove();
+      }
+
+      buildView() {
+        return this.vp.append("<div class=\"flexcentered\" style=\"color: rgba(255, 255, 255, 0.88);\">\n  <div style=\"max-width: 800px\">\n    <div class=\"alert alert-danger\">\n      <h1 class=\"alert-heading\"><i class=\"fa fa-warning\"></i> You got kicked!</h1>\n      <big><strong data-reason>you got kicked by a channel or server admin</strong></big>\n    </div>\n    <a href=\"#\" class=\"btn btn-primary\" style=\"display: none\">got it</a>\n  </div>\n</div>");
       }
 
       updateDesired(data) {
-        if (data.url !== this.frame.attr("src")) {
-          this.loaded = 0;
-          this.state = 3;
-          this.frame.attr("src", data.url);
-          return this.client.broadcastState();
+        if (data.info.reason) {
+          this.vp.find("[data-reason]").html(data.info.reason);
+        }
+        if (data.info.type !== "session_kicked") {
+          return this.vp.find("a").show();
         }
       }
 
+      // null api functions
       getUrl() {
-        return this.frame.attr("src");
+        return "STUI:CreateForm";
       }
 
       getState() {
-        return this.state;
+        return -1;
       }
 
       getLoadedFraction() {
-        return this.loaded;
+        return 1;
       }
 
-      // null api functions
       play() {}
 
       pause() {}
@@ -974,9 +1479,9 @@
 
     };
 
-    SyncTubeClient_Player_HtmlFrame.prototype.ctype = "HtmlFrame";
+    SyncTubeClient_Player_StuiKicked.prototype.ctype = "StuiKicked";
 
-    return SyncTubeClient_Player_HtmlFrame;
+    return SyncTubeClient_Player_StuiKicked;
 
   }).call(this);
 
@@ -1248,439 +1753,6 @@
 
   }).call(this);
 
-  window.SyncTubeClient_Player_StuiBanned = SyncTubeClient_Player_StuiBanned = (function() {
-    class SyncTubeClient_Player_StuiBanned {
-      constructor(client1) {
-        this.client = client1;
-        this.vp = $("<div>", {
-          id: "view_stui_banned",
-          width: "100%",
-          height: "100%"
-        }).fadeIn(3000).appendTo(this.client.view);
-        this.buildView();
-      }
-
-      destroy() {
-        return this.vp.remove();
-      }
-
-      buildView() {
-        return this.vp.append("<div class=\"flexcentered\" style=\"color: rgba(255, 255, 255, 0.88);\">\n  <div style=\"max-width: 800px\">\n    <div class=\"alert alert-danger\">\n      <h1 class=\"alert-heading\"><i class=\"fa fa-warning\"></i> You have been banned!</h1>\n      <big><strong data-reason></strong></big>\n      <big><strong>banned <span data-until></span></strong></big>\n    </div>\n  </div>\n</div>");
-      }
-
-      updateDesired(data) {
-        var banned_until, reason;
-        if (reason = data.info.reason) {
-          this.vp.find("[data-reason]").html(`<i class="fa fa-comment fa-flip-horizontal"></i> ${reason}<hr>`);
-        }
-        if (data.info.banned_until) {
-          banned_until = new Date(data.info.banned_until);
-          return this.vp.find("[data-until]").html(`until<br>${banned_until.toString()}`);
-        } else {
-          return this.vp.find("[data-until]").html("permanently");
-        }
-      }
-
-      // null api functions
-      getUrl() {
-        return "STUI:CreateForm";
-      }
-
-      getState() {
-        return -1;
-      }
-
-      getLoadedFraction() {
-        return 1;
-      }
-
-      play() {}
-
-      pause() {}
-
-      seekTo(time, paused = false) {}
-
-      getCurrentTime() {}
-
-      getDuration() {}
-
-    };
-
-    SyncTubeClient_Player_StuiBanned.prototype.ctype = "StuiBanned";
-
-    return SyncTubeClient_Player_StuiBanned;
-
-  }).call(this);
-
-  window.SyncTubeClient_Player_HtmlImage = SyncTubeClient_Player_HtmlImage = (function() {
-    class SyncTubeClient_Player_HtmlImage {
-      constructor(client1) {
-        this.client = client1;
-        this.state = -1;
-        this.loaded = 0;
-        this.image = $("<img>", {
-          id: "view_image",
-          height: "100%"
-        }).appendTo(this.client.view);
-        this.image.on("load", () => {
-          this.state = this.loaded = 1;
-          return this.client.broadcastState();
-        });
-      }
-
-      destroy() {
-        return this.image.remove();
-      }
-
-      updateDesired(data) {
-        if (data.url !== this.image.attr("src")) {
-          this.loaded = 0;
-          this.state = 3;
-          this.image.attr("src", data.url);
-          return this.client.broadcastState();
-        }
-      }
-
-      getUrl() {
-        return this.image.attr("src");
-      }
-
-      getState() {
-        return this.state;
-      }
-
-      getLoadedFraction() {
-        return this.loaded;
-      }
-
-      // null api functions
-      play() {}
-
-      pause() {}
-
-      seekTo(time, paused = false) {}
-
-      getCurrentTime() {}
-
-      getDuration() {}
-
-    };
-
-    SyncTubeClient_Player_HtmlImage.prototype.ctype = "HtmlImage";
-
-    return SyncTubeClient_Player_HtmlImage;
-
-  }).call(this);
-
-  window.SyncTubeClient = SyncTubeClient = (function() {
-    class SyncTubeClient {
-      static include(obj, into) {
-        var key, ref1, value;
-        for (key in obj) {
-          value = obj[key];
-          if (key !== "included" && key !== "start" && key !== "init") {
-            this.prototype[key] = value;
-          }
-        }
-        return (ref1 = obj.included) != null ? ref1.call(this, into) : void 0;
-      }
-
-      include(addon) {
-        this.included.push(addon);
-        return this.constructor.include(addon, this);
-      }
-
-      constructor(opts = {}) {
-        var base, base1, base2, base3, inc, j, len, ref1, ref2;
-        this.opts = opts;
-        // options
-        if ((base = this.opts).debug == null) {
-          base.debug = false;
-        }
-        if (this.opts.debug) {
-          window.client = this;
-        }
-        // synced settings (controlled by server)
-        if ((base1 = this.opts).synced == null) {
-          base1.synced = {};
-        }
-        if ((base2 = this.opts.synced).maxDrift == null) {
-          base2.maxDrift = 60000; // superseded by server instructions
-        }
-        if ((base3 = this.opts.synced).packetInterval == null) {
-          base3.packetInterval = 10000; // superseded by server instructions
-        }
-        
-        // Client data
-        this.index = null;
-        this.name = null;
-        this.control = false;
-        this.drift = 0;
-        // modules
-        this.include(SyncTubeClient_Util);
-        this.include(SyncTubeClient_ControlCodes);
-        this.include(SyncTubeClient_Network);
-        this.include(SyncTubeClient_UI);
-        this.include(SyncTubeClient_CommandBar);
-        this.include(SyncTubeClient_Player_Youtube);
-        this.include(SyncTubeClient_Player_HtmlFrame);
-        this.include(SyncTubeClient_Player_HtmlImage);
-        this.include(SyncTubeClient_Player_HtmlVideo);
-        this.include(SyncTubeClient_History);
-        this.include(SyncTubeClient_ClipboardPoll);
-        ref1 = this.included;
-        for (j = 0, len = ref1.length; j < len; j++) {
-          inc = ref1[j];
-          if ((ref2 = inc.init) != null) {
-            ref2.apply(this);
-          }
-        }
-      }
-
-      welcome(done) {
-        $("#page").hide();
-        return typeof done === "function" ? done() : void 0;
-      }
-
-      start() {
-        var inc, j, len, ref1, ref2;
-        ref1 = this.included;
-        for (j = 0, len = ref1.length; j < len; j++) {
-          inc = ref1[j];
-          if ((ref2 = inc.start) != null) {
-            ref2.apply(this);
-          }
-        }
-        $("#page").css({
-          maxWidth: 500,
-          opacity: 0
-        });
-        $("#page").fadeIn(1250);
-        this.delay(50, function() {
-          return $(window).resize();
-        });
-        this.delay(2250, function() {
-          $("#welcome").hide(750);
-          return $("#page").fadeTo(500, 1);
-        });
-        return this.listen();
-      }
-
-      // ===========
-      // = Logging =
-      // ===========
-      debug(...msg) {
-        if (!this.opts.debug) {
-          return;
-        }
-        msg.unshift(`[ST ${(new Date).toISOString()}]`);
-        return console.debug.apply(this, msg);
-      }
-
-      info(...msg) {
-        msg.unshift(`[ST ${(new Date).toISOString()}]`);
-        return console.log.apply(this, msg);
-      }
-
-      warn(...msg) {
-        msg.unshift(`[ST ${(new Date).toISOString()}]`);
-        return console.warn.apply(this, msg);
-      }
-
-      error(...msg) {
-        msg.unshift(`[ST ${(new Date).toISOString()}]`);
-        return console.error.apply(this, msg);
-      }
-
-    };
-
-    SyncTubeClient.prototype.VIEW_COMPONENTS = ["content", "view", "input", "input_nofocus", "status", "queue", "playlist", "clients"];
-
-    SyncTubeClient.prototype.included = [];
-
-    return SyncTubeClient;
-
-  }).call(this);
-
-  window.SyncTubeClient_CommandBar = SyncTubeClient_CommandBar = class SyncTubeClient_CommandBar {
-    constructor(client1, opts = {}) {
-      this.client = client1;
-      this.opts = opts;
-      this.buildDom();
-      this.captureInput();
-    }
-
-    captureInput() {
-      $(document).on("keydown keypress keyup", function(ev) {
-        return $("[data-alt-class]").each(function(i, el) {
-          if (ev.altKey && !$(el).data("isAlted")) {
-            $(el).attr("data-was-class", $(el).attr("class"));
-            $(el).attr("class", $(el).data("altClass"));
-            return $(el).data("isAlted", true);
-          } else if (!ev.altKey && $(el).data("isAlted")) {
-            $(el).attr("class", $(el).attr("data-was-class"));
-            $(el).removeAttr("data-was-class");
-            return $(el).data("isAlted", false);
-          }
-        });
-      });
-      return $("#command_bar [data-command]").click((event) => {
-        var cmd, el;
-        el = $(event.currentTarget);
-        cmd = el.data("command");
-        if (event.altKey && el.data("altCommand")) {
-          cmd = el.data("altCommand");
-        }
-        this.client.connection.send("/" + cmd);
-        return false;
-      });
-    }
-
-    updateDesired(data) {
-      if (data.state === "play") {
-        $("#command_bar [data-command=toggle]").removeClass("btn-success").addClass("btn-warning");
-        $("#command_bar [data-command=toggle] i").removeClass("fa-play").addClass("fa-pause");
-      } else {
-        $("#command_bar [data-command=toggle]").removeClass("btn-warning").addClass("btn-success");
-        $("#command_bar [data-command=toggle] i").removeClass("fa-pause").addClass("fa-play");
-      }
-      if (data.loop) {
-        $("#command_bar [data-command='loop toggle']").addClass("btn-warning");
-        return $("#command_bar [data-command='loop toggle'] i + i").removeClass("fa-toggle-off").addClass("fa-toggle-on");
-      } else {
-        $("#command_bar [data-command='loop toggle']").removeClass("btn-warning");
-        return $("#command_bar [data-command='loop toggle'] i + i").removeClass("fa-toggle-on").addClass("fa-toggle-off");
-      }
-    }
-
-    buildDom() {
-      return $("#second_row").prepend("<div class=\"col col-12\" id=\"command_bar\" style=\"margin-top: 10px; margin-bottom: -5px; opacity: 0.8; display: none\">\n  <div class=\"btn-group btn-group-sm\">\n    <button type=\"button\" data-command=\"seek 0\" title=\"start from 0\" class=\"btn btn-secondary\"><i class=\"fa fa-step-backward\"></i></button>\n    <button type=\"button\" data-command=\"seek -60\" data-alt-command=\"seek --slowmo -60\" title=\"go back(+alt=slowmo) 60 seconds\" class=\"btn btn-secondary\"><i class=\"fa fa-fw fa-backward\" data-alt-class=\"fa fa-fw fa-history\"></i> <small>60</small></button>\n    <button type=\"button\" data-command=\"seek -30\" data-alt-command=\"seek --slowmo -30\" title=\"go back(+alt=slowmo) 30 seconds\" class=\"btn btn-secondary\"><i class=\"fa fa-fw fa-backward\" data-alt-class=\"fa fa-fw fa-history\"></i> <small>30</small></button>\n    <button type=\"button\" data-command=\"seek -10\" data-alt-command=\"seek --slowmo -10\" title=\"go back(+alt=slowmo) 10 seconds\" class=\"btn btn-secondary\"><i class=\"fa fa-fw fa-backward\" data-alt-class=\"fa fa-fw fa-history\"></i> <small>10</small></button>\n  </div>\n\n  <button type=\"button\" data-command=\"toggle\" class=\"btn btn-sm btn-success\" style=\"padding-left: 15px; padding-right: 15px\"><i class=\"fa fa-fw fa-play\"></i></button>\n\n  <div class=\"btn-group btn-group-sm\">\n    <button type=\"button\" data-command=\"seek +10\" title=\"go forward 60 seconds\" class=\"btn btn-secondary\"><i class=\"fa fa-forward\"></i> <small>10</small></button>\n    <button type=\"button\" data-command=\"next\" title=\"next in playlist\" class=\"btn btn-info\" style=\"display: none\"><i class=\"fa fa-step-forward\"></i></button>\n    <button type=\"button\" data-command=\"seek +30\" title=\"go forward 30 seconds\" class=\"btn btn-secondary\"><i class=\"fa fa-forward\"></i> <small>30</small></button>\n    <button type=\"button\" data-command=\"seek +60\" title=\"go forward 10 seconds\" class=\"btn btn-secondary\"><i class=\"fa fa-forward\"></i> <small>60</small></button>\n  </div>\n\n  <button title=\"toggle loop\" type=\"button\" data-command=\"loop toggle\" class=\"btn btn-secondary btn-sm\"><i class=\"fa fa-refresh\"></i> <i class=\"fa fa-toggle-on\"></i></button>\n</div>");
-    }
-
-    show() {
-      return $("#command_bar").show(200, function() {
-        return $(window).resize();
-      });
-    }
-
-    hide() {
-      return $("#command_bar").hide(200, function() {
-        return $(window).resize();
-      });
-    }
-
-  };
-
-  window.SyncTubeClient_CommandBar.start = function() {
-    return this.commandBar = new SyncTubeClient_CommandBar(this, this.opts.command_bar);
-  };
-
-  window.SyncTubeClient_History = SyncTubeClient_History = class SyncTubeClient_History {
-    constructor(client1, opts = {}) {
-      var base, base1;
-      this.client = client1;
-      this.opts = opts;
-      if ((base = this.opts).limit == null) {
-        base.limit = 100;
-      }
-      if ((base1 = this.opts).save == null) {
-        base1.save = true; // @todo set to false
-      }
-      this.log = this.opts.save ? this.loadLog() : [];
-      this.index = -1;
-      this.buffer = null;
-      this.captureInput();
-    }
-
-    captureInput() {
-      return this.client.input.keydown((event) => {
-        if (event.keyCode === 27) { // ESC
-          if (this.index !== -1) {
-            this.index = -1;
-            if (this.buffer != null) {
-              this.client.input.val(this.buffer);
-            }
-            this.buffer = null;
-          }
-          return true;
-        }
-        if (event.keyCode === 38) { // ArrowUp
-          if (this.log[this.index + 1] == null) {
-            return false;
-          }
-          if (this.index === -1) {
-            this.buffer = this.client.input.val();
-          }
-          this.index++;
-          this.client.input.val(this.log[this.index]);
-          return false;
-        }
-        if (event.keyCode === 40) { // ArrowDown
-          if (this.index === 0) {
-            this.index = -1;
-            this.restoreBuffer();
-            return false;
-          }
-          if (this.log[this.index - 1] == null) {
-            return false;
-          }
-          this.index--;
-          this.client.input.val(this.log[this.index]);
-          return false;
-        }
-        return true;
-      });
-    }
-
-    restoreBuffer() {
-      if (this.buffer != null) {
-        this.client.input.val(this.buffer);
-      }
-      return this.buffer = null;
-    }
-
-    append(cmd) {
-      if (cmd && (!this.log.length || this.log[0] !== cmd)) {
-        this.log.unshift(cmd);
-      }
-      while (this.log.length > this.opts.limit) {
-        this.log.pop();
-      }
-      if (this.opts.save) {
-        this.saveLog();
-      }
-      this.index = -1;
-      return this.buffer = null;
-    }
-
-    saveLog() {
-      return this.LSsave("client_history", this.log);
-    }
-
-    loadLog() {
-      return this.LSload("client_history", []);
-    }
-
-    LSsave(key, value) {
-      return localStorage.setItem(`synctube_${key}`, JSON.stringify(value));
-    }
-
-    LSload(key, defVal) {
-      var e;
-      try {
-        return JSON.parse(localStorage.getItem(`synctube_${key}`)) || defVal;
-      } catch (error1) {
-        e = error1;
-        return defVal;
-      }
-    }
-
-  };
-
-  window.SyncTubeClient_History.start = function() {
-    return this.history = new SyncTubeClient_History(this, this.opts.history);
-  };
-
   window.SyncTubeClient_UI = {
     init: function() {
       var base, base1, j, l, len, len1, ref1, ref2, results, x;
@@ -1836,96 +1908,24 @@
     }
   };
 
-  window.SyncTubeClient_ClipboardPoll = SyncTubeClient_ClipboardPoll = class SyncTubeClient_ClipboardPoll {
-    constructor(client1, opts = {}) {
-      var base, base1;
-      this.client = client1;
-      this.opts = opts;
-      if ((base = this.opts).pollrate == null) {
-        base.pollrate = 1000;
-      }
-      if ((base1 = this.opts).autostartIfGranted == null) {
-        base1.autostartIfGranted = true;
-      }
-      this.running = false;
-      this.lastValue = null;
-      this.detectAutostart();
-    }
-
-    detectAutostart() {
-      return navigator.permissions.query({
-        name: 'clipboard-read'
-      }).then((status) => {
-        if (this.opts.autostartIfGranted && status.state === "granted") {
-          this.start();
+  window.SyncTubeClient_Util = {
+    getHashParams: function() {
+      var j, key, kv, kvp, len, parts, result;
+      result = {};
+      if (window.location.hash) {
+        parts = window.location.hash.substr(1).split("&");
+        for (j = 0, len = parts.length; j < len; j++) {
+          kv = parts[j];
+          kvp = kv.split("=");
+          key = kvp.shift();
+          result[key] = kvp.join("=");
         }
-        return status.onchange = () => {
-          if (status.state === "granted") {
-            return this.start();
-          } else {
-            return this.stop();
-          }
-        };
-      });
-    }
-
-    start() {
-      this.run = true;
-      this.client.debug("Started clipboard polling");
-      return this.tick();
-    }
-
-    async stop(wait = true) {
-      var promise;
-      this.run = false;
-      this.client.debug("Stopping clipboard polling...");
-      promise = new Promise((resolve, reject) => {
-        return this.stopped = resolve;
-      });
-      if (!this.running) {
-        this.stopped();
       }
-      if (wait) {
-        await promise;
-        this.client.debug("Stopped clipboard polling");
-      }
-      return promise;
+      return result;
+    },
+    delay: function(ms, func) {
+      return setTimeout(func, ms);
     }
-
-    async tick() {
-      var err, text;
-      if (!this.run) {
-        this.running = false;
-        if (typeof this.stopped === "function") {
-          this.stopped();
-        }
-        return;
-      }
-      this.running = true;
-      try {
-        text = (await navigator.clipboard.readText());
-        if (text !== this.lastValue) {
-          this.process(text);
-          return this.lastValue = text;
-        }
-      } catch (error1) {
-        err = error1;
-      } finally {
-        // nothing we can do about it :D
-        setTimeout((() => {
-          return this.tick();
-        }), this.opts.pollrate);
-      }
-    }
-
-    process(val) {
-      return this.client.debug("Processing", val);
-    }
-
-  };
-
-  window.SyncTubeClient_ClipboardPoll.start = function() {
-    return this.clipboardPoll = new SyncTubeClient_ClipboardPoll(this, this.opts.clipboardPoll);
   };
 
   // ./client/*.coffee will be inserted here by "npm run build" or "npm run dev"

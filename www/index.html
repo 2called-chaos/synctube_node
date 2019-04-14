@@ -13,27 +13,7 @@
     <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
     <link href="./client.css" rel="stylesheet">
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    <script type="text/javascript">
-      // ES6 support check
-      function check_es6() {
-        "use strict";
-        if (typeof Symbol == "undefined") return false;
-        try {
-          eval("class Foo {}");
-          eval("var bar = (x) => x+1");
-        } catch (e) { return false; }
-        return true;
-      }
-
-      var s = document.createElement('script');
-      s.defer = true;
-      if (check_es6()) {
-        s.src = "./client.js";
-      } else {
-        s.src = "./client_babel.js";
-      }
-      document.head.appendChild(s);
-    </script>
+    <script src="./client.js" defer="defer"></script>
   </head>
   <body>
     <div id="welcome" class="flexcentered">

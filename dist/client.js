@@ -1932,7 +1932,10 @@
   $(function() {
     var client;
     client = new SyncTubeClient({
-      debug: true
+      debug: true,
+      clipboardPoll: {
+        autostartIfGranted: false
+      }
     });
     return client.welcome(() => {
       return client.start();

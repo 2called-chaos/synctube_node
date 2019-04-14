@@ -2544,7 +2544,10 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
   $(function () {
     var client;
     client = new SyncTubeClient({
-      debug: true
+      debug: true,
+      clipboardPoll: {
+        autostartIfGranted: false
+      }
     });
     return client.welcome(function () {
       return client.start();

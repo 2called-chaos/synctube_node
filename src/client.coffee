@@ -3,4 +3,6 @@
 $ ->
   client = new SyncTubeClient
     debug: true
+    clipboardPoll:
+      autostartIfGranted: false
   client.welcome => client.start()

@@ -9,6 +9,9 @@ DEV =
       DEV.compileServer()
       DEV.compileClient()
       process.exit(0)
+    else if args[args.length - 1] == "build_babel"
+      DEV.compileClient("babel")
+      process.exit(0)
     else
       # compile and watch server
       DEV.compileServer()
@@ -35,7 +38,8 @@ DEV =
 
   compileClient: (ev, f) ->
     console.log ">>>> compile client (#{if f then "#{f} changed" else "init"})"
-    DEV.exec "cat $(find ./src/client -type f -name '*.coffee' -not -path '*/example.coffee' -print0 | xargs -0 echo) src/client.coffee | coffee -c --stdio > ./dist/client.js"
+    transpile = if ev == "babel" then "-t" else ""
+    DEV.exec "cat $(find ./src/client -type f -name '*.coffee' -not -path '*/example.coffee' -print0 | xargs -0 echo) src/client.coffee | coffee #{transpile} -c --stdio > ./dist/client_babel.js"
 
   runServer: (f) ->
     server_process = child_process.spawn("node",  ["./dist/server.js"])

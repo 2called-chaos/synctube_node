@@ -2,6 +2,7 @@
   "scripts": {
     "start": "node ./dist/server.js",
     "build": "coffee ./src/dev.coffee -n build",
+    "build_babel": "coffee ./src/dev.coffee -n build_babel",
     "dev": "coffee ./src/dev.coffee -n"
   },
   "name": "synctube",
@@ -13,6 +14,8 @@
     "websocket": "^1.0.28"
   },
   "devDependencies": {
+    "@babel/core": "^7.4.3",
+    "@babel/preset-env": "^7.4.3",
     "coffeescript": "^2.3.2"
   },
   "repository": {

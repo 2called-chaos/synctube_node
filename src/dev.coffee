@@ -38,8 +38,9 @@ DEV =
 
   compileClient: (ev, f) ->
     console.log ">>>> compile client (#{if f then "#{f} changed" else "init"})"
-    transpile = if ev == "babel" then "-t" else ""
-    DEV.exec "cat $(find ./src/client -type f -name '*.coffee' -not -path '*/example.coffee' -print0 | xargs -0 echo) src/client.coffee | coffee #{transpile} -c --stdio > ./dist/client_babel.js"
+    transpile = if ev == "babel" then "-t " else ""
+    dest = if ev == "babel" then "client_babel.js" else "client.js"
+    DEV.exec "cat $(find ./src/client -type f -name '*.coffee' -not -path '*/example.coffee' -print0 | xargs -0 echo) src/client.coffee | coffee #{transpile}-c --stdio > ./dist/#{dest}"
 
   runServer: (f) ->
     server_process = child_process.spawn("node",  ["./dist/server.js"])

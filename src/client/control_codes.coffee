@@ -30,6 +30,12 @@ window.SyncTubeClient_ControlCodes =
     @control = false
     @commandBar?.hide()
 
+  CMD_taken_host: ->
+    @host = true
+
+  CMD_lost_host: ->
+    @host = false
+
   CMD_unsubscribe: ->
     @CMD_ui_clear(component: "clients")
     @CMD_video_action(action: "destroy")

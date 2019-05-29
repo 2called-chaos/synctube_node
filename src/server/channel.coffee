@@ -127,15 +127,17 @@ exports.Class = class SyncTubeServerChannel
     client.control = this
     client.sendSystemMessage("You are in control of #{@name}!", COLORS.green) if sendMessage
     client.sendCode("taken_control", channel: @name)
+    client.sendCode("taken_host", channel: @name) if @host == @control.indexOf(client)
     @updateSubscriberList(client)
     @debug "granted control to client ##{client.index}(#{client.ip})"
 
   revokeControl: (client, sendMessage = true, reason = null) ->
     return if @control.indexOf(client) == -1
+    client.sendCode("lost_host", channel: @name) if @host == @control.indexOf(client)
+    client.sendCode("lost_control", channel: @name)
+    client.sendSystemMessage("You lost control of #{@name}#{if reason then " (#{reason})" else ""}!", COLORS.red) if sendMessage
     @control.splice(@control.indexOf(client), 1)
     client.control = null
-    client.sendSystemMessage("You lost control of #{@name}#{if reason then " (#{reason})" else ""}!", COLORS.red) if sendMessage
-    client.sendCode("lost_control", channel: @name)
     @updateSubscriberList(client)
     @debug "revoked control from client ##{client.index}(#{client.ip})"
 

@@ -621,6 +621,12 @@
       newHost = this.control[newHostI];
       this.control[wasHostI] = newHost;
       this.control[newHostI] = wasHost;
+      newHost.sendCode("taken_host", {
+        channel: this.name
+      });
+      wasHost.sendCode("lost_host", {
+        channel: this.name
+      });
       this.updateSubscriberList(client);
     } else {
       client.sendSystemMessage(`${(who != null ? who.name : void 0) || "Target"} is not in control and thereby can't be host`);

@@ -24,6 +24,7 @@ window.SyncTubeClient = class SyncTubeClient
     @index = null
     @name = null
     @control = false
+    @host = false
     @drift = 0
 
     # modules

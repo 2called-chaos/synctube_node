@@ -427,6 +427,8 @@ x.addCommand "Channel", "host", (client, who) ->
     newHost = @control[newHostI]
     @control[wasHostI] = newHost
     @control[newHostI] = wasHost
+    newHost.sendCode("taken_host", channel: @name)
+    wasHost.sendCode("lost_host", channel: @name)
     @updateSubscriberList(client)
   else
     client.sendSystemMessage("#{who?.name || "Target"} is not in control and thereby can't be host")

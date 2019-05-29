@@ -219,6 +219,12 @@
       this.control = false;
       return (ref = this.commandBar) != null ? ref.hide() : void 0;
     },
+    CMD_taken_host: function() {
+      return this.host = true;
+    },
+    CMD_lost_host: function() {
+      return this.host = false;
+    },
     CMD_unsubscribe: function() {
       this.CMD_ui_clear({
         component: "clients"
@@ -489,6 +495,7 @@
         this.index = null;
         this.name = null;
         this.control = false;
+        this.host = false;
         this.drift = 0;
         // modules
         this.include(SyncTubeClient_Util);

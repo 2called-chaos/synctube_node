@@ -263,6 +263,11 @@
       client.sendCode("taken_control", {
         channel: this.name
       });
+      if (this.host === this.control.indexOf(client)) {
+        client.sendCode("taken_host", {
+          channel: this.name
+        });
+      }
       this.updateSubscriberList(client);
       return this.debug(`granted control to client #${client.index}(${client.ip})`);
     }
@@ -271,14 +276,19 @@
       if (this.control.indexOf(client) === -1) {
         return;
       }
-      this.control.splice(this.control.indexOf(client), 1);
-      client.control = null;
-      if (sendMessage) {
-        client.sendSystemMessage(`You lost control of ${this.name}${(reason ? ` (${reason})` : "")}!`, COLORS.red);
+      if (this.host === this.control.indexOf(client)) {
+        client.sendCode("lost_host", {
+          channel: this.name
+        });
       }
       client.sendCode("lost_control", {
         channel: this.name
       });
+      if (sendMessage) {
+        client.sendSystemMessage(`You lost control of ${this.name}${(reason ? ` (${reason})` : "")}!`, COLORS.red);
+      }
+      this.control.splice(this.control.indexOf(client), 1);
+      client.control = null;
       this.updateSubscriberList(client);
       return this.debug(`revoked control from client #${client.index}(${client.ip})`);
     }

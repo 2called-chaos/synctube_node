@@ -9,6 +9,7 @@ UTIL = require("./util.js")
 Client = require("./client.js").Class
 Commands = require("./commands.js")
 Channel = require("./channel.js").Class
+PlaylistManager = require("./playlist_manager.js").Class
 HttpRequest = require("./http_request.js").Class
 
 exports.Class = class SyncTubeServer
@@ -31,6 +32,7 @@ exports.Class = class SyncTubeServer
         Channel: Channel
         Client: Client
         Commands: Commands
+        PlaylistManager: PlaylistManager
         HttpRequest: HttpRequest
         COLORS: COLORS
         UTIL: UTIL

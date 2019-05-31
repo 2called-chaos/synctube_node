@@ -35,6 +35,24 @@
     return r;
   };
 
+  exports.extractArg = function(args, keys, vlength = 0) {
+    var i, j, k, len, spliced;
+    spliced = null;
+    for (j = 0, len = keys.length; j < len; j++) {
+      k = keys[j];
+      i = args.indexOf(k);
+      if (i > -1) {
+        spliced = args.splice(i, 1 + vlength);
+        if (vlength) {
+          return spliced.slice(1);
+        } else {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
   exports.htmlEntities = function(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   };

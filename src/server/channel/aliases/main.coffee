@@ -2,7 +2,7 @@ exports._module = module
 exports.setup = (@server, classes) ->
   @hookChannelConstructor(classes.Channel, classes.Commands, classes.UTIL)
   @hookCommandsHandleMessage(classes.Commands)
-  @registerAlias(classes.Commands, classes.COLORS)
+  @registerAlias(classes.Commands, classes.COLORS, classes.UTIL)
 
 exports.hookChannelConstructor = (klass, Commands, UTIL) ->
   old = klass::init
@@ -38,10 +38,10 @@ exports.hookCommandsHandleMessage = (klass) ->
 
     old.call(this, server, client, message, msg)
 
-exports.registerAlias = (klass, COLORS) ->
+exports.registerAlias = (klass, COLORS, UTIL) ->
   klass.addCommand "Channel", "alias", "aliases", (client, args...) ->
     return client.permissionDenied("alias") unless @control.indexOf(client) > -1
-    deleteAlias = false
+    deleteAlias = UTIL.extractArg(args, ["-d", "--delete"])
 
     # Usage (no args)
     unless args.length
@@ -56,21 +56,15 @@ exports.registerAlias = (klass, COLORS) ->
       r
 
     # list
-    if (i = args.indexOf("-l")) > -1 || (i = args.indexOf("--list")) > -1
-      count = Object.keys(@plugin_aliases).length
+    if UTIL.extractArg(args, ["-l", "--list"])
+      count = Object.keys(@plugin_aliases).length - 1
       if count
-        args.splice(i, 1)
         msg = ["#{count} aliases:"]
         msg.push(formatEntry(name, command)) for name, command of @plugin_aliases when typeof command isnt "function"
         client.sendSystemMessage(msg.join("<br>"), COLORS.muted)
       else
         client.sendSystemMessage("No aliases registered so far!")
       return client.ack()
-
-    # delete flag
-    if (i = args.indexOf("-d")) > -1 || (i = args.indexOf("--delete")) > -1
-      args.splice(i, 1)
-      deleteAlias = true
 
     return client.ack() unless args[0] || deleteAlias
     name = args.shift()

@@ -6,7 +6,7 @@
     this.server = server1;
     this.hookChannelConstructor(classes.Channel, classes.Commands, classes.UTIL);
     this.hookCommandsHandleMessage(classes.Commands);
-    return this.registerAlias(classes.Commands, classes.COLORS);
+    return this.registerAlias(classes.Commands, classes.COLORS, classes.UTIL);
   };
 
   exports.hookChannelConstructor = function(klass, Commands, UTIL) {
@@ -63,13 +63,13 @@
     };
   };
 
-  exports.registerAlias = function(klass, COLORS) {
+  exports.registerAlias = function(klass, COLORS, UTIL) {
     return klass.addCommand("Channel", "alias", "aliases", function(client, ...args) {
-      var command, count, current, deleteAlias, formatEntry, i, msg, name, ref, value;
+      var command, count, current, deleteAlias, formatEntry, msg, name, ref, value;
       if (!(this.control.indexOf(client) > -1)) {
         return client.permissionDenied("alias");
       }
-      deleteAlias = false;
+      deleteAlias = UTIL.extractArg(args, ["-d", "--delete"]);
       // Usage (no args)
       if (!args.length) {
         client.sendSystemMessage("Usage: /alias [-l --list] | &lt;name&gt; [-d --delete] [command]");
@@ -88,10 +88,9 @@
         return r;
       };
       // list
-      if ((i = args.indexOf("-l")) > -1 || (i = args.indexOf("--list")) > -1) {
-        count = Object.keys(this.plugin_aliases).length;
+      if (UTIL.extractArg(args, ["-l", "--list"])) {
+        count = Object.keys(this.plugin_aliases).length - 1;
         if (count) {
-          args.splice(i, 1);
           msg = [`${count} aliases:`];
           ref = this.plugin_aliases;
           for (name in ref) {
@@ -105,11 +104,6 @@
           client.sendSystemMessage("No aliases registered so far!");
         }
         return client.ack();
-      }
-      // delete flag
-      if ((i = args.indexOf("-d")) > -1 || (i = args.indexOf("--delete")) > -1) {
-        args.splice(i, 1);
-        deleteAlias = true;
       }
       if (!(args[0] || deleteAlias)) {
         return client.ack();

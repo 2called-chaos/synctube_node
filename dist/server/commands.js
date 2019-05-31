@@ -319,10 +319,9 @@
         break;
       case "invoke":
         target = client;
-        if ((i = args.indexOf("-t")) > -1 || (i = args.indexOf("--target")) > -1) {
+        if (x = UTIL.extractArg(args, ["-t", "--target"], 1)) {
           Client = require("./client.js").Class;
-          x = args.splice(i, 2);
-          who = typeof x[1] === "string" ? x[1] : x[1].pattern;
+          who = typeof x[0] === "string" ? x[0] : x[0].pattern;
           target = Client.find(client, who, this.clients);
         }
         if (!target) {
@@ -423,33 +422,26 @@
   });
 
   x.addCommand("Channel", "sync", "resync", function(client, ...args) {
-    var found, i, instant, j, len, t, target, who;
+    var found, i, instant, len, t, target;
     target = [client];
-    instant = false;
-    if ((i = args.indexOf("-i")) > -1 || (i = args.indexOf("--instant")) > -1) {
-      args.splice(i, 1);
-      instant = true;
-    }
-    if ((i = args.indexOf("-t")) > -1 || (i = args.indexOf("--target")) > -1) {
-      x = args.splice(i, 2);
+    instant = UTIL.extractArg(args, ["-i", "--instant"]);
+    if (x = UTIL.extractArg(args, ["-t", "--target"], 1)) {
       if (!(this.control.indexOf(client) > -1)) {
         return client.permissionDenied("resync-target");
       }
       Client = require("./client.js").Class;
-      who = x[1];
-      found = Client.find(client, who, this.subscribers);
+      found = Client.find(client, x[0], this.subscribers);
       target = found === client ? false : [found];
     }
-    if ((i = args.indexOf("-a")) > -1 || (i = args.indexOf("--all")) > -1) {
-      args.splice(i, 1);
+    if (UTIL.extractArg(args, ["-a", "--all"])) {
       if (!(this.control.indexOf(client) > -1)) {
         return client.permissionDenied("resync-all");
       }
       target = this.subscribers;
     }
     if (target && target.length) {
-      for (j = 0, len = target.length; j < len; j++) {
-        t = target[j];
+      for (i = 0, len = target.length; i < len; i++) {
+        t = target[i];
         if (instant) {
           if (t != null) {
             t.sendCode("desired", Object.assign({}, this.desired, {

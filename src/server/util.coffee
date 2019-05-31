@@ -17,6 +17,15 @@ exports.shellSplit = (str, env, cleaned = true) ->
       r.push(x)
   r
 
+exports.extractArg = (args, keys, vlength = 0) ->
+  spliced = null
+  for k in keys
+    i = args.indexOf(k)
+    if i > -1
+      spliced = args.splice(i, 1 + vlength)
+      return if vlength then spliced.slice(1) else true
+  return false
+
 exports.htmlEntities = (str) ->
   String(str)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')

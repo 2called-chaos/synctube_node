@@ -220,10 +220,9 @@ x.addCommand "Server", "system", (client, subaction, args...) ->
         client.sendSystemMessage("No ban found for IP #{ip}")
     when "invoke"
       target = client
-      if (i = args.indexOf("-t")) > -1 || (i = args.indexOf("--target")) > -1
+      if x = UTIL.extractArg(args, ["-t", "--target"], 1)
         Client = require("./client.js").Class
-        x = args.splice(i, 2)
-        who = if typeof x[1] == "string" then x[1] else x[1].pattern
+        who = if typeof x[0] == "string" then x[0] else x[0].pattern
         target = Client.find(client, who, @clients)
       return true unless target
       which = args.shift()
@@ -293,21 +292,15 @@ x.addCommand "Channel", "s", "seek", (client, to) ->
 
 x.addCommand "Channel", "sync", "resync", (client, args...) ->
   target = [client]
-  instant = false
-  if (i = args.indexOf("-i")) > -1 || (i = args.indexOf("--instant")) > -1
-    args.splice(i, 1)
-    instant = true
+  instant = UTIL.extractArg(args, ["-i", "--instant"])
 
-  if (i = args.indexOf("-t")) > -1 || (i = args.indexOf("--target")) > -1
-    x = args.splice(i, 2)
+  if x = UTIL.extractArg(args, ["-t", "--target"], 1)
     return client.permissionDenied("resync-target") unless @control.indexOf(client) > -1
     Client = require("./client.js").Class
-    who = x[1]
-    found = Client.find(client, who, @subscribers)
+    found = Client.find(client, x[0], @subscribers)
     target = if found == client then false else [found]
 
-  if (i = args.indexOf("-a")) > -1 || (i = args.indexOf("--all")) > -1
-    args.splice(i, 1)
+  if UTIL.extractArg(args, ["-a", "--all"])
     return client.permissionDenied("resync-all") unless @control.indexOf(client) > -1
     target = @subscribers
 

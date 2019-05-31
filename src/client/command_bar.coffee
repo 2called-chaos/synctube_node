@@ -15,13 +15,6 @@ window.SyncTubeClient_CommandBar = class SyncTubeClient_CommandBar
           $(el).removeAttr("data-was-class")
           $(el).data("isAlted", false)
 
-    $("#command_bar [data-command]").click (event) =>
-      el = $(event.currentTarget)
-      cmd = el.data("command")
-      cmd = el.data("altCommand") if event.altKey && el.data("altCommand")
-      @client.connection.send("/" + cmd)
-      return false
-
   updateDesired: (data) ->
     if data.state == "play"
       $("#command_bar [data-command=toggle]").removeClass("btn-success").addClass("btn-warning")

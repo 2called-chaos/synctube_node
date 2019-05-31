@@ -103,7 +103,7 @@
     }
 
     captureInput() {
-      $(document).on("keydown keypress keyup", function(ev) {
+      return $(document).on("keydown keypress keyup", function(ev) {
         return $("[data-alt-class]").each(function(i, el) {
           if (ev.altKey && !$(el).data("isAlted")) {
             $(el).attr("data-was-class", $(el).attr("class"));
@@ -115,16 +115,6 @@
             return $(el).data("isAlted", false);
           }
         });
-      });
-      return $("#command_bar [data-command]").click((event) => {
-        var cmd, el;
-        el = $(event.currentTarget);
-        cmd = el.data("command");
-        if (event.altKey && el.data("altCommand")) {
-          cmd = el.data("altCommand");
-        }
-        this.client.connection.send("/" + cmd);
-        return false;
       });
     }
 
@@ -1865,8 +1855,19 @@
       this.input_nofocus.blur((event) => {
         return this.refocus = false;
       });
-      return this.input_nofocus.focus((event) => {
+      this.input_nofocus.focus((event) => {
         return this.refocus = true;
+      });
+      return $(document).on("click", "[data-command]", (event) => {
+        var cmd, el;
+        console.log(event);
+        el = $(event.currentTarget);
+        cmd = el.data("command");
+        if (event.altKey && el.data("altCommand")) {
+          cmd = el.data("altCommand");
+        }
+        this.connection.send("/" + cmd);
+        return false;
       });
     },
     enableInput: function(focus = true, clear = true) {

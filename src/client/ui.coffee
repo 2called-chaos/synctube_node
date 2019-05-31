@@ -66,6 +66,14 @@ window.SyncTubeClient_UI =
     @input_nofocus.blur (event) => @refocus = false
     @input_nofocus.focus (event) => @refocus = true
 
+    $(document).on "click", "[data-command]",  (event) =>
+      console.log event
+      el = $(event.currentTarget)
+      cmd = el.data("command")
+      cmd = el.data("altCommand") if event.altKey && el.data("altCommand")
+      @connection.send("/" + cmd)
+      return false
+
   enableInput: (focus = true, clear = true) ->
     @input.val("") if clear && @input.is(":disabled")
     @input.removeAttr("disabled")

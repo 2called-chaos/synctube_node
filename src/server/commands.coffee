@@ -154,7 +154,7 @@ x.addCommand "Server", "system", (client, subaction, args...) ->
         success = true
         try
           dur = UTIL.parseEasyDuration(args.shift())
-          time = new Date((new Date).getTime() + UTIL.timestamp2Seconds(dur) * 1000)
+          time = new Date((new Date).getTime() + UTIL.timestamp2Seconds(dur.toString()) * 1000)
         catch e
           success = false
           client.sendSystemMessage("Invalid duration format (timestamp or EasyDuration)")

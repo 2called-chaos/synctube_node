@@ -222,7 +222,7 @@
           success = true;
           try {
             dur = UTIL.parseEasyDuration(args.shift());
-            time = new Date((new Date).getTime() + UTIL.timestamp2Seconds(dur) * 1000);
+            time = new Date((new Date).getTime() + UTIL.timestamp2Seconds(dur.toString()) * 1000);
           } catch (error1) {
             e = error1;
             success = false;

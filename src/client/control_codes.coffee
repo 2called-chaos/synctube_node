@@ -72,7 +72,9 @@ window.SyncTubeClient_ControlCodes =
 
   CMD_video_action: (data) ->
     switch data.action
-      when "resume" then @player?.play()
+      when "resume"
+        @player?.pauseEnsured?("server cancel") if data.cancelPauseEnsured
+        @player?.play()
       when "pause" then @player?.pause()
       when "sync" then @player?.force_resync = true
       when "seek" then @player?.seekTo(data.to, data.paused)
@@ -146,6 +148,7 @@ window.SyncTubeClient_ControlCodes =
       changeHTML(el.find("[data-attr=name]"), data.name[0])
     changeHTML(el.find("[data-attr=timestamp]"), data.timestamp)
     @playlist.toggle(!!@playlist.find("div[data-pl-id]").length)
+    @playlist.scrollTop(@playlist.find("div.active").prop("offsetTop") - 15)
     $(window).resize()
 
   CMD_playlist_update: (data) ->
@@ -156,6 +159,7 @@ window.SyncTubeClient_ControlCodes =
       @playlist.find("div[data-pl-id]").removeClass("active")
       @playlist.find("div[data-pl-index=#{data.index}]").addClass("active")
     @playlist.toggle(!!@playlist.find("div[data-pl-id]").length)
+    @playlist.scrollTop(@playlist.find("div.active").prop("offsetTop") - 15)
     $(window).resize()
 
   CMD_update_single_subscriber: (resp) ->

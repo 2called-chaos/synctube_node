@@ -279,16 +279,23 @@
       });
     },
     CMD_video_action: function(data) {
-      var ref, ref1, ref2, ref3;
+      var ref, ref1, ref2, ref3, ref4;
       switch (data.action) {
         case "resume":
-          return (ref = this.player) != null ? ref.play() : void 0;
+          if (data.cancelPauseEnsured) {
+            if ((ref = this.player) != null) {
+              if (typeof ref.pauseEnsured === "function") {
+                ref.pauseEnsured("server cancel");
+              }
+            }
+          }
+          return (ref1 = this.player) != null ? ref1.play() : void 0;
         case "pause":
-          return (ref1 = this.player) != null ? ref1.pause() : void 0;
+          return (ref2 = this.player) != null ? ref2.pause() : void 0;
         case "sync":
-          return (ref2 = this.player) != null ? ref2.force_resync = true : void 0;
+          return (ref3 = this.player) != null ? ref3.force_resync = true : void 0;
         case "seek":
-          return (ref3 = this.player) != null ? ref3.seekTo(data.to, data.paused) : void 0;
+          return (ref4 = this.player) != null ? ref4.seekTo(data.to, data.paused) : void 0;
         case "destroy":
           this.dontBroadcast = false;
           this.stopBroadcast();
@@ -397,6 +404,7 @@
       }
       changeHTML(el.find("[data-attr=timestamp]"), data.timestamp);
       this.playlist.toggle(!!this.playlist.find("div[data-pl-id]").length);
+      this.playlist.scrollTop(this.playlist.find("div.active").prop("offsetTop") - 15);
       return $(window).resize();
     },
     CMD_playlist_update: function(data) {
@@ -416,6 +424,7 @@
         this.playlist.find(`div[data-pl-index=${data.index}]`).addClass("active");
       }
       this.playlist.toggle(!!this.playlist.find("div[data-pl-id]").length);
+      this.playlist.scrollTop(this.playlist.find("div.active").prop("offsetTop") - 15);
       return $(window).resize();
     },
     CMD_update_single_subscriber: function(resp) {
@@ -1565,14 +1574,17 @@
 
       updateDesired(data) {
         var current_ytid, lastPacketDiff, ref1, ref2;
+        this.desired = data;
         this.rememberVolume();
         if (!this.api) {
           this.loadVideo(data.url, data.state !== "play", data.seek);
-          this.ensurePause(data);
           return;
         }
         current_ytid = (ref1 = this.getUrl()) != null ? (ref2 = ref1.match(/([A-Za-z0-9_\-]{11})/)) != null ? ref2[0] : void 0 : void 0;
-        if (current_ytid !== data.url && !this.disableSourceSync) {
+        if ((current_ytid !== data.url || data.forceLoad) && !this.disableSourceSync) {
+          if (current_ytid == null) {
+            return;
+          }
           this.client.debug("switching video from", current_ytid, "to", data.url);
           this.loadVideo(data.url);
           if (data.state === "pause") {
@@ -1794,7 +1806,8 @@
       pauseEnsured(reason) {
         this.client.debug(`YT pause ensured (${reason})`);
         clearInterval(this.ensurePauseInterval);
-        return this.client.dontBroadcast = false;
+        this.client.dontBroadcast = false;
+        return this.client.sendControl("/ready");
       }
 
       rememberVolume() {
@@ -1885,11 +1898,12 @@
         } else {
 
         }
+        //console.log "DEATTACH playlist"
+        //$("#playlist").detach().appendTo("#playlist_ctn")
+        //console.log "ATTACH playlist"
+        //$("#playlist").detach()#.appendTo("#view_ctn")
+        return this.playlist.scrollTop(this.playlist.find("div.active").prop("offsetTop") - 15);
       });
-      //console.log "DEATTACH playlist"
-      //$("#playlist").detach().appendTo("#playlist_ctn")
-      //console.log "ATTACH playlist"
-      //$("#playlist").detach()#.appendTo("#view_ctn")
       return $(window).resize();
     },
     //setTimeout((-> $(window).resize()), 100)

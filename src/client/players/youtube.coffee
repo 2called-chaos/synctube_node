@@ -10,14 +10,15 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
     @pauseEnsured("player destroy")
 
   updateDesired: (data) ->
+    @desired = data
     @rememberVolume()
     unless @api
       @loadVideo(data.url, data.state != "play", data.seek)
-      @ensurePause(data)
       return
 
     current_ytid = @getUrl()?.match(/([A-Za-z0-9_\-]{11})/)?[0]
-    if current_ytid != data.url
+    if (current_ytid != data.url || data.forceLoad) && !@disableSourceSync
+      return unless current_ytid?
       @client.debug "switching video from", current_ytid, "to", data.url
       @loadVideo(data.url)
       @ensurePause(data) if data.state == "pause"
@@ -155,6 +156,7 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
     @client.debug "YT pause ensured (#{reason})"
     clearInterval(@ensurePauseInterval)
     @client.dontBroadcast = false
+    @client.sendControl("/ready")
 
   rememberVolume: ->
     return unless @client.history?

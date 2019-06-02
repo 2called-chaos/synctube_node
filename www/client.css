@@ -246,6 +246,10 @@ body {
   overflow-y: auto;
 }
 
+#playlist.inline {
+  max-height: 182px;
+}
+
 #playlist > div {
   background: #1e1e1e;
   position: relative;
@@ -269,9 +273,6 @@ body {
 }
 #playlist > div.active .active_indicator {
   opacity: 1;
-}
-#playlist > div + div {
-  padding-top: 0;
 }
 
 #playlist > div img[data-attr=thumbnail] {

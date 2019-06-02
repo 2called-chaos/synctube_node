@@ -105,12 +105,12 @@ exports.Class = class SyncTubeServerChannel
   live: (ctype, url) ->
     @persisted.desired = @desired = { ctype: ctype, url: url, state: "pause", seek: 0, loop: false, seek_update: new Date}
     @ready = []
-    @broadcastCode(false, "desired", @desired)
+    @broadcastCode(false, "desired", Object.assign({}, @desired, { forceLoad: true }))
 
     # start after grace period
     @ready_timeout = UTIL.delay @options.readyGracePeriod, =>
       @desired.state = "play"
-      @broadcastCode(false, "video_action", action: "play")
+      @broadcastCode(false, "video_action", action: "resume", reason: "gracePeriod")
 
   play: (ctype, url, playNext = false, intermission = false) ->
     if intermission
@@ -127,7 +127,7 @@ exports.Class = class SyncTubeServerChannel
 
   playVideo: (client, sendMessage = true) ->
     return unless @control.indexOf(client) > -1
-    @broadcastCode(client, "video_action", action: "resume", false)
+    @broadcastCode(client, "video_action", action: "resume", reason: "playVideo", false)
 
   grantControl: (client, sendMessage = true) ->
     return if @control.indexOf(client) > -1

@@ -209,12 +209,15 @@
         seek_update: new Date
       };
       this.ready = [];
-      this.broadcastCode(false, "desired", this.desired);
+      this.broadcastCode(false, "desired", Object.assign({}, this.desired, {
+        forceLoad: true
+      }));
       // start after grace period
       return this.ready_timeout = UTIL.delay(this.options.readyGracePeriod, () => {
         this.desired.state = "play";
         return this.broadcastCode(false, "video_action", {
-          action: "play"
+          action: "resume",
+          reason: "gracePeriod"
         });
       });
     }
@@ -251,7 +254,8 @@
         return;
       }
       return this.broadcastCode(client, "video_action", {
-        action: "resume"
+        action: "resume",
+        reason: "playVideo"
       }, false);
     }
 

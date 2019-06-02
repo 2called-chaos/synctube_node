@@ -39,6 +39,8 @@ window.SyncTubeClient_UI =
       else
         #console.log "DEATTACH playlist"
         #$("#playlist").detach().appendTo("#playlist_ctn")
+
+      @playlist.scrollTop(@playlist.find("div.active").prop("offsetTop") - 15)
     $(window).resize()
     #setTimeout((-> $(window).resize()), 100)
 

@@ -1575,6 +1575,9 @@
         if (current_ytid !== data.url && !this.disableSourceSync) {
           this.client.debug("switching video from", current_ytid, "to", data.url);
           this.loadVideo(data.url);
+          if (data.state === "pause") {
+            this.ensurePause(data);
+          }
           return;
         }
         if (this.getState() === 1 && data.state === "pause") {

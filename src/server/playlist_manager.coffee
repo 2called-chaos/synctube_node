@@ -90,7 +90,9 @@ exports.Class = class PlaylistManager
   cPrev: ->
 
   removeItemAtIndex: (index) ->
+    index = parseInt(index)
     wasAtEnd = @cAtEnd()
+    wasActive = index == @data[@set].index
     url = @data[@set].entries[index][1]
     dmap = @data[@set].map
     delete dmap[url]
@@ -99,7 +101,11 @@ exports.Class = class PlaylistManager
     # index bounds
     @data[@set].index = Math.min(@data[@set].index, @data[@set].entries.length - 1)
     @data[@set].index = -1 if @data[@set].entries.length == 0
-    @cPlayI(@data[@set].index) if !wasAtEnd && @data[@set].index != -1
+    if wasAtEnd && wasActive
+      @data[@set].index = -1
+      @channel.setDefaultDesired()
+
+    @cPlayI(@data[@set].index) if !wasAtEnd && @data[@set].index != -1 && wasActive
     @cUpdateList()
 
   handlePlay: ->
@@ -119,17 +125,25 @@ exports.Class = class PlaylistManager
 
   playNext: (ctype, url) ->
     return @append(ctype, url) if @cEmpty()
+    activeElement = @data[@set].entries[@data[@set].index]
     if qel = @buildQueueElement(ctype, url)
       qel[2].index = @data[@set].index + 1
     else
       qel = @data[@set].map[url]
+      return if qel[2].index == @data[@set].index
       @data[@set].entries.splice(qel[2].index, 1)
+      _qel[2].index = i for _qel, i in @data[@set].entries
 
-    @data[@set].entries.splice(@data[@set].index + 1, 0, qel)
+    @data[@set].entries.splice((if activeElement then activeElement[2].index else @data[@set].index) + 1, 0, qel)
+
+    # reset index
+    _qel[2].index = i for _qel, i in @data[@set].entries
+    @data[@set].index = if activeElement then activeElement[2].index else qel[2].index
     @cUpdateList()
     @handlePlay()
 
   append: (ctype, url) ->
+    activeElement = @data[@set].entries[@data[@set].index]
     if qel = @buildQueueElement(ctype, url)
       @data[@set].entries.push(qel)
       qel[2].index = @data[@set].entries.length - 1
@@ -138,6 +152,10 @@ exports.Class = class PlaylistManager
       qel = @data[@set].map[url]
       @data[@set].entries.splice(qel[2].index, 1)
       @data[@set].entries.push(qel)
+
+      # reset index
+      _qel[2].index = i for _qel, i in @data[@set].entries
+      @data[@set].index = if activeElement then activeElement[2].index else qel[2].index
       @cUpdateList()
     @handlePlay()
 

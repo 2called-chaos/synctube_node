@@ -154,8 +154,10 @@
     cPrev() {}
 
     removeItemAtIndex(index) {
-      var dmap, url, wasAtEnd;
+      var dmap, url, wasActive, wasAtEnd;
+      index = parseInt(index);
       wasAtEnd = this.cAtEnd();
+      wasActive = index === this.data[this.set].index;
       url = this.data[this.set].entries[index][1];
       dmap = this.data[this.set].map;
       delete dmap[url];
@@ -165,7 +167,11 @@
       if (this.data[this.set].entries.length === 0) {
         this.data[this.set].index = -1;
       }
-      if (!wasAtEnd && this.data[this.set].index !== -1) {
+      if (wasAtEnd && wasActive) {
+        this.data[this.set].index = -1;
+        this.channel.setDefaultDesired();
+      }
+      if (!wasAtEnd && this.data[this.set].index !== -1 && wasActive) {
         this.cPlayI(this.data[this.set].index);
       }
       return this.cUpdateList();
@@ -194,23 +200,40 @@
 
     // @getMeta: (url) ->
     playNext(ctype, url) {
-      var qel;
+      var _qel, activeElement, i, j, k, len, len1, qel, ref, ref1;
       if (this.cEmpty()) {
         return this.append(ctype, url);
       }
+      activeElement = this.data[this.set].entries[this.data[this.set].index];
       if (qel = this.buildQueueElement(ctype, url)) {
         qel[2].index = this.data[this.set].index + 1;
       } else {
         qel = this.data[this.set].map[url];
+        if (qel[2].index === this.data[this.set].index) {
+          return;
+        }
         this.data[this.set].entries.splice(qel[2].index, 1);
+        ref = this.data[this.set].entries;
+        for (i = j = 0, len = ref.length; j < len; i = ++j) {
+          _qel = ref[i];
+          _qel[2].index = i;
+        }
       }
-      this.data[this.set].entries.splice(this.data[this.set].index + 1, 0, qel);
+      this.data[this.set].entries.splice((activeElement ? activeElement[2].index : this.data[this.set].index) + 1, 0, qel);
+      ref1 = this.data[this.set].entries;
+      for (i = k = 0, len1 = ref1.length; k < len1; i = ++k) {
+        _qel = ref1[i];
+        // reset index
+        _qel[2].index = i;
+      }
+      this.data[this.set].index = activeElement ? activeElement[2].index : qel[2].index;
       this.cUpdateList();
       return this.handlePlay();
     }
 
     append(ctype, url) {
-      var qel;
+      var _qel, activeElement, i, j, len, qel, ref;
+      activeElement = this.data[this.set].entries[this.data[this.set].index];
       if (qel = this.buildQueueElement(ctype, url)) {
         this.data[this.set].entries.push(qel);
         qel[2].index = this.data[this.set].entries.length - 1;
@@ -219,6 +242,13 @@
         qel = this.data[this.set].map[url];
         this.data[this.set].entries.splice(qel[2].index, 1);
         this.data[this.set].entries.push(qel);
+        ref = this.data[this.set].entries;
+        for (i = j = 0, len = ref.length; j < len; i = ++j) {
+          _qel = ref[i];
+          // reset index
+          _qel[2].index = i;
+        }
+        this.data[this.set].index = activeElement ? activeElement[2].index : qel[2].index;
         this.cUpdateList();
       }
       return this.handlePlay();

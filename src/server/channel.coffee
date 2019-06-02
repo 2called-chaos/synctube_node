@@ -26,18 +26,22 @@ exports.Class = class SyncTubeServerChannel
       chatMode: "public" # public, admin-only, disabled
       playlistMode: "full" # full, disabled
     }
-    @desired = { ctype: @options.defaultCtype, url: @options.defaultUrl, seek: 0, loop: false, seek_update: new Date, state: if @options.defaultAutoplay then "play" else "pause" }
     @persisted = {
       queue: @queue
       playlists: @playlists
       desired: @desired
       options: @options
     }
+    @setDefaultDesired()
     @playlistManager = new PlaylistManager(this, @playlists)
     @playlistManager.load("default")
     @init()
 
   init: -> # plugin hook
+
+  setDefaultDesired: (broadcast = true) ->
+    @persisted.desired = @desired = { ctype: @options.defaultCtype, url: @options.defaultUrl, seek: 0, loop: false, seek_update: new Date, state: if @options.defaultAutoplay then "play" else "pause" }
+    @broadcastCode(false, "desired", @desired)
 
   broadcast: (client, message, color, client_color, sendToAuthor = true) ->
     for c in @subscribers

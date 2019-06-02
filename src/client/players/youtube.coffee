@@ -20,6 +20,7 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
     if current_ytid != data.url
       @client.debug "switching video from", current_ytid, "to", data.url
       @loadVideo(data.url)
+      @ensurePause(data) if data.state == "pause"
       return
 
     if @getState() == 1 && data.state == "pause"

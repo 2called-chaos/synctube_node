@@ -46,7 +46,22 @@
         chatMode: "public", // public, admin-only, disabled
         playlistMode: "full" // full, disabled
       };
-      this.desired = {
+      this.persisted = {
+        queue: this.queue,
+        playlists: this.playlists,
+        desired: this.desired,
+        options: this.options
+      };
+      this.setDefaultDesired();
+      this.playlistManager = new PlaylistManager(this, this.playlists);
+      this.playlistManager.load("default");
+      this.init();
+    }
+
+    init() {} // plugin hook
+
+    setDefaultDesired(broadcast = true) {
+      this.persisted.desired = this.desired = {
         ctype: this.options.defaultCtype,
         url: this.options.defaultUrl,
         seek: 0,
@@ -54,18 +69,8 @@
         seek_update: new Date,
         state: this.options.defaultAutoplay ? "play" : "pause"
       };
-      this.persisted = {
-        queue: this.queue,
-        playlists: this.playlists,
-        desired: this.desired,
-        options: this.options
-      };
-      this.playlistManager = new PlaylistManager(this, this.playlists);
-      this.playlistManager.load("default");
-      this.init();
+      return this.broadcastCode(false, "desired", this.desired);
     }
-
-    init() {} // plugin hook
 
     broadcast(client, message, color, client_color, sendToAuthor = true) {
       var c, j, len, ref, results;

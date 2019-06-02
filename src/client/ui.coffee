@@ -67,11 +67,18 @@ window.SyncTubeClient_UI =
     @input_nofocus.focus (event) => @refocus = true
 
     $(document).on "click", "[data-command]",  (event) =>
-      console.log event
       el = $(event.currentTarget)
       cmd = el.data("command")
       cmd = el.data("altCommand") if event.altKey && el.data("altCommand")
       @connection.send("/" + cmd)
+      return false
+
+    $(document).on "click", "[data-suggest-command]",  (event) =>
+      el = $(event.currentTarget)
+      cmd = el.data("suggestCommand")
+      cmd = el.data("altCommand") if event.altKey && el.data("altCommand")
+      el.closest(".dropdown-menu").prev().dropdown("toggle")
+      @input.val("/" + cmd).focus()
       return false
 
   enableInput: (focus = true, clear = true) ->

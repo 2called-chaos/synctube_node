@@ -32,7 +32,7 @@ window.SyncTubeClient_CommandBar = class SyncTubeClient_CommandBar
 
   buildDom: ->
     $("#second_row").prepend """
-    <div class="col col-12" id="command_bar" style="margin-top: 10px; margin-bottom: -5px; opacity: 0.8; display: none">
+    <div class="col col-12" id="command_bar" style="margin-top: 10px; margin-bottom: -5px; opacity: 0.8; display: none; z-index: 999">
       <div class="btn-group btn-group-sm">
         <button type="button" data-command="seek 0" title="start from 0" class="btn btn-secondary"><i class="fa fa-step-backward"></i></button>
         <button type="button" data-command="seek -60" data-alt-command="seek --slowmo -60" title="go back(+alt=slowmo) 60 seconds" class="btn btn-secondary"><i class="fa fa-fw fa-backward" data-alt-class="fa fa-fw fa-history"></i> <small>60</small></button>
@@ -50,6 +50,17 @@ window.SyncTubeClient_CommandBar = class SyncTubeClient_CommandBar
       </div>
 
       <button title="toggle loop" type="button" data-command="loop toggle" class="btn btn-secondary btn-sm"><i class="fa fa-refresh"></i> <i class="fa fa-toggle-on"></i></button>
+
+
+      <div class="btn-group btn-group-sm">
+        <button type="button" class="btn btn-primary" data-suggest-command="play " title="add YT"><i class="fa fa-plus"></i> <i class="fa fa-youtube"></i></button>
+        <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
+        <div class="dropdown-menu">
+          <a href="#" class="dropdown-item" data-suggest-command="video "><i class="fa fa-fw fa-file-video-o"></i> generic video (e.g. mp4)</a>
+          <a href="#" class="dropdown-item" data-suggest-command="image "><i class="fa fa-fw fa-picture-o"></i> image</a>
+          <a href="#" class="dropdown-item" data-suggest-command="browse "><i class="fa fa-fw fa-globe"></i> browse URL</a>
+        </div>
+      </div>
     </div>
     """
 

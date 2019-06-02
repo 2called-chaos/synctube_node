@@ -21,9 +21,8 @@
     for (j = 0, len = ref.length; j < len; j++) {
       x = ref[j];
       if (cleaned && typeof x !== "string") {
-        if (x.op != null) {
-          r.push(x.op);
-        } else if (x.pattern != null) {
+        //console.log typeof x, x
+        if (x.pattern != null) {
           r.push(x.pattern);
         } else {
           console.warn("unrecognized shell quote object", x);

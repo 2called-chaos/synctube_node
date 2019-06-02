@@ -7,9 +7,8 @@ exports.shellSplit = (str, env, cleaned = true) ->
     env ||= (k) -> if _env[k]? then _env[k] else "${#{k}}"
   for x in require("shell-quote").parse(str, env || _env)
     if cleaned && typeof x != "string"
-      if x.op?
-        r.push(x.op)
-      else if x.pattern?
+      #console.log typeof x, x
+      if x.pattern?
         r.push(x.pattern)
       else
         console.warn "unrecognized shell quote object", x

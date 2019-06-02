@@ -278,6 +278,24 @@
         return this.content.scrollTop(this.content.prop("scrollHeight"));
       });
     },
+    CMD_ui_playlist_show: function(data) {
+      this.playlist.removeClass("collapsed");
+      return this.delay(200, function() {
+        return $(window).resize();
+      });
+    },
+    CMD_ui_playlist_hide: function(data) {
+      this.playlist.addClass("collapsed");
+      return this.delay(200, function() {
+        return $(window).resize();
+      });
+    },
+    CMD_ui_playlist_toggle: function(data) {
+      this.playlist.toggleClass("collapsed");
+      return this.delay(200, function() {
+        return $(window).resize();
+      });
+    },
     CMD_video_action: function(data) {
       var ref, ref1, ref2, ref3, ref4;
       switch (data.action) {

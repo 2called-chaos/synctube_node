@@ -80,6 +80,11 @@
     return client.ack();
   });
 
+  x.addCommand("Server", "tpl", "togglepl", "toggleplaylist", function(client) {
+    client.sendCode("ui_playlist_toggle");
+    return client.ack();
+  });
+
   x.addCommand("Server", "packet", function(client, jdata) {
     var ch, error, json, ref, seek_was;
     try {

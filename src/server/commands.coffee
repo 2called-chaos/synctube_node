@@ -46,6 +46,10 @@ x.addCommand "Server", "tc", "togglechat", (client) ->
   client.sendCode("ui_chat_toggle")
   client.ack()
 
+x.addCommand "Server", "tpl", "togglepl", "toggleplaylist", (client) ->
+  client.sendCode("ui_playlist_toggle")
+  client.ack()
+
 x.addCommand "Server", "packet", (client, jdata) ->
   try
     json = JSON.parse(jdata)

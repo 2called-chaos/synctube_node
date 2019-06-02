@@ -248,6 +248,12 @@ body {
 
 #playlist.inline {
   max-height: 182px;
+  transition: max-height 0.2s ease-in-out, margin-top 0.2s ease-in-out;
+}
+
+#playlist.inline.collapsed {
+  max-height: 0px;
+  margin-top: 0px;
 }
 
 #playlist > div {

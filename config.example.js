@@ -35,9 +35,11 @@ config.protectedNames = [
 // = Plugins =
 // ===========
 config.plugins = [
+  // Playlist control functionality, basically required
+  require("./dist/server/channel/playlist/main.js"),
+
   // Allows admin users to define channel alias commands
-  // e.g. /alias /music
-  //require("./dist/server/channel/aliases/main.js")
+  require("./dist/server/channel/aliases/main.js")
 ]
 
 
@@ -67,7 +69,7 @@ config.maxDrift = 5000;
 // which is recommended due to crude implementation to avoid express dependency
 config.answerHttp = true;
 
-// The HTTP server (if answerHttp is true) will only ever serve assets listed here for security reasons (basedir evasion)
+// The HTTP server will only ever serve assets listed here and when answerHttp is enabled
 config.allowedAssets = [
   "/", // will serve index.html
   "/index.html",

@@ -53,12 +53,12 @@ window.SyncTubeClient_CommandBar = class SyncTubeClient_CommandBar
 
 
       <div class="btn-group btn-group-sm">
-        <button type="button" class="btn btn-primary" data-suggest-command="play " title="add YT"><i class="fa fa-plus"></i> <i class="fa fa-youtube"></i></button>
+        <button type="button" class="btn btn-primary" data-suggest-command="play " data-alt-command="play -n " title="add YT"><i class="fa fa-plus"></i> <i class="fa fa-youtube"></i></button>
         <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"></button>
         <div class="dropdown-menu">
-          <a href="#" class="dropdown-item" data-suggest-command="video "><i class="fa fa-fw fa-file-video-o"></i> generic video (e.g. mp4)</a>
-          <a href="#" class="dropdown-item" data-suggest-command="image "><i class="fa fa-fw fa-picture-o"></i> image</a>
-          <a href="#" class="dropdown-item" data-suggest-command="browse "><i class="fa fa-fw fa-globe"></i> browse URL</a>
+          <a href="#" class="dropdown-item" data-suggest-command="video " data-alt-command="video -n "><i class="fa fa-fw fa-file-video-o"></i> generic video (e.g. mp4)</a>
+          <a href="#" class="dropdown-item" data-suggest-command="image " data-alt-command="image -n "><i class="fa fa-fw fa-picture-o"></i> image</a>
+          <a href="#" class="dropdown-item" data-suggest-command="browse " data-alt-command="browse -n "><i class="fa fa-fw fa-globe"></i> browse URL</a>
         </div>
       </div>
     </div>

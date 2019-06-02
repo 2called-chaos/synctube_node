@@ -33,6 +33,8 @@
     }
 
     load(name, opts = {}) {
+      var old;
+      old = this.set;
       this.set = name;
       if (!this.data[this.set]) {
         this.debug(`Creating new playlist ${name}`);
@@ -50,6 +52,9 @@
         }, opts);
       }
       this.cUpdateList();
+      if (this.data[old] && !this.data[old].persisted) {
+        this.delete(old);
+      }
       return this.data[this.set];
     }
 

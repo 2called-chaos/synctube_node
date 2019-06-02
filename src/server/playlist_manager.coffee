@@ -13,6 +13,7 @@ exports.Class = class PlaylistManager
   sdata: (sub = @set) -> @data[sub]
 
   load: (name, opts = {}) ->
+    old = @set
     @set = name
     unless @data[@set]
       @debug "Creating new playlist #{name}"
@@ -29,6 +30,7 @@ exports.Class = class PlaylistManager
         persisted: true #
       }, opts)
     @cUpdateList()
+    @delete(old) if @data[old] && !@data[old].persisted
     @data[@set]
 
   delete: (name = @set) ->

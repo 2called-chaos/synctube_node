@@ -70,8 +70,14 @@ Unless otherwise specified all commands are being send to and processed by the s
     (CLIENT COMMAND) /s /sync /resync
       Forces seek to desired state on next update, ignoring maxDrift
 
+    (GLOBAL) /clear
+      Clears your chat
+
     (GLOBAL) /join <channel>
       Join a given channel
+
+    (GLOBAL) /dc /disconnect
+      Closes your connection to the server
 
     (GLOBAL) /control [channel] [password]
       If you are in a channel and the channel has no password you can omit the name, otherwise it's mandatory.
@@ -81,10 +87,16 @@ Unless otherwise specified all commands are being send to and processed by the s
     (GLOBAL) /rename
       Allows you to change your display name, no arguments, next message you send will be your name
 
+    (GLOBAL) /tc /togglechat
+      Toggle chat display (rather useless)
+
+    (GLOBAL) /tpl /togglepl /toggleplaylist
+      Toggle playlist
+
     (CHANNEL) /retry
       Revokes control, leaves and rejoins channel
 
-    (CHANNEL) /leave
+    (CHANNEL) /leave /quit
       Leave current channel, revoke control if applicable
 
     (CHANNEL-CONTROL) /p(ause) /r(esume) /t(oggle)
@@ -96,7 +108,7 @@ Unless otherwise specified all commands are being send to and processed by the s
     (CHANNEL-CONTROL) /pause /resume /toggle
       Pause, resume or toggle playback by forcing it as desired state
 
-    (CHANNEL-CONTROL) /play <str containing ytid>
+    (CHANNEL-CONTROL) /yt /youtube /play [-n --next] <str containing ytid>
       Play given video in current channel
 
     (CHANNEL(-CONTROL)) /loop [1/0/on/off/yes/no/y/n/true/false]
@@ -112,6 +124,12 @@ Unless otherwise specified all commands are being send to and processed by the s
       Warning: doesn't recognize failed loads due to Same-Origin Policy, pretty useless unfortunately
       Show given URL to current channel
 
+    (CHANNEL-CONTROL) /password <password> [bool:revoke=false]
+      Change channel control password, optionally revoke all clients (except you)
+
+    (CHANNEL-CONTROL) /copt [opt] [newval]
+      List, view or change channel options
+
     (CHANNEL-CONTROL) /host [name-regex]
       Makes you or matching user the new host, both clients are required to be in control
 
@@ -121,14 +139,69 @@ Unless otherwise specified all commands are being send to and processed by the s
     (CHANNEL-CONTROL) /revoke [name-regex]
       Revokes control for you or given user
 
+    (CHANNEL-CONTROL) /kick <name-regex> [message]
+      Kick client from channel with optional message
+
+    (CHANNEL-CONTROL) /alias /aliases [-l --list] | <name> [-d --delete] [command]
+      [Plugin] Add custom aliases with optional arguments (0 = all arguments)
+      (e.g. `/alias /kc /kick chaos ${0}` can then be used `/kc [reason]`)
+
+    (CHANNEL-CONTROL) /pl /playlist
+      [Plugin] playlist control commands
+        /playlist list
+          list existing playlists
+        /playlist load <name> [-v --volatile]
+          load existing or new playlist, volatile destroys the playlist when another is loaded
+        /playlist saveas
+          not implemented
+        /playlist delete <name>
+          delete playlist, it's entries and settings
+        /playlist clear
+          clear current playlist (entries only)
+        /playlist opt [opt] [newvalue]
+          list, view or change playlist options
+        /playlist next
+          not implemented
+        /playlist prev
+          not implemented
+        /playlist play [index]
+          play entry by index
+        /playlist remove [index]
+          remove entry by index
+
     (CHANNEL-INTERNAL) /ready /rdy
       Internal, unused code to signal readyness when switching videos
 
     (GLOBAL) !packet:{jsondata}
       Internal command to communicate client states
 
-    (GLOBAL-DEBUG) /invoke <code> [json]
-      development: send YOU an arbitrary control code from the server
+    (GLOBAL-DEBUG)
+      /system auth <syspw>
+        authenticate, required for all other system commands
+      /system restart
+        end process, restart if daemonized or development
+      /system gracefulRestart cancel | <period> [message]
+        same as restart but with optional grace period and message
+      /system message <message>
+        broadcast system message to all connected clients
+      /system chmessage <channel> <message>
+        broadcast system message to all clients in given channel
+      /system chkill <channel>
+        kick all clients in given channel and then delete it
+      /system status
+        show some system information
+      /system clients
+        show connected clients
+      /system banip <ip>
+        ban ip
+      /system unbanip <ip>
+        unban ip
+      /system invoke [-t --target <name-regex>] <CTRLcode> <JSON string>
+        invoke control code on you or given target
+      /system kick <name-regex> [message]
+        kick given target from the server with optional message
+      /system dump <client|channel> [id/name] | commands
+        dump information to system console
 
     (GLOBAL-DEBUG) /dump client|channel [name or index]
       development: dump specific or all client/channel to server console
@@ -150,24 +223,24 @@ These are recognized parameters that can be used in the URL hash
 
 ## Planned (S: Server, C: Client)
 
-  * UI: Control bar when in control (pause/play, next video, seek, seek+-10, seek+-30)
   * UI: altered layout for big screens (multi column)
   * UI: Visual controls for clients (grant/revoke/kick/forceSync)
-  * S/C: sync playback speed
+  * S/C: sync playback speed, implement slowmo seekbacks
   * S/C: sync loop (HtmlVideo: done, YT: manual implementation? also no getter)
-  * S/C: sync readiness when switching videos/buffering on seek to better synchronize clients (Server: not implemented, HtmlVideo: sends rdy already, YT: no idea when to trigger)
   * S/C: (named?) Playlists and proposal queue (non-admins can propose to separate queue, admins can approve or discard)
   * S/C: show who seeked/toggled/added stuff via overlayed notifications (channel setting)
+  * S/C: Help command (tricky since client has a few commands)
+  * S/C: (system/channel) intermissions
   * S: More sane static asset delivery (I mean it works...)
   * S: Persisted channel settings (maxDrift, packetInterval, ytid-aliases, cueDefault, chatMode, suggestedQuality, readyGracePeriod)
   * S: too many packets/control instruction detection and throttling
+  * C: VideoHTML allow source per client to allow syncing of restricted links from e.g. streaming sites
   * C: better detect host/detect control seeks in YT player
-  * C: Enhanced control keyboard shortcuts (toggle play, seek, volume, next video, approve first in queue, change speed)
-  * C: detect input-blur when disabled, don't focus on server-ack when blurred
+  * C: Enhanced control keyboard shortcuts (build into commandbar?) (toggle play, seek, volume, next video, approve first in queue, change speed)
   * C: YouTube search, bookmark/ext? to add from YT side
   * C: experiment with live drift correction by changing playback speed (client setting, channel setting default)
     This will probably work good with HTML Video (mp4/webp player) since it has stepless speed, YT may only have the .25 steps
-  * C: register control changes via endcards/etc to add to playlist
+  * C: register clipboard changes to suggest videos in playlist (we can't detect end/pause card clicks so client has to allow clipboard read and rightlick->copy link)
   * C: search videos
   * C: other players (what are people using these days? vimeo? can you embed netflix? :D)
 

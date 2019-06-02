@@ -43,11 +43,11 @@
       }
     },
     addCommand: function(parent, ...cmds) {
-      var cmd, j, len, proc, ref, results;
+      var cmd, i, len, proc, ref, results;
       ref = cmds, [...cmds] = ref, [proc] = splice.call(cmds, -1);
       results = [];
-      for (j = 0, len = cmds.length; j < len; j++) {
-        cmd = cmds[j];
+      for (i = 0, len = cmds.length; i < len; i++) {
+        cmd = cmds[i];
         results.push(((cmd) => {
           if (x[parent][cmd]) {
             console.warn("[ST-WARN] ", new Date, `Overwriting handler for existing command ${parent}.${cmd}`);
@@ -81,7 +81,7 @@
   });
 
   x.addCommand("Server", "packet", function(client, jdata) {
-    var ch, error, json, seek_was;
+    var ch, error, json, ref, seek_was;
     try {
       json = JSON.parse(jdata);
     } catch (error1) {
@@ -103,8 +103,11 @@
       });
       if (client === ch.control[ch.host] && ch.desired.url === json.url) {
         seek_was = ch.desired.seek;
-        if (json.state === "ended") {
+        if (json.state === "ended" && ch.desired.state !== json.state) {
           ch.desired.state = json.state;
+          if ((ref = ch.playlistManager) != null) {
+            ref.handleEnded();
+          }
         }
         ch.desired.seek = json.seek;
         ch.desired.seek_update = new Date();
@@ -185,7 +188,7 @@
   });
 
   x.addCommand("Server", "system", function(client, subaction, ...args) {
-    var amsg, b, c, ch, channel, detail, dur, e, i, iargs, ip, j, k, len, len1, m, msg, nulled, reason, ref, ref1, seconds, stamp, success, target, time, what, which, who;
+    var amsg, b, c, ch, channel, detail, dur, e, i, iargs, ip, j, len, len1, m, msg, nulled, reason, ref, ref1, seconds, stamp, success, target, time, what, which, who;
     if (!client.isSystemAdmin) {
       if (subaction === "auth") {
         if (UTIL.argsToStr(args) === this.opts.systemPassword) {
@@ -262,8 +265,8 @@
         client.sendSystemMessage("======================");
         nulled = 0;
         ref = this.clients;
-        for (j = 0, len = ref.length; j < len; j++) {
-          c = ref[j];
+        for (i = 0, len = ref.length; i < len; i++) {
+          c = ref[i];
           if (c === null) {
             nulled += 1;
           }
@@ -277,8 +280,8 @@
       case "clients":
         client.sendSystemMessage("======================");
         ref1 = this.clients;
-        for (k = 0, len1 = ref1.length; k < len1; k++) {
-          c = ref1[k];
+        for (j = 0, len1 = ref1.length; j < len1; j++) {
+          c = ref1[j];
           if (c != null) {
             client.sendSystemMessage(`<span class="soft_elli" style="min-width: 45px">[#${c.index}]</span>\n<span class="elli" style="width: 100px; margin-bottom: -4px">${c.name || "<em>unnamed</em>"}</span>\n<span>${c.ip}</span>`);
           }
@@ -474,13 +477,16 @@
     return client.ack();
   });
 
-  x.addCommand("Channel", "play", "yt", "youtube", function(client, url) {
-    var m;
+  x.addCommand("Channel", "play", "yt", "youtube", function(client, ...args) {
+    var intermission, m, playNext, url;
     if (!(this.control.indexOf(client) > -1)) {
       return client.permissionDenied("play");
     }
-    if (m = url.match(/([A-Za-z0-9_\-]{11})/)) {
-      this.liveVideo(m[1]);
+    playNext = UTIL.extractArg(args, ["-n", "--next"]);
+    intermission = UTIL.extractArg(args, ["-i", "--intermission"]);
+    url = args.join(" ");
+    if (m = url.match(/([A-Za-z-0-9_\-]{11})/)) {
+      this.play("Youtube", m[1], playNext, intermission);
     } else {
       client.sendSystemMessage("I don't recognize this URL/YTID format, sorry");
     }
@@ -506,20 +512,34 @@
     return client.ack();
   });
 
-  x.addCommand("Channel", "url", "browse", function(client, url, ctype = "HtmlFrame") {
+  x.addCommand("Channel", "url", "browse", function(client, ...args) {
+    var ctype, intermission, playNext, url;
     if (!(this.control.indexOf(client) > -1)) {
       return client.permissionDenied(`browse-${ctype}`);
     }
-    this.liveUrl(url, ctype);
+    playNext = UTIL.extractArg(args, ["-n", "--next"]);
+    intermission = UTIL.extractArg(args, ["-i", "--intermission"]);
+    ctype = "HtmlFrame";
+    if (UTIL.extractArg(args, ["--x-HtmlImage"])) {
+      ctype = "HtmlImage";
+    }
+    if (UTIL.extractArg(args, ["--x-HtmlVideo"])) {
+      ctype = "HtmlVideo";
+    }
+    url = args.join(" ");
+    if (!UTIL.startsWith(url, "http://", "https://")) {
+      url = `https://${url}`;
+    }
+    this.play(ctype, url, playNext, intermission);
     return client.ack();
   });
 
-  x.addCommand("Channel", "img", "image", "pic", "picture", "gif", "png", "jpg", function(client, url) {
-    return module.exports.Channel.browse.call(this, client, url, "HtmlImage");
+  x.addCommand("Channel", "img", "image", "pic", "picture", "gif", "png", "jpg", function(client, ...args) {
+    return module.exports.Channel.browse.call(this, client, ...args, "--x-HtmlImage");
   });
 
-  x.addCommand("Channel", "vid", "video", "mp4", "webp", function(client, url) {
-    return module.exports.Channel.browse.call(this, client, url, "HtmlVideo");
+  x.addCommand("Channel", "vid", "video", "mp4", "webp", function(client, ...args) {
+    return module.exports.Channel.browse.call(this, client, ...args, "--x-HtmlVideo");
   });
 
   x.addCommand("Channel", "leave", "quit", function(client) {
@@ -536,7 +556,7 @@
   });
 
   x.addCommand("Channel", "password", function(client, new_password, revoke) {
-    var ch, cu, j, len, ref;
+    var ch, cu, i, len, ref;
     if (ch = client.subscribed) {
       if (ch.control.indexOf(client) > -1) {
         if (typeof new_password === "string") {
@@ -545,8 +565,8 @@
           client.sendSystemMessage(`Password changed${(revoke ? ", revoked all but you" : "")}!`);
           if (revoke) {
             ref = ch.control;
-            for (j = 0, len = ref.length; j < len; j++) {
-              cu = ref[j];
+            for (i = 0, len = ref.length; i < len; i++) {
+              cu = ref[i];
               if (cu === client) {
                 continue;
               }
@@ -659,7 +679,7 @@
   });
 
   x.addCommand("Channel", "copt", function(client, opt, value) {
-    var c, cols, err, j, len, nv, ok, ot, ov, ref, ref1, who;
+    var c, cols, err, i, len, nv, ok, ot, ov, ref, ref1, who;
     if (!(this.control.indexOf(client) > -1)) {
       return client.permissionDenied("copt");
     }
@@ -700,8 +720,8 @@
             this.options[opt] = nv;
             this.sendSettings();
             ref = this.control;
-            for (j = 0, len = ref.length; j < len; j++) {
-              c = ref[j];
+            for (i = 0, len = ref.length; i < len; i++) {
+              c = ref[i];
               c.sendSystemMessage(`<span style="color: ${COLORS.warning}">CHANGED</span> channel option\n<span style="color: ${COLORS.info}">${ok}</span>\nfrom <span style="color: ${COLORS.magenta}">${ov}</span>\nto <span style="color: ${COLORS.magenta}">${nv}</span>`, COLORS.white);
             }
           } catch (error1) {

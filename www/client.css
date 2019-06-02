@@ -13,6 +13,14 @@ body {
 ::-webkit-scrollbar-corner { background-color: inherit;}
 ::-webkit-resizer { background-color: #666; }
 
+/* thanks bootstrap 4 */
+.btn-group-xs > .btn, .btn-xs {
+    padding  : .25rem .4rem;
+    font-size  : .875rem;
+    line-height  : .5;
+    border-radius : .2rem;
+}
+
 /* loader animation */
 .loader {
   display: block;
@@ -229,7 +237,74 @@ body {
 
 #playlist {
   margin-top: 15px;
-  background: purple;
-  min-height: 200px;
   overflow-y: auto;
+}
+
+#playlist > div {
+  background: #1e1e1e;
+  position: relative;
+  overflow: hidden;
+  padding: 8px;
+  display: flex;
+  flex-direction: row;
+}
+#playlist > div:nth-child(odd) {
+  background: #2a2a2a;
+}
+#playlist > div .active_indicator {
+  display: inline-block;
+  font-size: 10px;
+  position: absolute;
+  bottom: 12px;
+  /*left: 116px;*/
+  right: 68px;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+#playlist > div.active .active_indicator {
+  opacity: 1;
+}
+#playlist > div + div {
+  padding-top: 0;
+}
+
+#playlist > div img[data-attr=thumbnail] {
+  display: inline-block;
+  max-width: 100px;
+  max-height: 75px;
+  cursor: pointer;
+}
+
+#playlist > div span.first {
+  min-width: 100px;
+  min-height: 75px;
+  text-align: center;
+}
+#playlist > div span.second {
+  display: inline-block;
+  float: left;
+  color: #eee;
+  font-size: 14px;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-wrap: break-word;
+  padding: 4px 0px 4px 8px;
+}
+
+#playlist > div a[data-attr=name] {
+  display: inline-block;
+  color: #eee;
+}
+#playlist > div a[data-attr=author] {
+  display: block;
+  font-size: 10px;
+  color: #5bc0de;
+}
+
+#playlist > div span.btn-group {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
 }

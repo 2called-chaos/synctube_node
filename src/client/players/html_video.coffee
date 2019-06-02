@@ -38,7 +38,6 @@ window.SyncTubeClient_Player_HtmlVideo = class SyncTubeClient_Player_HtmlVideo
     @video.remove()
 
   updateDesired: (data) ->
-    console.log data.state
     if data.state == "play" then @video.attr("autoplay", "autoplay") else @video.removeAttr("autoplay")
 
     if data.url != @video.attr("src")

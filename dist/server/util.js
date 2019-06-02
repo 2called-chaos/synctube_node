@@ -229,4 +229,18 @@
     return seconds;
   };
 
+  exports.jsonGetHttps = function(url, cb) {
+    var body;
+    body = "";
+    return require("https").get(url, (res) => {
+      res.setEncoding("utf8");
+      res.on("data", (d) => {
+        return body += d;
+      });
+      return res.on("end", () => {
+        return cb(JSON.parse(body));
+      });
+    });
+  };
+
 }).call(this);

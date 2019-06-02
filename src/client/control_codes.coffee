@@ -38,7 +38,9 @@ window.SyncTubeClient_ControlCodes =
 
   CMD_unsubscribe: ->
     @CMD_ui_clear(component: "clients")
+    @CMD_ui_clear(component: "playlist")
     @CMD_video_action(action: "destroy")
+    @playlist.hide()
 
   CMD_desired: (data) ->
     if data.ctype != @player?.ctype
@@ -58,6 +60,7 @@ window.SyncTubeClient_ControlCodes =
     switch data.component
       when "chat" then @content.html("")
       when "clients" then @clients.html("")
+      when "playlist" then @playlist.html("")
       when "player" then @CMD_video_action(action: "destroy")
 
   CMD_ui_clipboard_poll: (data) ->
@@ -114,6 +117,44 @@ window.SyncTubeClient_ControlCodes =
       cmd = "/control #{hparams.control}"
       cmd += " #{hparams.password}" if hparams.password?
       @connection.send(cmd)
+
+  CMD_playlist_single_entry: (data) ->
+    el = @playlist.find("[data-pl-id=\"#{data.id}\"]")
+    if !el.length || el.data("plIndex") != data.index
+      _el = $(@buildPlaylistElement(data))
+      _el.attr("data-pl-id", data.id)
+      if el.length then el.replaceWith(_el) else @playlist.append(_el)
+      el = _el
+
+    changeHTML = (el, v) ->
+      return unless el.length
+      el.html(v) unless el.html() == v
+      el
+    changeAttr = (el, a, v) ->
+      return unless el.length
+      el.attr(a, v) unless el.attr(a) == v
+      el
+
+    changeAttr(el.find("[data-attr=thumbnail]"), "src", data.thumbnail) if data.thumbnail
+    if data.author
+      changeAttr(el.find("[data-attr=author]"), "href", data.author[1])
+      changeHTML(el.find("[data-attr=author]"), data.author[0])
+    if typeof data.name == "string"
+      changeHTML(el.find("[data-attr=name]"), data.name)
+    else
+      changeAttr(el.find("[data-attr=name]"), "href", data.name[1])
+      changeHTML(el.find("[data-attr=name]"), data.name[0])
+    changeHTML(el.find("[data-attr=timestamp]"), data.timestamp)
+    @playlist.toggle(!!@playlist.find("div[data-pl-id]").length)
+
+  CMD_playlist_update: (data) ->
+    if data.entries
+      @CMD_ui_clear(component: "playlist")
+      @CMD_playlist_single_entry(ple) for ple in data.entries
+    if data.index?
+      @playlist.find("div[data-pl-id]").removeClass("active")
+      @playlist.find("div[data-pl-index=#{data.index}]").addClass("active")
+    @playlist.toggle(!!@playlist.find("div[data-pl-id]").length)
 
   CMD_update_single_subscriber: (resp) ->
     data = resp?.data || {}

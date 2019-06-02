@@ -132,3 +132,10 @@ exports.timestamp2Seconds = (ts) ->
     seconds += if isNaN(add) then throw "invalidNaN" else add
 
   seconds
+
+exports.jsonGetHttps = (url, cb) ->
+  body = ""
+  require("https").get url, (res) =>
+    res.setEncoding("utf8")
+    res.on "data", (d) => body += d
+    res.on "end", () => cb(JSON.parse(body))

@@ -63,7 +63,9 @@ x.addCommand "Server", "packet", (client, jdata) ->
     ch.broadcastCode(client, "update_single_subscriber", channel: ch.name, data: ch.getSubscriberData(client, client, client.index))
     if client == ch.control[ch.host] && ch.desired.url == json.url
       seek_was = ch.desired.seek
-      ch.desired.state = json.state if json.state == "ended"
+      if json.state == "ended" && ch.desired.state != json.state
+        ch.desired.state = json.state
+        ch.playlistManager?.handleEnded()
       ch.desired.seek = json.seek
       ch.desired.seek_update = new Date()
       ch.broadcastCode(false, "desired", Object.assign({}, ch.desired, { force: Math.abs(ch.desired.seek - seek_was) > (@opts.packetInterval + 0.75) }))
@@ -323,10 +325,14 @@ x.addCommand "Channel", "ready", (client) ->
     @broadcastCode(false, "video_action", action: "play")
   return client.ack()
 
-x.addCommand "Channel", "play", "yt", "youtube", (client, url) ->
+x.addCommand "Channel", "play", "yt", "youtube", (client, args...) ->
   return client.permissionDenied("play") unless @control.indexOf(client) > -1
-  if m = url.match(/([A-Za-z0-9_\-]{11})/)
-    @liveVideo(m[1])
+  playNext = UTIL.extractArg(args, ["-n", "--next"])
+  intermission = UTIL.extractArg(args, ["-i", "--intermission"])
+  url = args.join(" ")
+
+  if m = url.match(/([A-Za-z-0-9_\-]{11})/)
+    @play("Youtube", m[1], playNext, intermission)
   else
     client.sendSystemMessage("I don't recognize this URL/YTID format, sorry")
 
@@ -347,13 +353,25 @@ x.addCommand "Channel", "loop", (client, what) ->
 
   return client.ack()
 
-x.addCommand "Channel", "url", "browse", (client, url, ctype = "HtmlFrame") ->
+x.addCommand "Channel", "url", "browse", (client, args...) ->
   return client.permissionDenied("browse-#{ctype}") unless @control.indexOf(client) > -1
-  @liveUrl(url, ctype)
+
+  playNext = UTIL.extractArg(args, ["-n", "--next"])
+  intermission = UTIL.extractArg(args, ["-i", "--intermission"])
+  ctype = "HtmlFrame"
+  ctype = "HtmlImage" if UTIL.extractArg(args, ["--x-HtmlImage"])
+  ctype = "HtmlVideo" if UTIL.extractArg(args, ["--x-HtmlVideo"])
+
+  url = args.join(" ")
+  url = "https://#{url}" unless UTIL.startsWith(url, "http://", "https://")
+  @play(ctype, url, playNext, intermission)
   return client.ack()
 
-x.addCommand "Channel", "img", "image", "pic", "picture", "gif", "png", "jpg", (client, url) -> module.exports.Channel.browse.call(this, client, url, "HtmlImage")
-x.addCommand "Channel", "vid", "video", "mp4", "webp", (client, url) -> module.exports.Channel.browse.call(this, client, url, "HtmlVideo")
+x.addCommand "Channel", "img", "image", "pic", "picture", "gif", "png", "jpg", (client, args...) ->
+  module.exports.Channel.browse.call(this, client, args..., "--x-HtmlImage")
+
+x.addCommand "Channel", "vid", "video", "mp4", "webp", (client, args...) ->
+  module.exports.Channel.browse.call(this, client, args..., "--x-HtmlVideo")
 
 x.addCommand "Channel", "leave", "quit", (client) ->
   if ch = client.subscribed

@@ -115,6 +115,24 @@ window.SyncTubeClient_UI =
     """
     @content.scrollTop(@content.prop("scrollHeight"))
 
+  buildPlaylistElement: (data) ->
+    $ """
+      <div data-pl-id="#{data.id}" data-pl-index="#{data.index}">
+        <span class="first">
+          <img src="" data-attr="thumbnail" data-command="pl play #{data.index}" title="play">
+        </span>
+        <span class="second">
+          <a data-attr="name"></a>
+          <a data-attr="author"></a>
+          <span class="active_indicator text-danger"><i class="fa fa-circle"></i> now playing</span>
+          <span class="btn-group">
+            <span class="btn btn-success btn-xs" data-command="pl play #{data.index}"><i class="fa fa-play"></i></span>
+            <span class="btn btn-danger btn-xs" data-command="pl remove #{data.index}"><i class="fa fa-times"></i></span>
+          </span>
+        </span>
+      </div>
+    """
+
   buildSubscriberElement: ->
     $ """
       <div data-client-index="">

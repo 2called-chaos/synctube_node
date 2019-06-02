@@ -1,0 +1,182 @@
+UTIL = require("./util.js")
+
+exports.Class = class PlaylistManager
+  debug: (a...) -> @channel.debug("[PL]", a...)
+  info: (a...) -> @channel.info("[PL]", a...)
+  warn: (a...) -> @channel.warn("[PL]", a...)
+  error: (a...) -> @channel.error("[PL]", a...)
+
+  constructor: (@channel, @data = {}) ->
+    @server = @channel.server
+    @set = null
+
+  sdata: (sub = @set) -> @data[sub]
+
+  load: (name, opts = {}) ->
+    @set = name
+    unless @data[@set]
+      @debug "Creating new playlist #{name}"
+      @data[@set] = Object.assign({}, {
+        index: -1
+        entries: []
+        map: {}
+        maxListSize: 100 #
+        autoPlayNext: true
+        autoRemove: true
+        shuffle: false #
+        loop: false #
+        loadImageThumbs: true #
+        persisted: true #
+      }, opts)
+    @cUpdateList()
+    @data[@set]
+
+  delete: (name = @set) ->
+    throw "cannot delete default playlist" if name == "default"
+    if name == @set
+      @load("default")
+      delete @data[name]
+    else
+      delete @data[name]
+      @cUpdateList()
+
+  clear: (name = @set) ->
+    return unless sdata = @data[name]
+    sdata.index = -1
+    sdata.entries = []
+    sdata.map = {}
+    @cUpdateList()
+    return true
+
+  cUpdateList: (client) ->
+    entries = []
+    for qel, i in @data[@set].entries
+      qel[2].index = i
+      entries.push(qel[2])
+    if client
+      client.sendCode("playlist_update", entries: entries, index: @data[@set].index)
+    else
+      @channel.broadcastCode(false, "playlist_update", entries: entries, index: @data[@set].index)
+
+  cUpdateIndex: (client) ->
+    if client
+      client.sendCode("playlist_update", index: @data[@set].index)
+    else
+      @channel.broadcastCode(false, "playlist_update", index: @data[@set].index)
+
+  cAtStart: -> @data[@set].index == 0 && !@cEmpty()
+  cAtEnd: -> @data[@set].index == (@data[@set].entries.length - 1)
+  cEmpty: -> @data[@set].entries.length == 0
+
+  cPlayI: (index) ->
+    index = parseInt(index)
+    if @data[@set].entries[index]
+      @data[@set].index = index
+      @cUpdateIndex()
+      @channel.live(@data[@set].entries[@data[@set].index]...)
+    else
+      throw "no such index"
+
+  cNext: ->
+    return false if @cEmpty()
+    return false if @cAtEnd()
+    if @data[@set].autoRemove && @data[@set].entries[@data[@set].index]
+      @removeItemAtIndex(@data[@set].index)
+    else
+      @data[@set].index++
+      @cUpdateIndex()
+    @channel.live(@data[@set].entries[@data[@set].index]...)
+
+  cPrev: ->
+
+  removeItemAtIndex: (index) ->
+    wasAtEnd = @cAtEnd()
+    url = @data[@set].entries[index][1]
+    dmap = @data[@set].map
+    delete dmap[url]
+    @data[@set].entries.splice(index, 1)
+
+    # index bounds
+    @data[@set].index = Math.min(@data[@set].index, @data[@set].entries.length - 1)
+    @data[@set].index = -1 if @data[@set].entries.length == 0
+    @cPlayI(@data[@set].index) if !wasAtEnd && @data[@set].index != -1
+    @cUpdateList()
+
+  handlePlay: ->
+    #return if @channel.desired?.state == "play"
+    return if !(@channel.desired?.state == "ended" || (@data[@set].entries.length == 1 && @data[@set].index == -1))
+    @cNext() if @data[@set].autoPlayNext
+
+  handleEnded: ->
+    @cNext() if @data[@set].autoPlayNext
+
+  add: (ctype, url) ->
+    #@data[@set].entries.push([ctype, url, player.getMeta(url)])
+
+  intermission: (method, args...) ->
+    # @getMeta: (url) ->
+
+
+  playNext: (ctype, url) ->
+    return @append(ctype, url) if @cEmpty()
+    if qel = @buildQueueElement(ctype, url)
+      qel[2].index = @data[@set].index + 1
+    else
+      qel = @data[@set].map[url]
+      @data[@set].entries.splice(qel[2].index, 1)
+
+    @data[@set].entries.splice(@data[@set].index + 1, 0, qel)
+    @cUpdateList()
+    @handlePlay()
+
+  append: (ctype, url) ->
+    if qel = @buildQueueElement(ctype, url)
+      @data[@set].entries.push(qel)
+      qel[2].index = @data[@set].entries.length - 1
+      @channel.broadcastCode(false, "playlist_single_entry", qel[2])
+    else
+      qel = @data[@set].map[url]
+      @data[@set].entries.splice(qel[2].index, 1)
+      @data[@set].entries.push(qel)
+      @cUpdateList()
+    @handlePlay()
+
+  buildQueueElement: (ctype, url) ->
+    return false if @data[@set].map[url]
+    data = [ctype, url]
+    data.push
+      ctype: ctype
+      name: "loading #{url}"
+      author: null
+      id: url
+      seconds: 0
+      timestamp: "0:00"
+      thumbnail: false
+    @data[@set].map[url] = data
+    @fetchMeta(data...)
+    data
+
+  fetchMeta: (ctype, url, data) ->
+    return if data.thumbnail != false
+    switch ctype
+      when "Youtube"
+        UTIL.jsonGetHttps "https://www.youtube.com/oembed?url=http://www.youtube.com/watch?v=#{url}&format=json", (d) =>
+          data.name = [d.title, "https://youtube.com/watch?v=#{url}"]
+          data.author = [d.author_name, d.author_url]
+          data.thumbnail = d.thumbnail_url.replace("hqdefault", "default")
+          @channel.broadcastCode(false, "playlist_single_entry", data)
+      when "HtmlImage"
+        data.name = [(if m = url.match(/\/([^\/]+)$/) then m[1] else url), url]
+        data.thumbnail = url
+        data.author = "image"
+        @channel.broadcastCode(false, "playlist_single_entry", data)
+      when "HtmlVideo"
+        data.name = [(if m = url.match(/\/([^\/]+)$/) then m[1] else url), url]
+        data.thumbnail = null
+        data.author = "video"
+        @channel.broadcastCode(false, "playlist_single_entry", data)
+      when "HtmlFrame"
+        data.name = [url, url]
+        data.thumbnail = null
+        data.author = "URL"
+        @channel.broadcastCode(false, "playlist_single_entry", data)

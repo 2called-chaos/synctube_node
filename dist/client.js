@@ -219,9 +219,13 @@
       this.CMD_ui_clear({
         component: "clients"
       });
-      return this.CMD_video_action({
+      this.CMD_ui_clear({
+        component: "playlist"
+      });
+      this.CMD_video_action({
         action: "destroy"
       });
+      return this.playlist.hide();
     },
     CMD_desired: function(data) {
       var e, klass, ref, ref1;
@@ -248,6 +252,8 @@
           return this.content.html("");
         case "clients":
           return this.clients.html("");
+        case "playlist":
+          return this.playlist.html("");
         case "player":
           return this.CMD_video_action({
             action: "destroy"
@@ -344,6 +350,71 @@
         }
         return this.connection.send(cmd);
       }
+    },
+    CMD_playlist_single_entry: function(data) {
+      var _el, changeAttr, changeHTML, el;
+      el = this.playlist.find(`[data-pl-id="${data.id}"]`);
+      if (!el.length || el.data("plIndex") !== data.index) {
+        _el = $(this.buildPlaylistElement(data));
+        _el.attr("data-pl-id", data.id);
+        if (el.length) {
+          el.replaceWith(_el);
+        } else {
+          this.playlist.append(_el);
+        }
+        el = _el;
+      }
+      changeHTML = function(el, v) {
+        if (!el.length) {
+          return;
+        }
+        if (el.html() !== v) {
+          el.html(v);
+        }
+        return el;
+      };
+      changeAttr = function(el, a, v) {
+        if (!el.length) {
+          return;
+        }
+        if (el.attr(a) !== v) {
+          el.attr(a, v);
+        }
+        return el;
+      };
+      if (data.thumbnail) {
+        changeAttr(el.find("[data-attr=thumbnail]"), "src", data.thumbnail);
+      }
+      if (data.author) {
+        changeAttr(el.find("[data-attr=author]"), "href", data.author[1]);
+        changeHTML(el.find("[data-attr=author]"), data.author[0]);
+      }
+      if (typeof data.name === "string") {
+        changeHTML(el.find("[data-attr=name]"), data.name);
+      } else {
+        changeAttr(el.find("[data-attr=name]"), "href", data.name[1]);
+        changeHTML(el.find("[data-attr=name]"), data.name[0]);
+      }
+      changeHTML(el.find("[data-attr=timestamp]"), data.timestamp);
+      return this.playlist.toggle(!!this.playlist.find("div[data-pl-id]").length);
+    },
+    CMD_playlist_update: function(data) {
+      var j, len, ple, ref;
+      if (data.entries) {
+        this.CMD_ui_clear({
+          component: "playlist"
+        });
+        ref = data.entries;
+        for (j = 0, len = ref.length; j < len; j++) {
+          ple = ref[j];
+          this.CMD_playlist_single_entry(ple);
+        }
+      }
+      if (data.index != null) {
+        this.playlist.find("div[data-pl-id]").removeClass("active");
+        this.playlist.find(`div[data-pl-index=${data.index}]`).addClass("active");
+      }
+      return this.playlist.toggle(!!this.playlist.find("div[data-pl-id]").length);
     },
     CMD_update_single_subscriber: function(resp) {
       var _el, changeAttr, changeHTML, data, el, k, ref, v;
@@ -1030,7 +1101,6 @@
 
       updateDesired(data) {
         var lastPacketDiff;
-        console.log(data.state);
         if (data.state === "play") {
           this.video.attr("autoplay", "autoplay");
         } else {
@@ -1500,7 +1570,7 @@
           return;
         }
         current_ytid = (ref1 = this.getUrl()) != null ? (ref2 = ref1.match(/([A-Za-z0-9_\-]{11})/)) != null ? ref2[0] : void 0 : void 0;
-        if (current_ytid !== data.url) {
+        if (current_ytid !== data.url && !this.disableSourceSync) {
           this.client.debug("switching video from", current_ytid, "to", data.url);
           this.loadVideo(data.url);
           return;
@@ -1907,6 +1977,9 @@
       tagname = data.author === "system" ? "strong" : "span";
       this.content.append(`<p>\n  <${tagname} style="color:${data.author_color}">${data.author}</${tagname}>\n  @ ${`0${dt.getHours()}`.slice(-2)}:${`0${dt.getMinutes()}`.slice(-2)}\n  <span style="color: ${data.text_color}">${data.text}</span>\n</p>`);
       return this.content.scrollTop(this.content.prop("scrollHeight"));
+    },
+    buildPlaylistElement: function(data) {
+      return $(`<div data-pl-id="${data.id}" data-pl-index="${data.index}">\n  <span class="first">\n    <img src="" data-attr="thumbnail" data-command="pl play ${data.index}" title="play">\n  </span>\n  <span class="second">\n    <a data-attr="name"></a>\n    <a data-attr="author"></a>\n    <span class="active_indicator text-danger"><i class="fa fa-circle"></i> now playing</span>\n    <span class="btn-group">\n      <span class="btn btn-success btn-xs" data-command="pl play ${data.index}"><i class="fa fa-play"></i></span>\n      <span class="btn btn-danger btn-xs" data-command="pl remove ${data.index}"><i class="fa fa-times"></i></span>\n    </span>\n  </span>\n</div>`);
     },
     buildSubscriberElement: function() {
       return $("<div data-client-index=\"\">\n  <div class=\"first\">\n    <span data-attr=\"admin-ctn\"><i></i></span>\n    <span data-attr=\"name\"></span>\n  </div>\n  <div class=\"second\">\n    <span data-attr=\"icon-ctn\"><i><span data-attr=\"progress\"></span> <span data-attr=\"timestamp\"></span></i></span>\n    <span data-attr=\"drift-ctn\" style=\"float:right\"><i><span data-attr=\"drift\"></span></i></span>\n    <div data-attr=\"progress-bar\"><div data-attr=\"progress-bar-buffered\"></div><div data-attr=\"progress-bar-position\"></div></div>\n  </div>\n</div>");

@@ -1,3 +1,4 @@
+PlaylistManager = require("./playlist_manager.js").Class
 COLORS = require("./colors.js")
 UTIL = require("./util.js")
 
@@ -12,10 +13,9 @@ exports.Class = class SyncTubeServerChannel
     @host = 0
     @subscribers = []
     @queue = []
+    @playlists = {}
     @ready = []
     @ready_timeout = null
-    @playlist = []
-    @playlist_index = 0
     @options = {
       defaultCtype: @server.opts.defaultCtype
       defaultUrl: @server.opts.defaultUrl
@@ -24,15 +24,17 @@ exports.Class = class SyncTubeServerChannel
       packetInterval: @server.opts.packetInterval
       readyGracePeriod: 2000
       chatMode: "public" # public, admin-only, disabled
+      playlistMode: "full" # full, disabled
     }
     @desired = { ctype: @options.defaultCtype, url: @options.defaultUrl, seek: 0, loop: false, seek_update: new Date, state: if @options.defaultAutoplay then "play" else "pause" }
     @persisted = {
       queue: @queue
-      playlist: @playlist
-      playlist_index: @playlist_index
+      playlists: @playlists
       desired: @desired
       options: @options
     }
+    @playlistManager = new PlaylistManager(this, @playlists)
+    @playlistManager.load("default")
     @init()
 
   init: -> # plugin hook
@@ -96,8 +98,8 @@ exports.Class = class SyncTubeServerChannel
 
     data
 
-  liveVideo: (url, state = "pause") ->
-    @desired = { ctype: "Youtube", url: url, state: state, seek: 0, loop: false, seek_update: new Date}
+  live: (ctype, url) ->
+    @persisted.desired = @desired = { ctype: ctype, url: url, state: "pause", seek: 0, loop: false, seek_update: new Date}
     @ready = []
     @broadcastCode(false, "desired", @desired)
 
@@ -106,11 +108,13 @@ exports.Class = class SyncTubeServerChannel
       @desired.state = "play"
       @broadcastCode(false, "video_action", action: "play")
 
-  liveUrl: (url, ctype = "HtmlFrame") ->
-    url = "https://#{url}" unless UTIL.startsWith(url, "http://", "https://")
-    @desired = { ctype: ctype, url: url, loop: false, state: "play" }
-    @ready = []
-    @broadcastCode(false, "desired", @desired)
+  play: (ctype, url, playNext = false, intermission = false) ->
+    if intermission
+      @playlistManager.intermission(ctype, url)
+    else if playNext
+      @playlistManager.playNext(ctype, url)
+    else
+      @playlistManager.append(ctype, url)
 
   pauseVideo: (client, sendMessage = true) ->
     return unless @control.indexOf(client) > -1
@@ -150,6 +154,7 @@ exports.Class = class SyncTubeServerChannel
     client.sendSystemMessage("You joined #{@name}!", COLORS.green) if sendMessage
     client.sendCode("subscribe", channel: @name)
     @sendSettings(client)
+    @playlistManager?.cUpdateList(client)
     client.sendCode("desired", Object.assign({}, @desired, { force: true }))
     @broadcast(client, "<i>joined the party!</i>", COLORS.green, COLORS.muted, false)
     @updateSubscriberList(client)

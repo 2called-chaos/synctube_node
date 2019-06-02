@@ -20,16 +20,15 @@ window.SyncTubeClient_UI =
       return unless $("#page").is(":visible")
       height_first  = $("#first_row").height()
       height_second = $("#second_row").height()
+      height_third = $("#third_row").height()
       width_second = $("#second_row").width()
-      height_both = height_first + height_second + 30
-      #ratio = width_second / (height_both + 60)
-      #console.log width_second, height_both, window.innerHeight, ratio, window.innerHeight * ratio
-      #$("#page").css(maxWidth: window.innerHeight * ratio)
+      #height_both = height_first + height_second + 30
+      height_both = height_first + height_second + height_third + 30
       if height_both > window.innerHeight && width_second > 500
         $("#page").css(maxWidth: $("#page").width() - 2)
         window.scrollTo(0, 0)
         @delay 1, => $(window).resize()
-      else if (window.innerHeight - height_both) > 1
+      else if (window.innerHeight - height_both) > 1 && $(document).innerWidth() > $("#page").width()
         $("#page").css(maxWidth: $("#page").width() + 2)
         window.scrollTo(0, 0)
         @delay 1, => $(window).resize()

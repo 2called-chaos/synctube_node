@@ -396,7 +396,8 @@
         changeHTML(el.find("[data-attr=name]"), data.name[0]);
       }
       changeHTML(el.find("[data-attr=timestamp]"), data.timestamp);
-      return this.playlist.toggle(!!this.playlist.find("div[data-pl-id]").length);
+      this.playlist.toggle(!!this.playlist.find("div[data-pl-id]").length);
+      return $(window).resize();
     },
     CMD_playlist_update: function(data) {
       var j, len, ple, ref;
@@ -414,7 +415,8 @@
         this.playlist.find("div[data-pl-id]").removeClass("active");
         this.playlist.find(`div[data-pl-index=${data.index}]`).addClass("active");
       }
-      return this.playlist.toggle(!!this.playlist.find("div[data-pl-id]").length);
+      this.playlist.toggle(!!this.playlist.find("div[data-pl-id]").length);
+      return $(window).resize();
     },
     CMD_update_single_subscriber: function(resp) {
       var _el, changeAttr, changeHTML, data, el, k, ref, v;
@@ -1848,17 +1850,16 @@
     },
     handleWindowResize: function() {
       $(window).resize((ev) => {
-        var height_both, height_first, height_second, width_second;
+        var height_both, height_first, height_second, height_third, width_second;
         if (!$("#page").is(":visible")) {
           return;
         }
         height_first = $("#first_row").height();
         height_second = $("#second_row").height();
+        height_third = $("#third_row").height();
         width_second = $("#second_row").width();
-        height_both = height_first + height_second + 30;
-        //ratio = width_second / (height_both + 60)
-        //console.log width_second, height_both, window.innerHeight, ratio, window.innerHeight * ratio
-        //$("#page").css(maxWidth: window.innerHeight * ratio)
+        //height_both = height_first + height_second + 30
+        height_both = height_first + height_second + height_third + 30;
         if (height_both > window.innerHeight && width_second > 500) {
           $("#page").css({
             maxWidth: $("#page").width() - 2
@@ -1867,7 +1868,7 @@
           this.delay(1, () => {
             return $(window).resize();
           });
-        } else if ((window.innerHeight - height_both) > 1) {
+        } else if ((window.innerHeight - height_both) > 1 && $(document).innerWidth() > $("#page").width()) {
           $("#page").css({
             maxWidth: $("#page").width() + 2
           });

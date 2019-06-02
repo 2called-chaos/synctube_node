@@ -146,6 +146,7 @@ window.SyncTubeClient_ControlCodes =
       changeHTML(el.find("[data-attr=name]"), data.name[0])
     changeHTML(el.find("[data-attr=timestamp]"), data.timestamp)
     @playlist.toggle(!!@playlist.find("div[data-pl-id]").length)
+    $(window).resize()
 
   CMD_playlist_update: (data) ->
     if data.entries
@@ -155,6 +156,7 @@ window.SyncTubeClient_ControlCodes =
       @playlist.find("div[data-pl-id]").removeClass("active")
       @playlist.find("div[data-pl-index=#{data.index}]").addClass("active")
     @playlist.toggle(!!@playlist.find("div[data-pl-id]").length)
+    $(window).resize()
 
   CMD_update_single_subscriber: (resp) ->
     data = resp?.data || {}

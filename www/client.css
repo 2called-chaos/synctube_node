@@ -70,6 +70,12 @@ body {
 
 /* custom style */
 
+@media (min-width: 576px) {
+  .pr-0-nxs {
+    padding-right: 0;
+  }
+}
+
 .flexcentered {
   min-height: 100%;
   min-height: 100%;

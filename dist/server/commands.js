@@ -208,9 +208,7 @@
           this.eachClient("sendSystemMessage", `Server restart: ${reason}`);
         }
         client.sendSystemMessage("See ya!");
-        throw "bye";
-        //UTIL.delay 1000, => client.sendCode "navigate", reload: true
-        return true;
+        return process.exit(1);
       case "gracefulRestart":
         if (args[0] === "cancel") {
           if (this.pendingRestart != null) {
@@ -357,6 +355,8 @@
           console.log(detail ? this.clients[parseInt(detail)] : client);
         } else if (what === "channel") {
           console.log(detail ? this.channels[detail] : client.subscribed ? client.subscribed : this.channels);
+        } else if (what === "commands") {
+          console.log(module.exports);
         }
     }
     return client.ack();

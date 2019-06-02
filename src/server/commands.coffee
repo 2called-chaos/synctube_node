@@ -140,9 +140,7 @@ x.addCommand "Server", "system", (client, subaction, args...) ->
     when "restart"
       @eachClient "sendSystemMessage", "Server restart: #{reason}" if reason = UTIL.argsToStr(args)
       client.sendSystemMessage "See ya!"
-      throw "bye"
-      #UTIL.delay 1000, => client.sendCode "navigate", reload: true
-      return true
+      return process.exit(1)
     when "gracefulRestart"
       if args[0] == "cancel"
         if @pendingRestart?
@@ -248,6 +246,8 @@ x.addCommand "Server", "system", (client, subaction, args...) ->
         console.log if detail then @clients[parseInt(detail)] else client
       else if what == "channel"
         console.log if detail then @channels[detail] else if client.subscribed then client.subscribed else @channels
+      else if what == "commands"
+        console.log module.exports
   return client.ack()
 
 x.addCommand "Channel", "retry", (client) ->

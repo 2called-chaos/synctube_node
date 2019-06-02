@@ -318,8 +318,10 @@ x.addCommand "Channel", "sync", "resync", (client, args...) ->
   return client.ack()
 
 x.addCommand "Channel", "ready", (client) ->
+  return client.ack() unless @ready
   @ready.push(client) unless @ready.indexOf(client) > -1
   if @ready.length == @subscribers.length
+    @ready = false
     clearTimeout(@ready_timeout)
     @desired.state = "play"
     @broadcastCode(false, "video_action", action: "resume", reason: "allReady", cancelPauseEnsured: true)

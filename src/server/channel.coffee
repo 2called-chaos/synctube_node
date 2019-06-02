@@ -14,7 +14,7 @@ exports.Class = class SyncTubeServerChannel
     @subscribers = []
     @queue = []
     @playlists = {}
-    @ready = []
+    @ready = false
     @ready_timeout = null
     @options = {
       defaultCtype: @server.opts.defaultCtype
@@ -109,6 +109,7 @@ exports.Class = class SyncTubeServerChannel
 
     # start after grace period
     @ready_timeout = UTIL.delay @options.readyGracePeriod, =>
+      @ready = false
       @desired.state = "play"
       @broadcastCode(false, "video_action", action: "resume", reason: "gracePeriod")
 

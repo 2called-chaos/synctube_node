@@ -34,7 +34,7 @@
       this.subscribers = [];
       this.queue = [];
       this.playlists = {};
-      this.ready = [];
+      this.ready = false;
       this.ready_timeout = null;
       this.options = {
         defaultCtype: this.server.opts.defaultCtype,
@@ -214,6 +214,7 @@
       }));
       // start after grace period
       return this.ready_timeout = UTIL.delay(this.options.readyGracePeriod, () => {
+        this.ready = false;
         this.desired.state = "play";
         return this.broadcastCode(false, "video_action", {
           action: "resume",

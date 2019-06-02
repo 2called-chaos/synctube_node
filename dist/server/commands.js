@@ -466,10 +466,14 @@
   });
 
   x.addCommand("Channel", "ready", function(client) {
+    if (!this.ready) {
+      return client.ack();
+    }
     if (!(this.ready.indexOf(client) > -1)) {
       this.ready.push(client);
     }
     if (this.ready.length === this.subscribers.length) {
+      this.ready = false;
       clearTimeout(this.ready_timeout);
       this.desired.state = "play";
       this.broadcastCode(false, "video_action", {

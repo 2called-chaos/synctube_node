@@ -18,6 +18,23 @@ window.SyncTubeClient_UI =
   handleWindowResize: ->
     $(window).resize (ev) =>
       return unless $("#page").is(":visible")
+
+      # playlist rattach
+      if $("#first_row").width() >= 1000
+        unless $("#playlist").parent().attr("id") == "playlist_rattach_ctn"
+          @debug "RATTACH playlist"
+          $("#playlist").detach().appendTo("#playlist_rattach_ctn")
+      else
+        unless $("#playlist").parent().attr("id") == "playlist_ctn"
+          @debug "INLINE playlist"
+          $("#playlist").detach().appendTo("#playlist_ctn")
+
+      # playlist fix
+      plrc = $("#playlist_rattach_ctn")
+      plre = plrc.find("#playlist")
+      plrc.toggle(!!(plre.length && plre.find("> div").length && !plre.hasClass("collapsed")))
+
+      # brute force width
       height_first  = $("#first_row").height()
       height_second = $("#second_row").height()
       height_third = $("#third_row").height()
@@ -33,13 +50,7 @@ window.SyncTubeClient_UI =
         window.scrollTo(0, 0)
         @delay 1, => $(window).resize()
 
-      if $("#first_row").width() > 800
-        #console.log "ATTACH playlist"
-        #$("#playlist").detach()#.appendTo("#view_ctn")
-      else
-        #console.log "DEATTACH playlist"
-        #$("#playlist").detach().appendTo("#playlist_ctn")
-
+      # post scroll
       @playlist.scrollTop(@playlist.find("div.active").prop("offsetTop") - 15)
     $(window).resize()
     #setTimeout((-> $(window).resize()), 100)

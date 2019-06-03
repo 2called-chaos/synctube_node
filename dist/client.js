@@ -1884,10 +1884,27 @@
     },
     handleWindowResize: function() {
       $(window).resize((ev) => {
-        var height_both, height_first, height_second, height_third, width_second;
+        var height_both, height_first, height_second, height_third, plrc, plre, width_second;
         if (!$("#page").is(":visible")) {
           return;
         }
+        // playlist rattach
+        if ($("#first_row").width() >= 1000) {
+          if ($("#playlist").parent().attr("id") !== "playlist_rattach_ctn") {
+            this.debug("RATTACH playlist");
+            $("#playlist").detach().appendTo("#playlist_rattach_ctn");
+          }
+        } else {
+          if ($("#playlist").parent().attr("id") !== "playlist_ctn") {
+            this.debug("INLINE playlist");
+            $("#playlist").detach().appendTo("#playlist_ctn");
+          }
+        }
+        // playlist fix
+        plrc = $("#playlist_rattach_ctn");
+        plre = plrc.find("#playlist");
+        plrc.toggle(!!(plre.length && plre.find("> div").length && !plre.hasClass("collapsed")));
+        // brute force width
         height_first = $("#first_row").height();
         height_second = $("#second_row").height();
         height_third = $("#third_row").height();
@@ -1911,15 +1928,7 @@
             return $(window).resize();
           });
         }
-        if ($("#first_row").width() > 800) {
-
-        } else {
-
-        }
-        //console.log "DEATTACH playlist"
-        //$("#playlist").detach().appendTo("#playlist_ctn")
-        //console.log "ATTACH playlist"
-        //$("#playlist").detach()#.appendTo("#view_ctn")
+        // post scroll
         return this.playlist.scrollTop(this.playlist.find("div.active").prop("offsetTop") - 15);
       });
       return $(window).resize();

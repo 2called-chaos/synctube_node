@@ -74,6 +74,9 @@ body {
   .pr-0-nxs {
     padding-right: 0;
   }
+  .pl-0-nxs {
+    padding-left: 0;
+  }
 }
 
 .flexcentered {
@@ -246,12 +249,26 @@ body {
   overflow-y: auto;
 }
 
-#playlist.inline {
+#playlist_rattach_ctn #playlist {
+  position: absolute;
+  margin-top: 0;
+  top: 0;
+  left: 0;
+  right: 15px;
+  bottom: 0;
+  max-width: 100%;
+  transition: max-width 0.2s ease-in-out;
+}
+#playlist_rattach_ctn #playlist.collapsed {
+  max-width: 0%;
+}
+
+#playlist_ctn #playlist {
   max-height: 182px;
   transition: max-height 0.2s ease-in-out, margin-top 0.2s ease-in-out;
 }
 
-#playlist.inline.collapsed {
+#playlist_ctn #playlist.collapsed {
   max-height: 0px;
   margin-top: 0px;
 }

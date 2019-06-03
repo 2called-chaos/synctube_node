@@ -35,6 +35,9 @@ exports.Class = class SyncTubeServerChannel
           playlistMode: "full" # full, disabled
 
     @persisted.beforeSave (ps, store) =>
+      # reset playlist index because it makes everything easier
+      v.index = -1 for k, v of store.playlists
+
       # delete playlist maps
       delete v["map"] for k, v of store.playlists
 

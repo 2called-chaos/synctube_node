@@ -1605,6 +1605,7 @@
         this.rememberVolume();
         if (!this.api) {
           this.loadVideo(data.url, data.state !== "play", data.seek);
+          this.ensurePause(data);
           return;
         }
         current_ytid = (ref1 = this.getUrl()) != null ? (ref2 = ref1.match(/([A-Za-z0-9_\-]{11})/)) != null ? ref2[0] : void 0 : void 0;

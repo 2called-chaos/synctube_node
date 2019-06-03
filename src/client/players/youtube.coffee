@@ -14,6 +14,7 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
     @rememberVolume()
     unless @api
       @loadVideo(data.url, data.state != "play", data.seek)
+      @ensurePause(data)
       return
 
     current_ytid = @getUrl()?.match(/([A-Za-z0-9_\-]{11})/)?[0]

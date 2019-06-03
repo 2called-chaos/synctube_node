@@ -266,16 +266,25 @@
       }
     },
     CMD_ui_chat_show: function(data) {
-      return this.content.show(200, () => {
+      this.content.show(200, () => {
         return this.content.scrollTop(this.content.prop("scrollHeight"));
+      });
+      return this.clients.show(200, () => {
+        return $(window).resize();
       });
     },
     CMD_ui_chat_hide: function(data) {
-      return this.content.hide(200);
+      this.content.hide(200);
+      return this.clients.hide(200, () => {
+        return $(window).resize();
+      });
     },
     CMD_ui_chat_toggle: function(data) {
-      return this.content.toggle(200, () => {
+      this.content.toggle(200, () => {
         return this.content.scrollTop(this.content.prop("scrollHeight"));
+      });
+      return this.clients.toggle(200, () => {
+        return $(window).resize();
       });
     },
     CMD_ui_playlist_show: function(data) {

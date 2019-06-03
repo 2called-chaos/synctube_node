@@ -88,7 +88,7 @@ Unless otherwise specified all commands are being send to and processed by the s
       Allows you to change your display name, no arguments, next message you send will be your name
 
     (GLOBAL) /tc /togglechat
-      Toggle chat display (rather useless)
+      Toggle chat & client display
 
     (GLOBAL) /tpl /togglepl /toggleplaylist
       Toggle playlist

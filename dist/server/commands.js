@@ -293,6 +293,10 @@
         break;
       case "banip":
         ip = args.shift();
+        if (ip == null) {
+          client.sendSystemMessage("Usage: /system banip &lt;ip&gt; [duration] [message]");
+          return client.ack();
+        }
         dur = args.shift();
         reason = args.join(" ");
         if (dur === "permanent") {
@@ -315,10 +319,9 @@
         break;
       case "unbanip":
         ip = args[0];
-        if (this.banned.hasOwnProperty(ip)) {
-          b = this.banned[ip];
+        if (b = this.banned.get(ip)) {
           client.sendSystemMessage(`Removed ban for IP ${ip} with expiry ${(b ? b : "never")}`);
-          delete this.banned[ip];
+          this.banned.purge(ip);
         } else {
           client.sendSystemMessage(`No ban found for IP ${ip}`);
         }
@@ -573,7 +576,7 @@
     if (ch = client.subscribed) {
       if (ch.control.indexOf(client) > -1) {
         if (typeof new_password === "string") {
-          ch.password = new_password ? new_password : void 0;
+          ch.persisted.set("password", new_password ? new_password : void 0);
           revoke = UTIL.strbool(revoke, false);
           client.sendSystemMessage(`Password changed${(revoke ? ", revoked all but you" : "")}!`);
           if (revoke) {

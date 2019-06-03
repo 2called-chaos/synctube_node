@@ -138,3 +138,6 @@ exports.jsonGetHttps = (url, cb) ->
     res.setEncoding("utf8")
     res.on "data", (d) => body += d
     res.on "end", () => cb(JSON.parse(body))
+
+exports.sha1 = (input) ->
+  require("crypto").createHash("sha1").update(input).digest("hex")

@@ -1,3 +1,4 @@
+PersistedStorage = require("./persisted_storage.js").Class
 PlaylistManager = require("./playlist_manager.js").Class
 COLORS = require("./colors.js")
 UTIL = require("./util.js")
@@ -12,35 +13,60 @@ exports.Class = class SyncTubeServerChannel
     @control = []
     @host = 0
     @subscribers = []
-    @queue = []
-    @playlists = {}
     @ready = false
     @ready_timeout = null
-    @options = {
-      defaultCtype: @server.opts.defaultCtype
-      defaultUrl: @server.opts.defaultUrl
-      defaultAutoplay: @server.opts.defaultAutoplay
-      maxDrift: @server.opts.maxDrift
-      packetInterval: @server.opts.packetInterval
-      readyGracePeriod: 2000
-      chatMode: "public" # public, admin-only, disabled
-      playlistMode: "full" # full, disabled
-    }
-    @persisted = {
-      queue: @queue
-      playlists: @playlists
-      desired: @desired
-      options: @options
-    }
-    @setDefaultDesired()
+    @persisted = new PersistedStorage @server, "channel/#{UTIL.sha1(@name)}",
+      assign_to: this
+      default:
+        name: @name
+        password: @password
+        queue: []
+        playlists: {}
+        playlistActiveSet: "default"
+        desired: false
+        options:
+          defaultCtype: @server.opts.defaultCtype
+          defaultUrl: @server.opts.defaultUrl
+          defaultAutoplay: @server.opts.defaultAutoplay
+          maxDrift: @server.opts.maxDrift
+          packetInterval: @server.opts.packetInterval
+          readyGracePeriod: 2000
+          chatMode: "public" # public, admin-only, disabled
+          playlistMode: "full" # full, disabled
+
+    @persisted.beforeSave (ps, store) =>
+      # delete playlist maps
+      delete v["map"] for k, v of store.playlists
+
+      # delete volatile playlists
+      for k, v of store.playlists
+        unless v.persisted
+          wasActive = k == store.playlistActiveSet
+          @debug "removing volatile playlist #{k}#{if wasActive then " (was active, switching to default)" else ""}"
+          delete store.playlists[k]
+          @playlistActiveSet = @persisted.set("playlistActiveSet", "default") if wasActive
+
+    @setDefaultDesired() unless @desired
     @playlistManager = new PlaylistManager(this, @playlists)
-    @playlistManager.load("default")
+    @playlistManager.rebuildMaps()
+    @playlistManager.onListChange (set) => @playlistActiveSet = @persisted.set("playlistActiveSet", set)
+    @playlistManager.load(@playlistActiveSet)
     @init()
 
   init: -> # plugin hook
 
+  defaultDesired: ->
+    {
+      ctype: @options.defaultCtype
+      url: @options.defaultUrl
+      seek: 0
+      loop: false
+      seek_update: new Date
+      state: if @options.defaultAutoplay then "play" else "pause"
+    }
+
   setDefaultDesired: (broadcast = true) ->
-    @persisted.desired = @desired = { ctype: @options.defaultCtype, url: @options.defaultUrl, seek: 0, loop: false, seek_update: new Date, state: if @options.defaultAutoplay then "play" else "pause" }
+    @persisted.desired = @desired = @defaultDesired()
     @broadcastCode(false, "desired", @desired)
 
   broadcast: (client, message, color, client_color, sendToAuthor = true) ->

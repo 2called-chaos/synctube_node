@@ -4,6 +4,7 @@ http = require('http')
 webSocketServer = require('websocket').server
 
 # internal
+PersistedStorage = require("./persisted_storage.js").Class
 COLORS = require("./colors.js")
 UTIL = require("./util.js")
 Client = require("./client.js").Class
@@ -16,19 +17,46 @@ exports.Class = class SyncTubeServer
   constructor: (@opts = {}) ->
     @root = process.env.ST_ROOT || process.cwd()
     @loadConfig()
-    @banned = {}
+    @registerShutdownHandler()
+    @banned = new PersistedStorage(this, "server/banned_ips")
     @clients = []
     @channels = {}
     @pendingRestart = null
-
-    # set process title
     process.title = "synctube-server"
 
     @loadPlugin(plugin) for plugin in @opts.plugins if @opts.plugins
+    @loadPersistedChannels()
+
+  registerShutdownHandler: ->
+    process.on 'exit', => @persistChannels()
+
+    process.on 'SIGINT', =>
+      @warn "Interrupt signal received, shutting down..."
+      process.exit(130)
+
+    process.on 'SIGTERM', =>
+      @warn "Termination signal received, shutting down..."
+      process.exit(2)
+
+    process.on 'uncaughtException', (e) =>
+      @warn "Encountered FATAL exception, shutting down..."
+      @error "Uncaught FATAL Exception: #{e}"
+      console.trace(e)
+      process.exit(99)
+
+  persistChannels: ->
+    @info "Saving channels..."
+    for n, c of @channels
+      try
+        @debug "Saving channel #{n}..."
+        c.persisted.sSave()
+      catch err
+        @error "Failed to save channel #{n}: #{err}"
 
   loadPlugin: (plugin) ->
     try
       plugin.setup this,
+        PersistedStorage: PersistedStorage
         Channel: Channel
         Client: Client
         Commands: Commands
@@ -38,6 +66,22 @@ exports.Class = class SyncTubeServer
         UTIL: UTIL
     catch err
       @error "Failed to setup plugin #{plugin?._module?.filename}: #{err}"
+
+  loadPersistedChannels: ->
+    cpath = "#{@root}/data/channel"
+    return unless fs.existsSync(cpath)
+    files = fs.readdirSync(cpath)
+    @info "Restoring #{files.length} persisted channels..."
+    for file in files
+      try
+        continue unless UTIL.endsWith(file, ".json")
+        jdata = JSON.parse(fs.readFileSync("#{cpath}/#{file}"))
+        throw "no name in JSON" unless jdata.name
+        throw "channel #{jdata.name} already exists" if @channels[jdata.name]
+        @channels[jdata.name] = new Channel(this, jdata.name, jdata.password)
+      catch err
+        @error "Failed to restore channel from file #{file}: #{err}"
+        console.trace(err)
 
   loadConfig: () ->
     unless fs.existsSync("#{@root}/config.js")
@@ -132,18 +176,18 @@ exports.Class = class SyncTubeServer
 
   banIp: (ip, duration, reason) ->
     end = if duration == -1 then null else new Date((new Date).getTime() + duration * 1000)
-    @banned[ip] = end
+    @banned.persist(ip, end)
     @guardBanned(client, reason) for client in @clients when client?
 
   guardBanned: (client, reason) ->
     return false if !client
-    return false unless @banned.hasOwnProperty(client.ip)
-    match = @banned[client.ip]
+    return false unless @banned.hasKey(client.ip)
+    match = @banned.get(client.ip)
 
     # check expired
     if match && (new Date) > match
       @debug "Purge expired ban for #{client.ip} which expired #{match}"
-      delete @banned[client.ip]
+      @banned.purge(client.ip)
       return false
 
     client.info "closing connection for #{client.ip}, banned until #{match}"

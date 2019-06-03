@@ -18,14 +18,14 @@ exports.registerPlaylist = (klass, COLORS, UTIL) ->
       when "list"
         msg = ["Listing #{Object.keys(@playlistManager.data).length} playlists:"]
         for name, data of @playlistManager.data
-          r = """<span style="color: #{COLORS.info}">#{name}</span>"""
+          r = """<span style="color: #{if @playlistManager.set == name then COLORS.warning else COLORS.info}">#{name}</span>"""
           r += """ => <span style="color: #{COLORS.magenta}">#{data.entries.length} entries</span>"""
           msg.push(r)
         client.sendSystemMessage(msg.join("<br>"), COLORS.muted)
       when "load"
         volatile = UTIL.extractArg(args, ["-v", "--volatile"])
         if !args[0]
-          client.sendSystemMessage("Usage: /playlist load <name> [-v --volatile]")
+          client.sendSystemMessage("Usage: /playlist load &lt;name&gt; [-v --volatile]")
         else if args[0] == @playlistManager.set
           client.sendSystemMessage("Given playlist already active!")
         else if @playlistManager.data[args[0]]
@@ -40,7 +40,7 @@ exports.registerPlaylist = (klass, COLORS, UTIL) ->
         client.sendSystemMessage("Not implemented")
       when "delete"
         if !args[0]
-          client.sendSystemMessage("Usage: /playlist delete <name>")
+          client.sendSystemMessage("Usage: /playlist delete &lt;name&gt;")
         else if args[0] == "default"
           client.sendSystemMessage("Cannot delete default playlist, use clear!")
         else if data = @playlistManager.data[args[0]]
@@ -126,7 +126,7 @@ exports.registerPlaylist = (klass, COLORS, UTIL) ->
           else
             client.sendSystemMessage("Current playlist has no such index")
         else
-          client.sendSystemMessage("Usage: /playlist play <index>")
+          client.sendSystemMessage("Usage: /playlist play &lt;index&gt;")
       when "remove"
         if args[0]?
           index = parseInt(args[0])
@@ -136,16 +136,16 @@ exports.registerPlaylist = (klass, COLORS, UTIL) ->
           else
             client.sendSystemMessage("Current playlist has no such index")
         else
-          client.sendSystemMessage("Usage: /playlist remove <index>")
+          client.sendSystemMessage("Usage: /playlist remove &lt;index&gt;")
       else
         # Usage (no args)
         client.sendSystemMessage("Usage: /playlist list")
-        client.sendSystemMessage("Usage: /playlist load <name> [-v --volatile]")
-        client.sendSystemMessage("Usage: /playlist saveas <name>")
-        client.sendSystemMessage("Usage: /playlist delete <name>")
+        client.sendSystemMessage("Usage: /playlist load &lt;name&gt; [-v --volatile]")
+        client.sendSystemMessage("Usage: /playlist saveas &lt;name&gt;")
+        client.sendSystemMessage("Usage: /playlist delete &lt;name&gt;")
         client.sendSystemMessage("Usage: /playlist clear")
         client.sendSystemMessage("Usage: /playlist opt [option] [newvalue]")
         client.sendSystemMessage("Usage: /playlist next/prev")
-        client.sendSystemMessage("Usage: /playlist play/remove <index>")
+        client.sendSystemMessage("Usage: /playlist play/remove &lt;index&gt;")
 
     client.ack()

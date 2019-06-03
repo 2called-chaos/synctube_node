@@ -242,4 +242,8 @@
     });
   };
 
+  exports.sha1 = function(input) {
+    return require("crypto").createHash("sha1").update(input).digest("hex");
+  };
+
 }).call(this);

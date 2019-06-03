@@ -8,7 +8,9 @@ exports.hookChannelConstructor = (klass, Commands, UTIL) ->
   old = klass::init
   klass::init = (a...) ->
     old(a...)
-    @persisted.plugin_aliases = @plugin_aliases = {}
+    @persisted.set("plugin_aliases", {}) unless @persisted.hasKey("plugin_aliases")
+    @persisted.beforeSave (ps, store) => ps.rem("__fetch")
+    @plugin_aliases = @persisted.get("plugin_aliases")
     @plugin_aliases.__fetch = (msg) ->
       return if UTIL.startsWith(msg, "!packet:")
       for n, v of this

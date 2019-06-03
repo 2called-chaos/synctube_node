@@ -28,7 +28,7 @@
           ref = this.playlistManager.data;
           for (name in ref) {
             data = ref[name];
-            r = `<span style="color: ${COLORS.info}">${name}</span>`;
+            r = `<span style="color: ${(this.playlistManager.set === name ? COLORS.warning : COLORS.info)}">${name}</span>`;
             r += ` => <span style="color: ${COLORS.magenta}">${data.entries.length} entries</span>`;
             msg.push(r);
           }
@@ -37,7 +37,7 @@
         case "load":
           volatile = UTIL.extractArg(args, ["-v", "--volatile"]);
           if (!args[0]) {
-            client.sendSystemMessage("Usage: /playlist load <name> [-v --volatile]");
+            client.sendSystemMessage("Usage: /playlist load &lt;name&gt; [-v --volatile]");
           } else if (args[0] === this.playlistManager.set) {
             client.sendSystemMessage("Given playlist already active!");
           } else if (this.playlistManager.data[args[0]]) {
@@ -59,7 +59,7 @@
           break;
         case "delete":
           if (!args[0]) {
-            client.sendSystemMessage("Usage: /playlist delete <name>");
+            client.sendSystemMessage("Usage: /playlist delete &lt;name&gt;");
           } else if (args[0] === "default") {
             client.sendSystemMessage("Cannot delete default playlist, use clear!");
           } else if (data = this.playlistManager.data[args[0]]) {
@@ -152,7 +152,7 @@
               client.sendSystemMessage("Current playlist has no such index");
             }
           } else {
-            client.sendSystemMessage("Usage: /playlist play <index>");
+            client.sendSystemMessage("Usage: /playlist play &lt;index&gt;");
           }
           break;
         case "remove":
@@ -165,19 +165,19 @@
               client.sendSystemMessage("Current playlist has no such index");
             }
           } else {
-            client.sendSystemMessage("Usage: /playlist remove <index>");
+            client.sendSystemMessage("Usage: /playlist remove &lt;index&gt;");
           }
           break;
         default:
           // Usage (no args)
           client.sendSystemMessage("Usage: /playlist list");
-          client.sendSystemMessage("Usage: /playlist load <name> [-v --volatile]");
-          client.sendSystemMessage("Usage: /playlist saveas <name>");
-          client.sendSystemMessage("Usage: /playlist delete <name>");
+          client.sendSystemMessage("Usage: /playlist load &lt;name&gt; [-v --volatile]");
+          client.sendSystemMessage("Usage: /playlist saveas &lt;name&gt;");
+          client.sendSystemMessage("Usage: /playlist delete &lt;name&gt;");
           client.sendSystemMessage("Usage: /playlist clear");
           client.sendSystemMessage("Usage: /playlist opt [option] [newvalue]");
           client.sendSystemMessage("Usage: /playlist next/prev");
-          client.sendSystemMessage("Usage: /playlist play/remove <index>");
+          client.sendSystemMessage("Usage: /playlist play/remove &lt;index&gt;");
       }
       return client.ack();
     });

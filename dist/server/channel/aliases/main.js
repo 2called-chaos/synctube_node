@@ -14,7 +14,13 @@
     old = klass.prototype.init;
     return klass.prototype.init = function(...a) {
       old(...a);
-      this.persisted.plugin_aliases = this.plugin_aliases = {};
+      if (!this.persisted.hasKey("plugin_aliases")) {
+        this.persisted.set("plugin_aliases", {});
+      }
+      this.persisted.beforeSave((ps, store) => {
+        return ps.rem("__fetch");
+      });
+      this.plugin_aliases = this.persisted.get("plugin_aliases");
       return this.plugin_aliases.__fetch = function(msg) {
         var args, argstr, commandParts, n, ref, v;
         if (UTIL.startsWith(msg, "!packet:")) {

@@ -32,6 +32,10 @@
       return this.data[sub];
     }
 
+    onListChange(cb) {
+      return this._onListChange = cb;
+    }
+
     load(name, opts = {}) {
       var old;
       old = this.set;
@@ -55,7 +59,32 @@
       if (this.data[old] && !this.data[old].persisted) {
         this.delete(old);
       }
+      if (typeof this._onListChange === "function") {
+        this._onListChange(this.set);
+      }
       return this.data[this.set];
+    }
+
+    rebuildMaps() {
+      var data, entry, name, ref, results;
+      ref = this.data;
+      results = [];
+      for (name in ref) {
+        data = ref[name];
+        delete data["map"];
+        data.map = {};
+        results.push((function() {
+          var j, len, ref1, results1;
+          ref1 = data.entries;
+          results1 = [];
+          for (j = 0, len = ref1.length; j < len; j++) {
+            entry = ref1[j];
+            results1.push(data.map[entry[1]] = entry);
+          }
+          return results1;
+        })());
+      }
+      return results;
     }
 
     delete(name = this.set) {

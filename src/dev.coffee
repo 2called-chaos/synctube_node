@@ -3,6 +3,7 @@ coffee         = require "coffeescript"
 child_process  = require "child_process"
 server_process = null
 useDebugger    = false
+stopLoop       = false
 
 DEV =
   run: (args...) ->
@@ -15,6 +16,24 @@ DEV =
       DEV.compileClient()
       process.exit(0)
     else
+      _proc = process
+      process.on 'SIGINT', =>
+        if server_process?
+          stopLoop = true
+          server_process.on 'close', =>
+            console.log "seya"
+            _proc.exit(130)
+          server_process.kill('SIGINT')
+        else
+          _proc.exit(130)
+      process.on 'SIGTERM', =>
+        if server_process?
+          stopLoop = true
+          server_process.on 'close', => _proc.exit(2)
+          server_process.kill('SIGTERM')
+        else
+          _proc.exit(2)
+
       # compile and watch server
       DEV.compileServer()
       @watchRecursive(closely, DEV.compileServer) for closely in ["./src/server.coffee", "./src/server"]
@@ -46,7 +65,7 @@ DEV =
       console.log ">>>>>> #{sf}  >>  #{dd}"
       cmd = "coffee -o #{dd} -c #{sf}"
       console.log ">>>>>> #{cmd}"
-      DEV.exec cmd, -> server_process?.kill('SIGHUP')
+      DEV.exec cmd, -> server_process?.kill('SIGTERM')
     else
       DEV.exec "coffee -o dist -c src/server.coffee"
       DEV.exec "coffee -o dist/server -c src/server"
@@ -62,6 +81,7 @@ DEV =
     server_process.stdout.on "data", (data) -> process.stdout.write data.toString()
     server_process.stderr.on "data", (data) -> process.stderr.write data.toString()
     server_process.on "close", ->
+      return if stopLoop
       console.log ">>>> restarting server"
       child_process.exec "which say && say restarting server"
       setTimeout (-> f(f)), 1000

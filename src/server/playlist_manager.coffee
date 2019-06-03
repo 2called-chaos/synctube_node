@@ -12,6 +12,8 @@ exports.Class = class PlaylistManager
 
   sdata: (sub = @set) -> @data[sub]
 
+  onListChange: (cb) -> @_onListChange = cb
+
   load: (name, opts = {}) ->
     old = @set
     @set = name
@@ -31,7 +33,14 @@ exports.Class = class PlaylistManager
       }, opts)
     @cUpdateList()
     @delete(old) if @data[old] && !@data[old].persisted
+    @_onListChange?(@set)
     @data[@set]
+
+  rebuildMaps: ->
+    for name, data of @data
+      delete data["map"]
+      data.map = {}
+      data.map[entry[1]] = entry for entry in data.entries
 
   delete: (name = @set) ->
     throw "cannot delete default playlist" if name == "default"

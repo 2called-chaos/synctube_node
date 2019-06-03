@@ -203,6 +203,11 @@ x.addCommand "Server", "system", (client, subaction, args...) ->
       client.sendSystemMessage "======================"
     when "banip"
       ip = args.shift()
+
+      unless ip?
+        client.sendSystemMessage("Usage: /system banip &lt;ip&gt; [duration] [message]")
+        return client.ack()
+
       dur = args.shift()
       reason = args.join(" ")
       dur = -1 if dur == "permanent"
@@ -216,10 +221,9 @@ x.addCommand "Server", "system", (client, subaction, args...) ->
       client.sendSystemMessage(amsg)
     when "unbanip"
       ip = args[0]
-      if @banned.hasOwnProperty(ip)
-        b = @banned[ip]
+      if b = @banned.get(ip)
         client.sendSystemMessage("Removed ban for IP #{ip} with expiry #{if b then b else "never"}")
-        delete @banned[ip]
+        @banned.purge(ip)
       else
         client.sendSystemMessage("No ban found for IP #{ip}")
     when "invoke"
@@ -392,7 +396,7 @@ x.addCommand "Channel", "password", (client, new_password, revoke) ->
   if ch = client.subscribed
     if ch.control.indexOf(client) > -1
       if typeof new_password == "string"
-        ch.password = if new_password then new_password else undefined
+        ch.persisted.set("password", if new_password then new_password else undefined)
         revoke = UTIL.strbool(revoke, false)
         client.sendSystemMessage("Password changed#{if revoke then ", revoked all but you" else ""}!")
         if revoke

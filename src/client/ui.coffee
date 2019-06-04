@@ -17,7 +17,6 @@ window.SyncTubeClient_UI =
 
   handleWindowResize: ->
     $(window).resize (ev) =>
-      return unless $("#page").is(":visible")
 
       # playlist rattach
       if $("#first_row").width() >= 1000
@@ -28,6 +27,8 @@ window.SyncTubeClient_UI =
         unless $("#playlist").parent().attr("id") == "playlist_ctn"
           @debug "INLINE playlist"
           $("#playlist").detach().appendTo("#playlist_ctn")
+
+      return unless $("#page").is(":visible")
 
       # playlist fix
       plrc = $("#playlist_rattach_ctn")

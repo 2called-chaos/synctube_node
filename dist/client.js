@@ -1895,9 +1895,6 @@
     handleWindowResize: function() {
       $(window).resize((ev) => {
         var height_both, height_first, height_second, height_third, plrc, plre, width_second;
-        if (!$("#page").is(":visible")) {
-          return;
-        }
         // playlist rattach
         if ($("#first_row").width() >= 1000) {
           if ($("#playlist").parent().attr("id") !== "playlist_rattach_ctn") {
@@ -1909,6 +1906,9 @@
             this.debug("INLINE playlist");
             $("#playlist").detach().appendTo("#playlist_ctn");
           }
+        }
+        if (!$("#page").is(":visible")) {
+          return;
         }
         // playlist fix
         plrc = $("#playlist_rattach_ctn");

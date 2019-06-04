@@ -10,6 +10,8 @@ exports.shellSplit = (str, env, cleaned = true) ->
       #console.log typeof x, x
       if x.pattern?
         r.push(x.pattern)
+      else if x.op?
+        r.push(x.op)
       else
         console.warn "unrecognized shell quote object", x
     else

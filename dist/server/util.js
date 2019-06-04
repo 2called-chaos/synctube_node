@@ -24,6 +24,8 @@
         //console.log typeof x, x
         if (x.pattern != null) {
           r.push(x.pattern);
+        } else if (x.op != null) {
+          r.push(x.op);
         } else {
           console.warn("unrecognized shell quote object", x);
         }

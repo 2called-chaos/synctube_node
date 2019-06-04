@@ -58,24 +58,21 @@
         }
       });
       this.persisted.beforeSave((ps, store) => {
-        var k, ref, ref1, ref2, results, v, wasActive;
+        var k, ref, ref1, results, v, wasActive;
         ref = store.playlists;
         for (k in ref) {
           v = ref[k];
           // reset playlist index because it makes everything easier
-          v.index = -1;
-        }
-        ref1 = store.playlists;
-        for (k in ref1) {
-          v = ref1[k];
+          //v.index = -1 for k, v of store.playlists
+
           // delete playlist maps
           delete v["map"];
         }
-        ref2 = store.playlists;
+        ref1 = store.playlists;
         // delete volatile playlists
         results = [];
-        for (k in ref2) {
-          v = ref2[k];
+        for (k in ref1) {
+          v = ref1[k];
           if (!v.persisted) {
             wasActive = k === store.playlistActiveSet;
             this.debug(`removing volatile playlist ${k}${(wasActive ? " (was active, switching to default)" : "")}`);
@@ -126,7 +123,7 @@
     }
 
     setDefaultDesired(broadcast = true) {
-      this.persisted.desired = this.desired = this.defaultDesired();
+      this.persisted.set("desired", this.defaultDesired());
       return this.broadcastCode(false, "desired", this.desired);
     }
 
@@ -258,14 +255,14 @@
     }
 
     live(ctype, url) {
-      this.persisted.desired = this.desired = {
+      this.persisted.set("desired", {
         ctype: ctype,
         url: url,
         state: "pause",
         seek: 0,
         loop: false,
         seek_update: new Date
-      };
+      });
       this.ready = [];
       this.broadcastCode(false, "desired", Object.assign({}, this.desired, {
         forceLoad: true

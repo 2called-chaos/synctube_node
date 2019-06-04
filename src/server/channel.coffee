@@ -36,7 +36,7 @@ exports.Class = class SyncTubeServerChannel
 
     @persisted.beforeSave (ps, store) =>
       # reset playlist index because it makes everything easier
-      v.index = -1 for k, v of store.playlists
+      #v.index = -1 for k, v of store.playlists
 
       # delete playlist maps
       delete v["map"] for k, v of store.playlists
@@ -74,7 +74,7 @@ exports.Class = class SyncTubeServerChannel
     }
 
   setDefaultDesired: (broadcast = true) ->
-    @persisted.desired = @desired = @defaultDesired()
+    @persisted.set("desired", @defaultDesired())
     @broadcastCode(false, "desired", @desired)
 
   broadcast: (client, message, color, client_color, sendToAuthor = true) ->
@@ -137,7 +137,7 @@ exports.Class = class SyncTubeServerChannel
     data
 
   live: (ctype, url) ->
-    @persisted.desired = @desired = { ctype: ctype, url: url, state: "pause", seek: 0, loop: false, seek_update: new Date}
+    @persisted.set("desired", { ctype: ctype, url: url, state: "pause", seek: 0, loop: false, seek_update: new Date})
     @ready = []
     @broadcastCode(false, "desired", Object.assign({}, @desired, { forceLoad: true }))
 

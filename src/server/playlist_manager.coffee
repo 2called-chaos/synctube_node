@@ -194,26 +194,31 @@ exports.Class = class PlaylistManager
     data
 
   fetchMeta: (ctype, url, data) ->
-    return if data.thumbnail != false
-    switch ctype
-      when "Youtube"
-        UTIL.jsonGetHttps "https://www.youtube.com/oembed?url=http://www.youtube.com/watch?v=#{url}&format=json", (d) =>
-          data.name = [d.title, "https://youtube.com/watch?v=#{url}"]
-          data.author = [d.author_name, d.author_url]
-          data.thumbnail = d.thumbnail_url.replace("hqdefault", "default")
+    try
+      return if data.thumbnail != false
+      switch ctype
+        when "Youtube"
+          UTIL.jsonGetHttps "https://www.youtube.com/oembed?url=http://www.youtube.com/watch?v=#{url}&format=json", (d) =>
+            data.name = [d.title, "https://youtube.com/watch?v=#{url}"]
+            data.author = [d.author_name, d.author_url]
+            data.thumbnail = d.thumbnail_url.replace("hqdefault", "default")
+            @channel.broadcastCode(false, "playlist_single_entry", data)
+        when "HtmlImage"
+          data.name = [(if m = url.match(/\/([^\/]+)$/) then m[1] else url), url]
+          data.thumbnail = url
+          data.author = "image"
           @channel.broadcastCode(false, "playlist_single_entry", data)
-      when "HtmlImage"
-        data.name = [(if m = url.match(/\/([^\/]+)$/) then m[1] else url), url]
-        data.thumbnail = url
-        data.author = "image"
-        @channel.broadcastCode(false, "playlist_single_entry", data)
-      when "HtmlVideo"
-        data.name = [(if m = url.match(/\/([^\/]+)$/) then m[1] else url), url]
-        data.thumbnail = null
-        data.author = "video"
-        @channel.broadcastCode(false, "playlist_single_entry", data)
-      when "HtmlFrame"
-        data.name = [url, url]
-        data.thumbnail = null
-        data.author = "URL"
-        @channel.broadcastCode(false, "playlist_single_entry", data)
+        when "HtmlVideo"
+          data.name = [(if m = url.match(/\/([^\/]+)$/) then m[1] else url), url]
+          data.thumbnail = null
+          data.author = "video"
+          @channel.broadcastCode(false, "playlist_single_entry", data)
+        when "HtmlFrame"
+          data.name = [url, url]
+          data.thumbnail = null
+          data.author = "URL"
+          @channel.broadcastCode(false, "playlist_single_entry", data)
+    catch e
+      @error "Failed to load meta information: #{e}"
+      console.trace(e)
+

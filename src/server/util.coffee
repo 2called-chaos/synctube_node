@@ -139,7 +139,12 @@ exports.jsonGetHttps = (url, cb) ->
   require("https").get url, (res) =>
     res.setEncoding("utf8")
     res.on "data", (d) => body += d
-    res.on "end", () => cb(JSON.parse(body))
+    res.on "end", () =>
+      try
+        cb(JSON.parse(body))
+      catch e
+        console.error "Failed to load meta information: #{e}"
+        console.trace(e)
 
 exports.sha1 = (input) ->
   require("crypto").createHash("sha1").update(input).digest("hex")

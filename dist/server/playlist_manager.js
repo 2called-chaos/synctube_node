@@ -330,33 +330,39 @@
     }
 
     fetchMeta(ctype, url, data) {
-      var m;
-      if (data.thumbnail !== false) {
-        return;
-      }
-      switch (ctype) {
-        case "Youtube":
-          return UTIL.jsonGetHttps(`https://www.youtube.com/oembed?url=http://www.youtube.com/watch?v=${url}&format=json`, (d) => {
-            data.name = [d.title, `https://youtube.com/watch?v=${url}`];
-            data.author = [d.author_name, d.author_url];
-            data.thumbnail = d.thumbnail_url.replace("hqdefault", "default");
+      var e, m;
+      try {
+        if (data.thumbnail !== false) {
+          return;
+        }
+        switch (ctype) {
+          case "Youtube":
+            return UTIL.jsonGetHttps(`https://www.youtube.com/oembed?url=http://www.youtube.com/watch?v=${url}&format=json`, (d) => {
+              data.name = [d.title, `https://youtube.com/watch?v=${url}`];
+              data.author = [d.author_name, d.author_url];
+              data.thumbnail = d.thumbnail_url.replace("hqdefault", "default");
+              return this.channel.broadcastCode(false, "playlist_single_entry", data);
+            });
+          case "HtmlImage":
+            data.name = [((m = url.match(/\/([^\/]+)$/)) ? m[1] : url), url];
+            data.thumbnail = url;
+            data.author = "image";
             return this.channel.broadcastCode(false, "playlist_single_entry", data);
-          });
-        case "HtmlImage":
-          data.name = [((m = url.match(/\/([^\/]+)$/)) ? m[1] : url), url];
-          data.thumbnail = url;
-          data.author = "image";
-          return this.channel.broadcastCode(false, "playlist_single_entry", data);
-        case "HtmlVideo":
-          data.name = [((m = url.match(/\/([^\/]+)$/)) ? m[1] : url), url];
-          data.thumbnail = null;
-          data.author = "video";
-          return this.channel.broadcastCode(false, "playlist_single_entry", data);
-        case "HtmlFrame":
-          data.name = [url, url];
-          data.thumbnail = null;
-          data.author = "URL";
-          return this.channel.broadcastCode(false, "playlist_single_entry", data);
+          case "HtmlVideo":
+            data.name = [((m = url.match(/\/([^\/]+)$/)) ? m[1] : url), url];
+            data.thumbnail = null;
+            data.author = "video";
+            return this.channel.broadcastCode(false, "playlist_single_entry", data);
+          case "HtmlFrame":
+            data.name = [url, url];
+            data.thumbnail = null;
+            data.author = "URL";
+            return this.channel.broadcastCode(false, "playlist_single_entry", data);
+        }
+      } catch (error) {
+        e = error;
+        this.error(`Failed to load meta information: ${e}`);
+        return console.trace(e);
       }
     }
 

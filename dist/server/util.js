@@ -239,7 +239,14 @@
         return body += d;
       });
       return res.on("end", () => {
-        return cb(JSON.parse(body));
+        var e;
+        try {
+          return cb(JSON.parse(body));
+        } catch (error) {
+          e = error;
+          console.error(`Failed to load meta information: ${e}`);
+          return console.trace(e);
+        }
       });
     });
   };

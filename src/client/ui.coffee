@@ -19,7 +19,7 @@ window.SyncTubeClient_UI =
     $(window).resize (ev) =>
 
       # playlist rattach
-      if $("#first_row").width() >= 1000
+      if $("#first_row").width() >= 800
         unless $("#playlist").parent().attr("id") == "playlist_rattach_ctn"
           @debug "RATTACH playlist"
           $("#playlist").detach().appendTo("#playlist_rattach_ctn")

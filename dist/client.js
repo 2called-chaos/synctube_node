@@ -1896,7 +1896,7 @@
       $(window).resize((ev) => {
         var height_both, height_first, height_second, height_third, plrc, plre, width_second;
         // playlist rattach
-        if ($("#first_row").width() >= 1000) {
+        if ($("#first_row").width() >= 800) {
           if ($("#playlist").parent().attr("id") !== "playlist_rattach_ctn") {
             this.debug("RATTACH playlist");
             $("#playlist").detach().appendTo("#playlist_rattach_ctn");

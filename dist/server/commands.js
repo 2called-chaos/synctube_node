@@ -570,6 +570,9 @@
     if (!(this.control.indexOf(client) > -1)) {
       return client.permissionDenied("play");
     }
+    if (this.playlistManager.ensurePlaylistQuota(client)) {
+      return client.ack();
+    }
     playNext = UTIL.extractArg(args, ["-n", "--next"]);
     intermission = UTIL.extractArg(args, ["-i", "--intermission"]);
     url = args.join(" ");
@@ -610,6 +613,9 @@
     var ctype, intermission, playNext, url;
     if (!(this.control.indexOf(client) > -1)) {
       return client.permissionDenied(`browse-${ctype}`);
+    }
+    if (this.playlistManager.ensurePlaylistQuota(client)) {
+      return client.ack();
     }
     playNext = UTIL.extractArg(args, ["-n", "--next"]);
     intermission = UTIL.extractArg(args, ["-i", "--intermission"]);

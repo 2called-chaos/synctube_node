@@ -230,11 +230,29 @@
     add(ctype, url) {}
 
     //@data[@set].entries.push([ctype, url, player.getMeta(url)])
+    ensurePlaylistQuota(client) {
+      if (this.data[this.set].entries.length >= this.data[this.set].maxListSize) {
+        if (client != null) {
+          client.sendRPCResponse({
+            error: `Playlist entry limit of ${this.data[this.set].maxListSize} exceeded!`
+          });
+        }
+        if (client != null) {
+          client.sendSystemMessage(`Playlist entry limit of ${this.data[this.set].maxListSize} exceeded!`);
+        }
+        return true;
+      }
+      return false;
+    }
+
     intermission(method, ...args) {}
 
     // @getMeta: (url) ->
     playNext(ctype, url) {
       var _qel, activeElement, i, j, k, len, len1, qel, ref, ref1;
+      if (this.ensurePlaylistQuota()) {
+        return false;
+      }
       if (this.cEmpty()) {
         return this.append(ctype, url);
       }
@@ -267,6 +285,9 @@
 
     append(ctype, url) {
       var _qel, activeElement, i, j, len, qel, ref;
+      if (this.ensurePlaylistQuota()) {
+        return false;
+      }
       activeElement = this.data[this.set].entries[this.data[this.set].index];
       if (qel = this.buildQueueElement(ctype, url)) {
         this.data[this.set].entries.push(qel);

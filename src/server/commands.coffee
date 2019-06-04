@@ -378,6 +378,7 @@ x.addCommand "Channel", "ready", (client) ->
 
 x.addCommand "Channel", "play", "yt", "youtube", (client, args...) ->
   return client.permissionDenied("play") unless @control.indexOf(client) > -1
+  return client.ack() if @playlistManager.ensurePlaylistQuota(client)
   playNext = UTIL.extractArg(args, ["-n", "--next"])
   intermission = UTIL.extractArg(args, ["-i", "--intermission"])
   url = args.join(" ")
@@ -408,6 +409,7 @@ x.addCommand "Channel", "loop", (client, what) ->
 
 x.addCommand "Channel", "url", "browse", (client, args...) ->
   return client.permissionDenied("browse-#{ctype}") unless @control.indexOf(client) > -1
+  return client.ack() if @playlistManager.ensurePlaylistQuota(client)
 
   playNext = UTIL.extractArg(args, ["-n", "--next"])
   intermission = UTIL.extractArg(args, ["-i", "--intermission"])

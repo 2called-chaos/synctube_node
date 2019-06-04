@@ -130,11 +130,18 @@ exports.Class = class PlaylistManager
   add: (ctype, url) ->
     #@data[@set].entries.push([ctype, url, player.getMeta(url)])
 
+  ensurePlaylistQuota: (client) ->
+    if @data[@set].entries.length >= @data[@set].maxListSize
+      client?.sendRPCResponse(error: "Playlist entry limit of #{@data[@set].maxListSize} exceeded!")
+      client?.sendSystemMessage("Playlist entry limit of #{@data[@set].maxListSize} exceeded!")
+      return true
+    return false
+
   intermission: (method, args...) ->
     # @getMeta: (url) ->
 
-
   playNext: (ctype, url) ->
+    return false if @ensurePlaylistQuota()
     return @append(ctype, url) if @cEmpty()
     activeElement = @data[@set].entries[@data[@set].index]
     if qel = @buildQueueElement(ctype, url)
@@ -154,6 +161,7 @@ exports.Class = class PlaylistManager
     @handlePlay()
 
   append: (ctype, url) ->
+    return false if @ensurePlaylistQuota()
     activeElement = @data[@set].entries[@data[@set].index]
     if qel = @buildQueueElement(ctype, url)
       @data[@set].entries.push(qel)

@@ -12,6 +12,8 @@ exports.shellSplit = (str, env, cleaned = true) ->
         r.push(x.pattern)
       else if x.op?
         r.push(x.op)
+      else if x.comment?
+        r.push(x.comment)
       else
         console.warn "unrecognized shell quote object", x
     else

@@ -26,6 +26,8 @@
           r.push(x.pattern);
         } else if (x.op != null) {
           r.push(x.op);
+        } else if (x.comment != null) {
+          r.push(x.comment);
         } else {
           console.warn("unrecognized shell quote object", x);
         }

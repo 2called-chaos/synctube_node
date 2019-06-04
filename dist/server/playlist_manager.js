@@ -282,7 +282,7 @@
           // reset index
           _qel[2].index = i;
         }
-        this.data[this.set].index = activeElement ? activeElement[2].index : qel[2].index;
+        this.data[this.set].index = this.data[this.set].index === -1 ? -1 : activeElement ? activeElement[2].index : qel[2].index;
         this.cUpdateList();
       }
       return this.handlePlay();

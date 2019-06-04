@@ -166,7 +166,7 @@ exports.Class = class PlaylistManager
 
       # reset index
       _qel[2].index = i for _qel, i in @data[@set].entries
-      @data[@set].index = if activeElement then activeElement[2].index else qel[2].index
+      @data[@set].index = if @data[@set].index == -1 then -1 else if activeElement then activeElement[2].index else qel[2].index
       @cUpdateList()
     @handlePlay()
 

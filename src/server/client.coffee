@@ -61,6 +61,7 @@ exports.Class = class SyncTubeServerClient
         Commands.handleMessage(@server, this, message, msg)
       else
         @setUsername(msg)
+        @isRPC = true if @name == "rpc_client"
 
     return this
 
@@ -81,7 +82,7 @@ exports.Class = class SyncTubeServerClient
   permissionDenied: (context) ->
     msg = "You don't have the required permissions to perform this action"
     msg += " (#{context})" if context
-    @sendSystemMessage(msg)
+    if @isRPC then @sendRPCResponse(error: msg) else @sendSystemMessage(msg)
     return @ack()
 
   send: (message) ->
@@ -107,7 +108,27 @@ exports.Class = class SyncTubeServerClient
         time: (new Date()).getTime()
     return this
 
-  sendSystemMessage: (message, color) -> @sendMessage(message, color || COLORS.red, "system", COLORS.red)
+  sendRPCResponse: (data = {}) ->
+    return unless @isRPC
+
+    if data.error?
+      data.type = "error"
+      data.message = data.error
+      delete data["error"]
+
+    if data.success?
+      data.type = "success"
+      data.message = data.success
+      delete data["success"]
+
+    @sendUTF JSON.stringify
+      type: "rpc_response"
+      data: Object.assign({}, data, { time: (new Date()).getTime() })
+    return this
+
+  sendSystemMessage: (message, color) ->
+    return if @isRPC
+    @sendMessage(message, color || COLORS.red, "system", COLORS.red)
 
   ack: ->
     @sendCode "ack"

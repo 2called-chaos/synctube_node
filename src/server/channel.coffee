@@ -58,6 +58,11 @@ exports.Class = class SyncTubeServerChannel
 
   init: -> # plugin hook
 
+  getRPCKey: ->
+    kbase = "#{@name}:"
+    kbase += "#{@password}" if @password?
+    UTIL.sha1(kbase)
+
   defaultDesired: ->
     {
       ctype: @options.defaultCtype

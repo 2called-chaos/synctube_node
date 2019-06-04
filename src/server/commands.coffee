@@ -77,6 +77,47 @@ x.addCommand "Server", "packet", (client, jdata) ->
     client.sendCode("desired", ch.desired) if ch
   return true
 
+x.addCommand "Server", "rpc", (client, args...) ->
+  key = UTIL.extractArg(args, ["-k", "--key"], 1)?[0]
+  channel = UTIL.extractArg(args, ["-c", "--channel"], 1)?[0]
+
+  # authentication
+  if channel
+    if cobj = @channels[channel]
+      if key? && key == cobj.getRPCKey()
+        cobj.debug "granted control to RPC client ##{client.index}(#{client.ip})"
+        cobj.control.push(client)
+        client.control = cobj
+      else
+        client.sendRPCResponse error: "Authentication failed"
+        return
+    else
+      client.sendRPCResponse error: "No such channel"
+      return
+  else if !channel
+    client.sendRPCResponse error: "Server RPC not allowed"
+    return
+
+  # available actions
+  action = args.shift()
+  try
+    switch action
+      when "play", "yt", "youtube"
+        module.exports.Channel.youtube.call(cobj, client, args...)
+      when "browse", "url"
+        module.exports.Channel.browse.call(cobj, client, args...)
+      when "vid", "video", "mp4", "webp"
+        module.exports.Channel.video.call(cobj, client, args...)
+      when "img", "image", "pic", "picture", "gif", "png", "jpg"
+        module.exports.Channel.image.call(cobj, client, args...)
+      else
+        client.sendRPCResponse error: "Unknown RPC action"
+  catch err
+    @error "[RPC]", err
+    client.sendRPCResponse error: "Unknown RPC error"
+
+  return client.ack()
+
 x.addCommand "Server", "join", (client, chname) ->
   if channel = @channels[chname]
     channel.subscribe(client)
@@ -343,7 +384,9 @@ x.addCommand "Channel", "play", "yt", "youtube", (client, args...) ->
 
   if m = url.match(/([A-Za-z-0-9_\-]{11})/)
     @play("Youtube", m[1], playNext, intermission)
+    client.sendRPCResponse(success: "Video successfully added to playlist")
   else
+    client.sendRPCResponse(error: "I don't recognize this URL/YTID format, sorry")
     client.sendSystemMessage("I don't recognize this URL/YTID format, sorry")
 
   return client.ack()
@@ -478,6 +521,45 @@ x.addCommand "Channel", "revoke", (client, who) ->
   else
     client.sendSystemMessage("#{who?.name || "Target"} was not in control")
 
+  return client.ack()
+
+x.addCommand "Channel", "rpckey", (client) ->
+  return client.permissionDenied("rpckey") unless @control.indexOf(client) > -1
+  client.sendSystemMessage("RPC-Key for this channel: #{@getRPCKey()}")
+  client.sendSystemMessage("The key will change with the channel password!", COLORS.warning)
+  return client.ack()
+
+x.addCommand "Channel", "bookmarklet", (client, args...) ->
+  return client.permissionDenied("bookmarklet") unless @control.indexOf(client) > -1
+
+  showHelp = UTIL.extractArg(args, ["-h", "--help"])
+  withNotification = UTIL.extractArg(args, ["-n", "--notifications"])
+  desiredAction = UTIL.extractArg(args, ["-a", "--action"], 1)?[0] || "yt"
+  label = UTIL.extractArg(args, ["-l", "--label"], 1)?[0] || "+ SyncTube (#{desiredAction.toUpperCase()})"
+
+  if showHelp
+    client.sendSystemMessage("Usage: /bookmarklet [-h --help] | [-a --action=youtube] [-n --notifications] [-l --label LABEL]", COLORS.info)
+    client.sendSystemMessage(" Action might be one of: youtube video image url", COLORS.white)
+    client.sendSystemMessage(" Notifications will show you the result if enabled for youtube.com", COLORS.white)
+    client.sendSystemMessage(" Label is the name of the button, you can change that in your browser too", COLORS.white)
+    client.sendSystemMessage("The embedded key will change with the channel password!", COLORS.warning)
+    return client.ack()
+
+  if withNotification
+    script = """(function(b){n=Notification;x=function(a){h="%wsurl%";s="https://statics.bmonkeys.net/img/rpcico/";w=window;w.stwsb=w.stwsb||[];if(w.stwsc){if(w.stwsc.readyState!=1){w.stwsb.push(a)}else{w.stwsc.send(a)}}else{w.stwsb.push("rpc_client");w.stwsb.push(a);w.stwsc=new WebSocket(h);w.stwsc.onmessage=function(m){j=JSON.parse(m.data);if(j.type=="rpc_response"){new n("SyncTube",{body:j.data.message,icon:s+j.data.type+".png"})}};w.stwsc.onopen=function(){while(w.stwsb.length){w.stwsc.send(w.stwsb.shift())}};w.stwsc.onerror=function(){alert("stwscError: failed to connect to "+h);console.error(arguments[0])};w.stwsc.onclose=function(){w.stwsc=null}}};if(n.permission==="granted"||n.permission==="denied"){x(b)}else{n.requestPermission().then(function(result){x(b)})}})("/rpc -k %key% -c %channel% play "+window.location)"""
+  else
+    script = """(function(a){h="%wsurl%";w=window;w.stwsb=w.stwsb||[];if(w.stwsc){if(w.stwsc.readyState!=1){w.stwsb.push(a)}else{w.stwsc.send(a)}}else{w.stwsb.push("rpc_client");w.stwsb.push(a);w.stwsc=new WebSocket(h);w.stwsc.onopen=function(){while(w.stwsb.length){w.stwsc.send(w.stwsb.shift())}};w.stwsc.onerror=function(){alert("stwscError: failed to connect to "+h);console.error(arguments[0])};w.stwsc.onclose=function(){w.stwsc=null}}})("/rpc -k %key% -c %channel% play "+window.location)"""
+
+  wsurl = client.request.origin.replace(/^https:\/\//, "wss://").replace(/^http:\/\//, "ws://")
+  wsurl += "/#{client.request.resourceURL.pathname}"
+  script = script.replace "%wsurl%", wsurl
+  script = script.replace "%channel%", @name
+  script = script.replace "%key%", @getRPCKey()
+  client.sendSystemMessage("""
+    The embedded key will change with the channel password!<br>
+    <span style="color: #{COLORS.info}">Drag the following button to your bookmark bar:</span>
+    <a href="javascript:#{encodeURIComponent script}" class="btn btn-primary btn-xs" style="font-size: 10px">#{label}</a>
+  """, COLORS.warning)
   return client.ack()
 
 x.addCommand "Channel", "copt", (client, opt, value) ->

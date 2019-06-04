@@ -128,6 +128,78 @@
     return true;
   });
 
+  x.addCommand("Server", "rpc", function(client, ...args) {
+    var action, channel, cobj, err, key, ref, ref1;
+    key = (ref = UTIL.extractArg(args, ["-k", "--key"], 1)) != null ? ref[0] : void 0;
+    channel = (ref1 = UTIL.extractArg(args, ["-c", "--channel"], 1)) != null ? ref1[0] : void 0;
+    // authentication
+    if (channel) {
+      if (cobj = this.channels[channel]) {
+        if ((key != null) && key === cobj.getRPCKey()) {
+          cobj.debug(`granted control to RPC client #${client.index}(${client.ip})`);
+          cobj.control.push(client);
+          client.control = cobj;
+        } else {
+          client.sendRPCResponse({
+            error: "Authentication failed"
+          });
+          return;
+        }
+      } else {
+        client.sendRPCResponse({
+          error: "No such channel"
+        });
+        return;
+      }
+    } else if (!channel) {
+      client.sendRPCResponse({
+        error: "Server RPC not allowed"
+      });
+      return;
+    }
+    // available actions
+    action = args.shift();
+    try {
+      switch (action) {
+        case "play":
+        case "yt":
+        case "youtube":
+          module.exports.Channel.youtube.call(cobj, client, ...args);
+          break;
+        case "browse":
+        case "url":
+          module.exports.Channel.browse.call(cobj, client, ...args);
+          break;
+        case "vid":
+        case "video":
+        case "mp4":
+        case "webp":
+          module.exports.Channel.video.call(cobj, client, ...args);
+          break;
+        case "img":
+        case "image":
+        case "pic":
+        case "picture":
+        case "gif":
+        case "png":
+        case "jpg":
+          module.exports.Channel.image.call(cobj, client, ...args);
+          break;
+        default:
+          client.sendRPCResponse({
+            error: "Unknown RPC action"
+          });
+      }
+    } catch (error1) {
+      err = error1;
+      this.error("[RPC]", err);
+      client.sendRPCResponse({
+        error: "Unknown RPC error"
+      });
+    }
+    return client.ack();
+  });
+
   x.addCommand("Server", "join", function(client, chname) {
     var channel;
     if (channel = this.channels[chname]) {
@@ -503,7 +575,13 @@
     url = args.join(" ");
     if (m = url.match(/([A-Za-z-0-9_\-]{11})/)) {
       this.play("Youtube", m[1], playNext, intermission);
+      client.sendRPCResponse({
+        success: "Video successfully added to playlist"
+      });
     } else {
+      client.sendRPCResponse({
+        error: "I don't recognize this URL/YTID format, sorry"
+      });
       client.sendSystemMessage("I don't recognize this URL/YTID format, sorry");
     }
     return client.ack();
@@ -691,6 +769,46 @@
     } else {
       client.sendSystemMessage(`${(who != null ? who.name : void 0) || "Target"} was not in control`);
     }
+    return client.ack();
+  });
+
+  x.addCommand("Channel", "rpckey", function(client) {
+    if (!(this.control.indexOf(client) > -1)) {
+      return client.permissionDenied("rpckey");
+    }
+    client.sendSystemMessage(`RPC-Key for this channel: ${this.getRPCKey()}`);
+    client.sendSystemMessage("The key will change with the channel password!", COLORS.warning);
+    return client.ack();
+  });
+
+  x.addCommand("Channel", "bookmarklet", function(client, ...args) {
+    var desiredAction, label, ref, ref1, script, showHelp, withNotification, wsurl;
+    if (!(this.control.indexOf(client) > -1)) {
+      return client.permissionDenied("bookmarklet");
+    }
+    showHelp = UTIL.extractArg(args, ["-h", "--help"]);
+    withNotification = UTIL.extractArg(args, ["-n", "--notifications"]);
+    desiredAction = ((ref = UTIL.extractArg(args, ["-a", "--action"], 1)) != null ? ref[0] : void 0) || "yt";
+    label = ((ref1 = UTIL.extractArg(args, ["-l", "--label"], 1)) != null ? ref1[0] : void 0) || `+ SyncTube (${desiredAction.toUpperCase()})`;
+    if (showHelp) {
+      client.sendSystemMessage("Usage: /bookmarklet [-h --help] | [-a --action=youtube] [-n --notifications] [-l --label LABEL]", COLORS.info);
+      client.sendSystemMessage(" Action might be one of: youtube video image url", COLORS.white);
+      client.sendSystemMessage(" Notifications will show you the result if enabled for youtube.com", COLORS.white);
+      client.sendSystemMessage(" Label is the name of the button, you can change that in your browser too", COLORS.white);
+      client.sendSystemMessage("The embedded key will change with the channel password!", COLORS.warning);
+      return client.ack();
+    }
+    if (withNotification) {
+      script = "(function(b){n=Notification;x=function(a){h=\"%wsurl%\";s=\"https://statics.bmonkeys.net/img/rpcico/\";w=window;w.stwsb=w.stwsb||[];if(w.stwsc){if(w.stwsc.readyState!=1){w.stwsb.push(a)}else{w.stwsc.send(a)}}else{w.stwsb.push(\"rpc_client\");w.stwsb.push(a);w.stwsc=new WebSocket(h);w.stwsc.onmessage=function(m){j=JSON.parse(m.data);if(j.type==\"rpc_response\"){new n(\"SyncTube\",{body:j.data.message,icon:s+j.data.type+\".png\"})}};w.stwsc.onopen=function(){while(w.stwsb.length){w.stwsc.send(w.stwsb.shift())}};w.stwsc.onerror=function(){alert(\"stwscError: failed to connect to \"+h);console.error(arguments[0])};w.stwsc.onclose=function(){w.stwsc=null}}};if(n.permission===\"granted\"||n.permission===\"denied\"){x(b)}else{n.requestPermission().then(function(result){x(b)})}})(\"/rpc -k %key% -c %channel% play \"+window.location)";
+    } else {
+      script = "(function(a){h=\"%wsurl%\";w=window;w.stwsb=w.stwsb||[];if(w.stwsc){if(w.stwsc.readyState!=1){w.stwsb.push(a)}else{w.stwsc.send(a)}}else{w.stwsb.push(\"rpc_client\");w.stwsb.push(a);w.stwsc=new WebSocket(h);w.stwsc.onopen=function(){while(w.stwsb.length){w.stwsc.send(w.stwsb.shift())}};w.stwsc.onerror=function(){alert(\"stwscError: failed to connect to \"+h);console.error(arguments[0])};w.stwsc.onclose=function(){w.stwsc=null}}})(\"/rpc -k %key% -c %channel% play \"+window.location)";
+    }
+    wsurl = client.request.origin.replace(/^https:\/\//, "wss://").replace(/^http:\/\//, "ws://");
+    wsurl += `/${client.request.resourceURL.pathname}`;
+    script = script.replace("%wsurl%", wsurl);
+    script = script.replace("%channel%", this.name);
+    script = script.replace("%key%", this.getRPCKey());
+    client.sendSystemMessage(`The embedded key will change with the channel password!<br>\n<span style="color: ${COLORS.info}">Drag the following button to your bookmark bar:</span>\n<a href="javascript:${encodeURIComponent(script)}" class="btn btn-primary btn-xs" style="font-size: 10px">${label}</a>`, COLORS.warning);
     return client.ack();
   });
 

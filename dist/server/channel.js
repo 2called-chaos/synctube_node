@@ -58,18 +58,24 @@
         }
       });
       this.persisted.beforeSave((ps, store) => {
-        var k, ref, ref1, results, v, wasActive;
+        var k, ref, ref1, ref2, results, v, wasActive;
         ref = store.playlists;
         for (k in ref) {
           v = ref[k];
+          // reset playlist index because it makes everything easier
+          v.index = -1;
+        }
+        ref1 = store.playlists;
+        for (k in ref1) {
+          v = ref1[k];
           // delete playlist maps
           delete v["map"];
         }
-        ref1 = store.playlists;
+        ref2 = store.playlists;
         // delete volatile playlists
         results = [];
-        for (k in ref1) {
-          v = ref1[k];
+        for (k in ref2) {
+          v = ref2[k];
           if (!v.persisted) {
             wasActive = k === store.playlistActiveSet;
             this.debug(`removing volatile playlist ${k}${(wasActive ? " (was active, switching to default)" : "")}`);
@@ -98,6 +104,15 @@
     }
 
     init() {} // plugin hook
+
+    getRPCKey() {
+      var kbase;
+      kbase = `${this.name}:`;
+      if (this.password != null) {
+        kbase += `${this.password}`;
+      }
+      return UTIL.sha1(kbase);
+    }
 
     defaultDesired() {
       return {

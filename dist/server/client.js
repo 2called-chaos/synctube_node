@@ -113,7 +113,10 @@
         if (this.name) {
           return Commands.handleMessage(this.server, this, message, msg);
         } else {
-          return this.setUsername(msg);
+          this.setUsername(msg);
+          if (this.name === "rpc_client") {
+            return this.isRPC = true;
+          }
         }
       });
       return this;
@@ -156,7 +159,13 @@
       if (context) {
         msg += ` (${context})`;
       }
-      this.sendSystemMessage(msg);
+      if (this.isRPC) {
+        this.sendRPCResponse({
+          error: msg
+        });
+      } else {
+        this.sendSystemMessage(msg);
+      }
       return this.ack();
     }
 
@@ -198,7 +207,33 @@
       return this;
     }
 
+    sendRPCResponse(data = {}) {
+      if (!this.isRPC) {
+        return;
+      }
+      if (data.error != null) {
+        data.type = "error";
+        data.message = data.error;
+        delete data["error"];
+      }
+      if (data.success != null) {
+        data.type = "success";
+        data.message = data.success;
+        delete data["success"];
+      }
+      this.sendUTF(JSON.stringify({
+        type: "rpc_response",
+        data: Object.assign({}, data, {
+          time: (new Date()).getTime()
+        })
+      }));
+      return this;
+    }
+
     sendSystemMessage(message, color) {
+      if (this.isRPC) {
+        return;
+      }
       return this.sendMessage(message, color || COLORS.red, "system", COLORS.red);
     }
 

@@ -130,6 +130,12 @@ Unless otherwise specified all commands are being send to and processed by the s
     (CHANNEL-CONTROL) /copt [opt] [newval]
       List, view or change channel options
 
+    (CHANNEL-CONTROL) /rpckey
+      Show you the current RPC key (will change with channel password)
+
+    (CHANNEL-CONTROL) /bookmarklet [-h --help] | [-a --action=youtube] [-n --notifications] [-l --label LABEL]
+      Gives you a button you can drag to your bookmarks to add items to the playlist from e.g. YouTube tabs
+
     (CHANNEL-CONTROL) /host [name-regex]
       Makes you or matching user the new host, both clients are required to be in control
 
@@ -174,6 +180,9 @@ Unless otherwise specified all commands are being send to and processed by the s
 
     (GLOBAL) !packet:{jsondata}
       Internal command to communicate client states
+
+    (GLOBAL) /rpc <-k --key KEY> <-c --channel CHANNEL> <rpc_call>
+      Allowed remote access to a limited set of channel control features
 
     (GLOBAL-DEBUG)
       /system auth <syspw>

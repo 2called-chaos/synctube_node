@@ -104,13 +104,18 @@ exports.Class = class PlaylistManager
     index = parseInt(index)
     wasAtEnd = @cAtEnd()
     wasActive = index == @data[@set].index
+    activeElement = @data[@set].entries[@data[@set].index]
     url = @data[@set].entries[index][1]
     dmap = @data[@set].map
     delete dmap[url]
     @data[@set].entries.splice(index, 1)
 
     # index bounds
-    @data[@set].index = Math.min(@data[@set].index, @data[@set].entries.length - 1)
+    _qel[2].index = i for _qel, i in @data[@set].entries
+    if activeElement
+      @data[@set].index = activeElement[2].index
+    else
+      @data[@set].index = Math.min(@data[@set].index, @data[@set].entries.length - 1)
     @data[@set].index = -1 if @data[@set].entries.length == 0
     if wasAtEnd && wasActive
       @data[@set].index = -1

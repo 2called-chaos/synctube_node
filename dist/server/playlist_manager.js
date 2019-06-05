@@ -188,16 +188,26 @@
     cPrev() {}
 
     removeItemAtIndex(index) {
-      var dmap, url, wasActive, wasAtEnd;
+      var _qel, activeElement, dmap, i, j, len, ref, url, wasActive, wasAtEnd;
       index = parseInt(index);
       wasAtEnd = this.cAtEnd();
       wasActive = index === this.data[this.set].index;
+      activeElement = this.data[this.set].entries[this.data[this.set].index];
       url = this.data[this.set].entries[index][1];
       dmap = this.data[this.set].map;
       delete dmap[url];
       this.data[this.set].entries.splice(index, 1);
-      // index bounds
-      this.data[this.set].index = Math.min(this.data[this.set].index, this.data[this.set].entries.length - 1);
+      ref = this.data[this.set].entries;
+      for (i = j = 0, len = ref.length; j < len; i = ++j) {
+        _qel = ref[i];
+        // index bounds
+        _qel[2].index = i;
+      }
+      if (activeElement) {
+        this.data[this.set].index = activeElement[2].index;
+      } else {
+        this.data[this.set].index = Math.min(this.data[this.set].index, this.data[this.set].entries.length - 1);
+      }
       if (this.data[this.set].entries.length === 0) {
         this.data[this.set].index = -1;
       }

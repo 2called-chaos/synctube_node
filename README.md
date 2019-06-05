@@ -24,6 +24,7 @@ Feel free to leave some feedback or request features as well, just dump your tho
   * Client
     * (I hope) [appealing default layout](https://i.imgur.com/lXSnNQq.png) (dark theme, responsive) served by node server, better one for large screens coming
     * Easily bookmark your settings with URL hash (e.g. `.../#user=myname&control=mychannel&maxWidth=10`)
+    * Add a bookmarklet to add videos from a YouTube page directly (per channel). Or use the RPC yourself in other ways.
     * detailed sync information (e.g. client drift from host)
     * technically works via chat commands but can be abstracted into UI
 
@@ -232,7 +233,7 @@ These are recognized parameters that can be used in the URL hash
 
 ## Planned (S: Server, C: Client)
 
-  * UI: altered layout for big screens (multi column)
+  * UI: refine layout adaptions
   * UI: Visual controls for clients (grant/revoke/kick/forceSync)
   * S/C: sync playback speed, implement slowmo seekbacks
   * S/C: sync loop (HtmlVideo: done, YT: manual implementation? also no getter)
@@ -241,12 +242,12 @@ These are recognized parameters that can be used in the URL hash
   * S/C: Help command (tricky since client has a few commands)
   * S/C: (system/channel) intermissions
   * S: More sane static asset delivery (I mean it works...)
-  * S: Persisted channel settings (maxDrift, packetInterval, ytid-aliases, cueDefault, chatMode, suggestedQuality, readyGracePeriod)
+  * S: Add client setting suggestedQuality (maybe defaulting to a channel suggestion)
   * S: too many packets/control instruction detection and throttling
   * C: VideoHTML allow source per client to allow syncing of restricted links from e.g. streaming sites
   * C: better detect host/detect control seeks in YT player
   * C: Enhanced control keyboard shortcuts (build into commandbar?) (toggle play, seek, volume, next video, approve first in queue, change speed)
-  * C: YouTube search, bookmark/ext? to add from YT side
+  * C: YouTube search
   * C: experiment with live drift correction by changing playback speed (client setting, channel setting default)
     This will probably work good with HTML Video (mp4/webp player) since it has stepless speed, YT may only have the .25 steps
   * C: register clipboard changes to suggest videos in playlist (we can't detect end/pause card clicks so client has to allow clipboard read and rightlick->copy link)
@@ -257,14 +258,26 @@ These are recognized parameters that can be used in the URL hash
 ## Client control codes (for dev)
 
     ack
+    banned
     desired
+    disconnected
+    kicked
     lost_control
+    lost_host
     navigate
+    playlist_single_entry
+    playlist_update
     require_username
     server_settings
     session_index
+    session_kicked
     subscriber_list
     taken_control
+    taken_host
+    ui_chat
+    ui_clear
+    ui_clipboard_poll
+    ui_playlist
     unsubscribe
     update_single_subscriber
     username

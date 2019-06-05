@@ -83,6 +83,7 @@ window.SyncTubeClient_UI =
       el = $(event.currentTarget)
       cmd = el.data("command")
       cmd = el.data("altCommand") if event.altKey && el.data("altCommand")
+      el.closest(".dropdown-menu").prev().dropdown("toggle") if el.hasClass("dropdown-item")
       @connection.send("/" + cmd)
       return false
 
@@ -90,7 +91,7 @@ window.SyncTubeClient_UI =
       el = $(event.currentTarget)
       cmd = el.data("suggestCommand")
       cmd = el.data("altCommand") if event.altKey && el.data("altCommand")
-      el.closest(".dropdown-menu").prev().dropdown("toggle")
+      el.closest(".dropdown-menu").prev().dropdown("toggle") if el.hasClass("dropdown-item")
       @input.val("/" + cmd).focus()
       return false
 

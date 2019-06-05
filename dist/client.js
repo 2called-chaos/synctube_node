@@ -1994,6 +1994,9 @@
         if (event.altKey && el.data("altCommand")) {
           cmd = el.data("altCommand");
         }
+        if (el.hasClass("dropdown-item")) {
+          el.closest(".dropdown-menu").prev().dropdown("toggle");
+        }
         this.connection.send("/" + cmd);
         return false;
       });
@@ -2004,7 +2007,9 @@
         if (event.altKey && el.data("altCommand")) {
           cmd = el.data("altCommand");
         }
-        el.closest(".dropdown-menu").prev().dropdown("toggle");
+        if (el.hasClass("dropdown-item")) {
+          el.closest(".dropdown-menu").prev().dropdown("toggle");
+        }
         this.input.val("/" + cmd).focus();
         return false;
       });

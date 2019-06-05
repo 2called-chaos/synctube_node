@@ -127,14 +127,39 @@ body {
   overflow-wrap: break-word;
 }
 
-#input {
-  border-radius: 2px;
-  border: 1px solid #333;
+.st-input-ctn {
   margin-top: 10px;
-  padding: 5px;
-  width: 100%;
+}
+
+.st-input-ctn .dropdown-menu {
+  background-color: #232323;
+  border: 1px solid #6c757d;
+}
+.st-input-ctn .dropdown-menu .dropdown-divider {
+  border-color: #6c757d;
+}
+.st-input-ctn .dropdown-menu a {
+  color: #868e96;
+  padding: .25rem 1rem;
+}
+.st-input-ctn .dropdown-menu a:focus,
+.st-input-ctn .dropdown-menu a:hover {
+  background-color: #3a3a3a;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.st-input-ctn .input-group-append button {
+  border: 1px solid #333;
+}
+
+#input {
+  border: 1px solid #333;
   color: rgba(255, 255, 255, 0.88);
   background: #121212;
+}
+#input:focus {
+  box-shadow: none;
+  border: 1px solid #6c757d;
 }
 
 #input_nofocus {

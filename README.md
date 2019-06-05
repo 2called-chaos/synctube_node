@@ -84,8 +84,8 @@ Unless otherwise specified all commands are being send to and processed by the s
       If the channel does not exist it will be created, with the provided password or passwordless if omitted!
       If you ARE in control and `/control <channel> delete`, the channel will be deleted!
 
-    (GLOBAL) /rename
-      Allows you to change your display name, no arguments, next message you send will be your name
+    (GLOBAL) /rename <new_name>
+      Allows you to change your display name
 
     (GLOBAL) /tc /togglechat
       Toggle chat & client display

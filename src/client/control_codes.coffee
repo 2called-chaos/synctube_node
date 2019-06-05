@@ -107,12 +107,11 @@ window.SyncTubeClient_ControlCodes =
 
   CMD_require_username: (data) ->
     @enableInput()
-    @CMD_desired(ctype: "StuiCreateForm")
     @input.attr("maxLength", data.maxLength) if data.maxLength?
     @status.text("Choose name:")
+    @CMD_desired(ctype: "StuiCreateForm")
 
     # check hash params
-    return if data.autofill == false
     hparams = @getHashParams()
     @connection.send(p) if p = hparams.user || hparams.username || hparams.name
 

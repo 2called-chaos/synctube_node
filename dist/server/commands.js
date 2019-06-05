@@ -253,13 +253,7 @@
       client.old_name = client.name;
       client.setUsername(new_name);
     } else {
-      client.sendCode("require_username", {
-        maxLength: this.opts.nameMaxLength,
-        autofill: false
-      });
-      client.old_name = client.name;
-      client.name = null;
-      client.sendSystemMessage("Tell me your new username!");
+      client.sendSystemMessage("Usage: /rename &lt;new_name&gt;");
     }
     return client.ack();
   });

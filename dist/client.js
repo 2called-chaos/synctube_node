@@ -346,17 +346,14 @@
     CMD_require_username: function(data) {
       var hparams, p;
       this.enableInput();
-      this.CMD_desired({
-        ctype: "StuiCreateForm"
-      });
       if (data.maxLength != null) {
         this.input.attr("maxLength", data.maxLength);
       }
       this.status.text("Choose name:");
+      this.CMD_desired({
+        ctype: "StuiCreateForm"
+      });
       // check hash params
-      if (data.autofill === false) {
-        return;
-      }
       hparams = this.getHashParams();
       if (p = hparams.user || hparams.username || hparams.name) {
         return this.connection.send(p);

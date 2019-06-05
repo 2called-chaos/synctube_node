@@ -135,8 +135,8 @@ window.SyncTubeClient_UI =
           <img src="" data-attr="thumbnail" data-command="pl play #{data.index}" title="play">
         </span>
         <span class="second">
-          <a data-attr="name"></a>
-          <a data-attr="author"></a>
+          <a data-attr="name" target="_blank"></a>
+          <a data-attr="author" target="_blank"></a>
           <span class="active_indicator text-danger"><i class="fa fa-circle"></i> now playing</span>
           <span class="btn-group">
             <span class="btn btn-success btn-xs" data-command="pl play #{data.index}"><i class="fa fa-play"></i></span>

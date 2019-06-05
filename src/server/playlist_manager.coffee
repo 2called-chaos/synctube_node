@@ -198,6 +198,7 @@ exports.Class = class PlaylistManager
       return if data.thumbnail != false
       switch ctype
         when "Youtube"
+          data.name = [url, "https://youtube.com/watch?v=#{url}"]
           UTIL.jsonGetHttps "https://www.youtube.com/oembed?url=http://www.youtube.com/watch?v=#{url}&format=json", (d) =>
             data.name = [d.title, "https://youtube.com/watch?v=#{url}"]
             data.author = [d.author_name, d.author_url]

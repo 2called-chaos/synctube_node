@@ -420,13 +420,17 @@
         changeAttr(el.find("[data-attr=thumbnail]"), "src", data.thumbnail);
       }
       if (data.author) {
+        changeAttr(el.find("[data-attr=author]"), "title", data.author[0]);
         changeAttr(el.find("[data-attr=author]"), "href", data.author[1]);
         changeHTML(el.find("[data-attr=author]"), data.author[0]);
       }
       if (typeof data.name === "string") {
         changeHTML(el.find("[data-attr=name]"), data.name);
+        changeAttr(el.find("[data-attr=name]"), "title", data.name);
+        el.find("[data-attr=name]").removeAttr("href");
       } else {
         changeAttr(el.find("[data-attr=name]"), "href", data.name[1]);
+        changeAttr(el.find("[data-attr=name]"), "title", data.name[0]);
         changeHTML(el.find("[data-attr=name]"), data.name[0]);
       }
       changeHTML(el.find("[data-attr=timestamp]"), data.timestamp);
@@ -2034,7 +2038,7 @@
       return this.content.scrollTop(this.content.prop("scrollHeight"));
     },
     buildPlaylistElement: function(data) {
-      return $(`<div data-pl-id="${data.id}" data-pl-index="${data.index}">\n  <span class="first">\n    <img src="" data-attr="thumbnail" data-command="pl play ${data.index}" title="play">\n  </span>\n  <span class="second">\n    <a data-attr="name"></a>\n    <a data-attr="author"></a>\n    <span class="active_indicator text-danger"><i class="fa fa-circle"></i> now playing</span>\n    <span class="btn-group">\n      <span class="btn btn-success btn-xs" data-command="pl play ${data.index}"><i class="fa fa-play"></i></span>\n      <span class="btn btn-danger btn-xs" data-command="pl remove ${data.index}"><i class="fa fa-times"></i></span>\n    </span>\n  </span>\n</div>`);
+      return $(`<div data-pl-id="${data.id}" data-pl-index="${data.index}">\n  <span class="first">\n    <img src="" data-attr="thumbnail" data-command="pl play ${data.index}" title="play">\n  </span>\n  <span class="second">\n    <a data-attr="name" target="_blank"></a>\n    <a data-attr="author" target="_blank"></a>\n    <span class="active_indicator text-danger"><i class="fa fa-circle"></i> now playing</span>\n    <span class="btn-group">\n      <span class="btn btn-success btn-xs" data-command="pl play ${data.index}"><i class="fa fa-play"></i></span>\n      <span class="btn btn-danger btn-xs" data-command="pl remove ${data.index}"><i class="fa fa-times"></i></span>\n    </span>\n  </span>\n</div>`);
     },
     buildSubscriberElement: function() {
       return $("<div data-client-index=\"\">\n  <div class=\"first\">\n    <span data-attr=\"admin-ctn\"><i></i></span>\n    <span data-attr=\"name\"></span>\n  </div>\n  <div class=\"second\">\n    <span data-attr=\"icon-ctn\"><i><span data-attr=\"progress\"></span> <span data-attr=\"timestamp\"></span></i></span>\n    <span data-attr=\"drift-ctn\" style=\"float:right\"><i><span data-attr=\"drift\"></span></i></span>\n    <div data-attr=\"progress-bar\"><div data-attr=\"progress-bar-buffered\"></div><div data-attr=\"progress-bar-position\"></div></div>\n  </div>\n</div>");

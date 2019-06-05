@@ -149,12 +149,16 @@ window.SyncTubeClient_ControlCodes =
 
     changeAttr(el.find("[data-attr=thumbnail]"), "src", data.thumbnail) if data.thumbnail
     if data.author
+      changeAttr(el.find("[data-attr=author]"), "title", data.author[0])
       changeAttr(el.find("[data-attr=author]"), "href", data.author[1])
       changeHTML(el.find("[data-attr=author]"), data.author[0])
     if typeof data.name == "string"
       changeHTML(el.find("[data-attr=name]"), data.name)
+      changeAttr(el.find("[data-attr=name]"), "title", data.name)
+      el.find("[data-attr=name]").removeAttr("href")
     else
       changeAttr(el.find("[data-attr=name]"), "href", data.name[1])
+      changeAttr(el.find("[data-attr=name]"), "title", data.name[0])
       changeHTML(el.find("[data-attr=name]"), data.name[0])
     changeHTML(el.find("[data-attr=timestamp]"), data.timestamp)
     @playlist.toggle(!!@playlist.find("div[data-pl-id]").length)

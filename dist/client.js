@@ -265,45 +265,47 @@
         return navigator.clipboard.readText();
       }
     },
-    CMD_ui_chat_show: function(data) {
-      this.content.show(200, () => {
-        return this.content.scrollTop(this.content.prop("scrollHeight"));
-      });
-      return this.clients.show(200, () => {
-        return $(window).resize();
-      });
+    CMD_ui_chat: function(data) {
+      switch (data.action) {
+        case "show":
+          this.content.show(200, () => {
+            return this.content.scrollTop(this.content.prop("scrollHeight"));
+          });
+          return this.clients.show(200, () => {
+            return $(window).resize();
+          });
+        case "hide":
+          this.content.hide(200);
+          return this.clients.hide(200, () => {
+            return $(window).resize();
+          });
+        default:
+          this.content.toggle(200, () => {
+            return this.content.scrollTop(this.content.prop("scrollHeight"));
+          });
+          return this.clients.toggle(200, () => {
+            return $(window).resize();
+          });
+      }
     },
-    CMD_ui_chat_hide: function(data) {
-      this.content.hide(200);
-      return this.clients.hide(200, () => {
-        return $(window).resize();
-      });
-    },
-    CMD_ui_chat_toggle: function(data) {
-      this.content.toggle(200, () => {
-        return this.content.scrollTop(this.content.prop("scrollHeight"));
-      });
-      return this.clients.toggle(200, () => {
-        return $(window).resize();
-      });
-    },
-    CMD_ui_playlist_show: function(data) {
-      this.playlist.removeClass("collapsed");
-      return this.delay(200, function() {
-        return $(window).resize();
-      });
-    },
-    CMD_ui_playlist_hide: function(data) {
-      this.playlist.addClass("collapsed");
-      return this.delay(200, function() {
-        return $(window).resize();
-      });
-    },
-    CMD_ui_playlist_toggle: function(data) {
-      this.playlist.toggleClass("collapsed");
-      return this.delay(200, function() {
-        return $(window).resize();
-      });
+    CMD_ui_playlist: function(data) {
+      switch (data.action) {
+        case "show":
+          this.playlist.removeClass("collapsed");
+          return this.delay(200, function() {
+            return $(window).resize();
+          });
+        case "hide":
+          this.playlist.addClass("collapsed");
+          return this.delay(200, function() {
+            return $(window).resize();
+          });
+        default:
+          this.playlist.toggleClass("collapsed");
+          return this.delay(200, function() {
+            return $(window).resize();
+          });
+      }
     },
     CMD_video_action: function(data) {
       var ref, ref1, ref2, ref3, ref4;

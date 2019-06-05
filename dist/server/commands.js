@@ -76,12 +76,16 @@
   });
 
   x.addCommand("Server", "tc", "togglechat", function(client) {
-    client.sendCode("ui_chat_toggle");
+    client.sendCode("ui_chat", {
+      action: "toggle"
+    });
     return client.ack();
   });
 
   x.addCommand("Server", "tpl", "togglepl", "toggleplaylist", function(client) {
-    client.sendCode("ui_playlist_toggle");
+    client.sendCode("ui_playlist", {
+      action: "toggle"
+    });
     return client.ack();
   });
 

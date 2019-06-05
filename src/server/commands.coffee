@@ -43,11 +43,11 @@ x.addCommand "Server", "clear", (client) ->
   client.ack()
 
 x.addCommand "Server", "tc", "togglechat", (client) ->
-  client.sendCode("ui_chat_toggle")
+  client.sendCode("ui_chat", action: "toggle")
   client.ack()
 
 x.addCommand "Server", "tpl", "togglepl", "toggleplaylist", (client) ->
-  client.sendCode("ui_playlist_toggle")
+  client.sendCode("ui_playlist", action: "toggle")
   client.ack()
 
 x.addCommand "Server", "packet", (client, jdata) ->

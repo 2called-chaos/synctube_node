@@ -66,19 +66,26 @@ window.SyncTubeClient_ControlCodes =
   CMD_ui_clipboard_poll: (data) ->
     navigator.clipboard.readText() if data.action == "permission"
 
-  CMD_ui_chat_show: (data) ->
-    @content.show 200, => @content.scrollTop(@content.prop("scrollHeight"))
-    @clients.show 200, => $(window).resize()
-  CMD_ui_chat_hide: (data) ->
-    @content.hide 200
-    @clients.hide 200, => $(window).resize()
-  CMD_ui_chat_toggle: (data) ->
-    @content.toggle 200, => @content.scrollTop(@content.prop("scrollHeight"))
-    @clients.toggle 200, => $(window).resize()
+  CMD_ui_chat: (data) ->
+    switch data.action
+      when "show"
+        @content.show 200, => @content.scrollTop(@content.prop("scrollHeight"))
+        @clients.show 200, => $(window).resize()
+      when "hide"
+        @content.hide 200
+        @clients.hide 200, => $(window).resize()
+      else
+        @content.toggle 200, => @content.scrollTop(@content.prop("scrollHeight"))
+        @clients.toggle 200, => $(window).resize()
 
-  CMD_ui_playlist_show: (data) -> @playlist.removeClass("collapsed"); @delay 200, -> $(window).resize()
-  CMD_ui_playlist_hide: (data) -> @playlist.addClass("collapsed"); @delay 200, -> $(window).resize()
-  CMD_ui_playlist_toggle: (data) -> @playlist.toggleClass("collapsed"); @delay 200, -> $(window).resize()
+  CMD_ui_playlist: (data) ->
+    switch data.action
+      when "show"
+        @playlist.removeClass("collapsed"); @delay 200, -> $(window).resize()
+      when "hide"
+        @playlist.addClass("collapsed"); @delay 200, -> $(window).resize()
+      else
+        @playlist.toggleClass("collapsed"); @delay 200, -> $(window).resize()
 
   CMD_video_action: (data) ->
     switch data.action

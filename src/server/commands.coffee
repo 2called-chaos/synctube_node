@@ -221,6 +221,13 @@ x.addCommand "Server", "system", (client, subaction, args...) ->
         client.sendSystemMessage "Channel destroyed!"
       else
         client.sendSystemMessage "The channel could not be found!"
+    when "chfixsessions"
+      channel = args.shift()
+      if ch = @channels[channel]
+        nulled = ch.cleanupControlSessions()
+        client.sendSystemMessage "Cleared #{nulled} invalid sessions!"
+      else
+        client.sendSystemMessage "The channel could not be found!"
     when "status"
       client.sendSystemMessage "======================"
       nulled = 0

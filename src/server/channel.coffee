@@ -228,3 +228,30 @@ exports.Class = class SyncTubeServerChannel
   findClient: (client, who) ->
     require("./client.js").Class.find(client, who, @subscribers, "channel")
 
+  cleanupControlSessions: ->
+    nulled = 0
+    nulled += 1 for c in @control when c.control isnt this
+    if nulled > 0
+      @debug "reindexing control sessions (#{nulled} invalid sessions)"
+    else
+      return nulled
+
+    # remember valid host
+    oldHost = @control[@host]
+    oldHost = null unless host.control == this
+    oldHost.sendCode("lost_host", channel: @name)
+
+    # reindex
+    newControl = []
+    newControl.push(oldHost) if oldHost
+    for c in @clients when c isnt null
+      newControl.push(c) if oldHost && newControl.indexOf(oldHost) < 0
+    @control = newClients
+
+    # update host
+    @host = 0
+    (oldHost || @control[@host])?.sendCode("taken_host", channel: @name)
+    @updateSubscriberList()
+    
+    return nulled
+    

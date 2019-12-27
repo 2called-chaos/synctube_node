@@ -139,6 +139,9 @@
     // authentication
     if (channel) {
       if (cobj = this.channels[channel]) {
+        if (cobj.control.indexOf(client) > -1) {
+          return;
+        }
         if ((key != null) && key === cobj.getRPCKey()) {
           cobj.debug(`granted control to RPC client #${client.index}(${client.ip})`);
           cobj.control.push(client);

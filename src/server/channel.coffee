@@ -238,7 +238,7 @@ exports.Class = class SyncTubeServerChannel
 
     # remember valid host
     oldHost = @control[@host]
-    oldHost = null unless host.control == this
+    oldHost = null unless oldHost.control == this
     oldHost.sendCode("lost_host", channel: @name)
 
     # reindex

@@ -451,7 +451,7 @@
       }
       // remember valid host
       oldHost = this.control[this.host];
-      if (host.control !== this) {
+      if (oldHost.control !== this) {
         oldHost = null;
       }
       oldHost.sendCode("lost_host", {

@@ -139,18 +139,17 @@
     // authentication
     if (channel) {
       if (cobj = this.channels[channel]) {
-        if (cobj.control.indexOf(client) > -1) {
-          return;
-        }
-        if ((key != null) && key === cobj.getRPCKey()) {
-          cobj.debug(`granted control to RPC client #${client.index}(${client.ip})`);
-          cobj.control.push(client);
-          client.control = cobj;
-        } else {
-          client.sendRPCResponse({
-            error: "Authentication failed"
-          });
-          return;
+        if (cobj.control.indexOf(client) < 0) {
+          if ((key != null) && key === cobj.getRPCKey()) {
+            cobj.debug(`granted control to RPC client #${client.index}(${client.ip})`);
+            cobj.control.push(client);
+            client.control = cobj;
+          } else {
+            client.sendRPCResponse({
+              error: "Authentication failed"
+            });
+            return;
+          }
         }
       } else {
         client.sendRPCResponse({

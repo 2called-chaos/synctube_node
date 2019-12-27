@@ -84,14 +84,14 @@ x.addCommand "Server", "rpc", (client, args...) ->
   # authentication
   if channel
     if cobj = @channels[channel]
-      return if cobj.control.indexOf(client) > -1
-      if key? && key == cobj.getRPCKey()
-        cobj.debug "granted control to RPC client ##{client.index}(#{client.ip})"
-        cobj.control.push(client)
-        client.control = cobj
-      else
-        client.sendRPCResponse error: "Authentication failed"
-        return
+      if cobj.control.indexOf(client) < 0
+        if key? && key == cobj.getRPCKey()
+          cobj.debug "granted control to RPC client ##{client.index}(#{client.ip})"
+          cobj.control.push(client)
+          client.control = cobj
+        else
+          client.sendRPCResponse error: "Authentication failed"
+          return
     else
       client.sendRPCResponse error: "No such channel"
       return

@@ -169,6 +169,37 @@
       }
     }
 
+    cSwap(srcIndex, dstIndex) {
+      var _qel, activeElement, dstItem, i, j, len, ref, srcItem;
+      srcIndex = parseInt(srcIndex);
+      dstIndex = parseInt(dstIndex);
+      if (srcItem = this.data[this.set].entries[srcIndex]) {
+        if (dstItem = this.data[this.set].entries[dstIndex]) {
+          activeElement = this.data[this.set].entries[this.data[this.set].index];
+          // swap entries
+          this.data[this.set].entries[srcIndex] = dstItem;
+          this.data[this.set].entries[dstIndex] = srcItem;
+          ref = this.data[this.set].entries;
+          for (i = j = 0, len = ref.length; j < len; i = ++j) {
+            _qel = ref[i];
+            
+            // index bounds
+            _qel[2].index = i;
+          }
+          if (activeElement) {
+            this.data[this.set].index = activeElement[2].index;
+          } else {
+            this.data[this.set].index = Math.min(this.data[this.set].index, this.data[this.set].entries.length - 1);
+          }
+          return this.cUpdateList();
+        } else {
+          throw "no such dstIndex";
+        }
+      } else {
+        throw "no such srcIndex";
+      }
+    }
+
     cNext() {
       if (this.cEmpty()) {
         return false;

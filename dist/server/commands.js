@@ -334,6 +334,15 @@
           client.sendSystemMessage("The channel could not be found!");
         }
         break;
+      case "chfixsessions":
+        channel = args.shift();
+        if (ch = this.channels[channel]) {
+          nulled = ch.cleanupControlSessions();
+          client.sendSystemMessage(`Cleared ${nulled} invalid sessions!`);
+        } else {
+          client.sendSystemMessage("The channel could not be found!");
+        }
+        break;
       case "status":
         client.sendSystemMessage("======================");
         nulled = 0;

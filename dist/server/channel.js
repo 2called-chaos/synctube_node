@@ -434,6 +434,55 @@
       return require("./client.js").Class.find(client, who, this.subscribers, "channel");
     }
 
+    cleanupControlSessions() {
+      var c, j, l, len, len1, newControl, nulled, oldHost, ref, ref1, ref2;
+      nulled = 0;
+      ref = this.control;
+      for (j = 0, len = ref.length; j < len; j++) {
+        c = ref[j];
+        if (c.control !== this) {
+          nulled += 1;
+        }
+      }
+      if (nulled > 0) {
+        this.debug(`reindexing control sessions (${nulled} invalid sessions)`);
+      } else {
+        return nulled;
+      }
+      // remember valid host
+      oldHost = this.control[this.host];
+      if (host.control !== this) {
+        oldHost = null;
+      }
+      oldHost.sendCode("lost_host", {
+        channel: this.name
+      });
+      // reindex
+      newControl = [];
+      if (oldHost) {
+        newControl.push(oldHost);
+      }
+      ref1 = this.clients;
+      for (l = 0, len1 = ref1.length; l < len1; l++) {
+        c = ref1[l];
+        if (c !== null) {
+          if (oldHost && newControl.indexOf(oldHost) < 0) {
+            newControl.push(c);
+          }
+        }
+      }
+      this.control = newClients;
+      // update host
+      this.host = 0;
+      if ((ref2 = oldHost || this.control[this.host]) != null) {
+        ref2.sendCode("taken_host", {
+          channel: this.name
+        });
+      }
+      this.updateSubscriberList();
+      return nulled;
+    }
+
   };
 
 }).call(this);

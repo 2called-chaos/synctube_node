@@ -9,7 +9,7 @@
 
   exports.registerPlaylist = function(klass, COLORS, UTIL) {
     return klass.addCommand("Channel", "playlist", "pl", function(client, ...args) {
-      var action, avail_opts, c, cols, data, err, i, index, j, len, len1, msg, name, nv, ok, ot, ov, r, ref, ref1, value, volatile, x;
+      var action, avail_opts, c, cols, data, dstIndex, err, i, index, j, len, len1, msg, name, nv, ok, ot, ov, r, ref, ref1, srcIndex, value, volatile, x;
       if (!(this.control.indexOf(client) > -1)) {
         return client.permissionDenied("playlist");
       }
@@ -155,6 +155,23 @@
             client.sendSystemMessage("Usage: /playlist play &lt;index&gt;");
           }
           break;
+        case "swap":
+          if ((args[0] != null) && (args[1] != null)) {
+            srcIndex = parseInt(args[0]);
+            dstIndex = parseInt(args[1]);
+            if (this.playlistManager.sdata().entries[srcIndex]) {
+              if (this.playlistManager.sdata().entries[dstIndex]) {
+                this.playlistManager.cSwap(srcIndex, dstIndex);
+              } else {
+                client.sendSystemMessage("Current playlist has no such dstIndex");
+              }
+            } else {
+              client.sendSystemMessage("Current playlist has no such srcIndex");
+            }
+          } else {
+            client.sendSystemMessage("Usage: /playlist swap &lt;srcIndex&gt; &lt;dstIndex&gt;");
+          }
+          break;
         case "remove":
           if (args[0] != null) {
             index = parseInt(args[0]);
@@ -178,6 +195,7 @@
           client.sendSystemMessage("Usage: /playlist opt [option] [newvalue]");
           client.sendSystemMessage("Usage: /playlist next/prev");
           client.sendSystemMessage("Usage: /playlist play/remove &lt;index&gt;");
+          client.sendSystemMessage("Usage: /playlist swap &lt;srcIndex&gt; &lt;dstIndex&gt;");
       }
       return client.ack();
     });

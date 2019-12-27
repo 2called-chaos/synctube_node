@@ -24,10 +24,12 @@ window.SyncTubeClient_ControlCodes =
 
   CMD_taken_control: ->
     @control = true
+    @playlistUI?.enableSorting()
     @commandBar?.show()
 
   CMD_lost_control: ->
     @control = false
+    @playlistUI?.disableSorting()
     @commandBar?.hide()
 
   CMD_taken_host: ->

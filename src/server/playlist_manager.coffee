@@ -88,6 +88,30 @@ exports.Class = class PlaylistManager
     else
       throw "no such index"
 
+  cSwap: (srcIndex, dstIndex) ->
+    srcIndex = parseInt(srcIndex)
+    dstIndex = parseInt(dstIndex)
+    if srcItem = @data[@set].entries[srcIndex]
+      if dstItem = @data[@set].entries[dstIndex]
+        activeElement = @data[@set].entries[@data[@set].index]
+
+        # swap entries
+        @data[@set].entries[srcIndex] = dstItem
+        @data[@set].entries[dstIndex] = srcItem
+        
+        # index bounds
+        _qel[2].index = i for _qel, i in @data[@set].entries
+        if activeElement
+          @data[@set].index = activeElement[2].index
+        else
+          @data[@set].index = Math.min(@data[@set].index, @data[@set].entries.length - 1)
+        
+        @cUpdateList()
+      else
+        throw "no such dstIndex"
+    else
+      throw "no such srcIndex"
+
   cNext: ->
     return false if @cEmpty()
     return false if @cAtEnd()

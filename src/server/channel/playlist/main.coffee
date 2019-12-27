@@ -127,6 +127,19 @@ exports.registerPlaylist = (klass, COLORS, UTIL) ->
             client.sendSystemMessage("Current playlist has no such index")
         else
           client.sendSystemMessage("Usage: /playlist play &lt;index&gt;")
+      when "swap"
+        if args[0]? && args[1]?
+          srcIndex = parseInt(args[0])
+          dstIndex = parseInt(args[1])
+          if @playlistManager.sdata().entries[srcIndex]
+            if @playlistManager.sdata().entries[dstIndex]
+              @playlistManager.cSwap(srcIndex, dstIndex)
+            else
+              client.sendSystemMessage("Current playlist has no such dstIndex")
+          else
+            client.sendSystemMessage("Current playlist has no such srcIndex")
+        else
+          client.sendSystemMessage("Usage: /playlist swap &lt;srcIndex&gt; &lt;dstIndex&gt;")
       when "remove"
         if args[0]?
           index = parseInt(args[0])
@@ -147,5 +160,6 @@ exports.registerPlaylist = (klass, COLORS, UTIL) ->
         client.sendSystemMessage("Usage: /playlist opt [option] [newvalue]")
         client.sendSystemMessage("Usage: /playlist next/prev")
         client.sendSystemMessage("Usage: /playlist play/remove &lt;index&gt;")
+        client.sendSystemMessage("Usage: /playlist swap &lt;srcIndex&gt; &lt;dstIndex&gt;")
 
     client.ack()

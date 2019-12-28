@@ -112,7 +112,7 @@
       return true;
     }
 
-    cUpdateList(client) {
+    cUpdateList(client, opts = {}) {
       var entries, i, j, len, qel, ref;
       entries = [];
       ref = this.data[this.set].entries;
@@ -124,12 +124,14 @@
       if (client) {
         return client.sendCode("playlist_update", {
           entries: entries,
-          index: this.data[this.set].index
+          index: this.data[this.set].index,
+          keepScroll: opts.keepScroll
         });
       } else {
         return this.channel.broadcastCode(false, "playlist_update", {
           entries: entries,
-          index: this.data[this.set].index
+          index: this.data[this.set].index,
+          keepScroll: opts.keepScroll
         });
       }
     }
@@ -191,7 +193,9 @@
           } else {
             this.data[this.set].index = Math.min(this.data[this.set].index, this.data[this.set].entries.length - 1);
           }
-          return this.cUpdateList();
+          return this.cUpdateList(null, {
+            keepScroll: true
+          });
         } else {
           throw "no such dstIndex";
         }
@@ -249,7 +253,9 @@
       if (!wasAtEnd && this.data[this.set].index !== -1 && wasActive) {
         this.cPlayI(this.data[this.set].index);
       }
-      return this.cUpdateList();
+      return this.cUpdateList(null, {
+        keepScroll: !wasActive
+      });
     }
 
     handlePlay() {

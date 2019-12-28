@@ -59,15 +59,15 @@ exports.Class = class PlaylistManager
     @cUpdateList()
     return true
 
-  cUpdateList: (client) ->
+  cUpdateList: (client, opts = {}) ->
     entries = []
     for qel, i in @data[@set].entries
       qel[2].index = i
       entries.push(qel[2])
     if client
-      client.sendCode("playlist_update", entries: entries, index: @data[@set].index)
+      client.sendCode("playlist_update", entries: entries, index: @data[@set].index, keepScroll: opts.keepScroll)
     else
-      @channel.broadcastCode(false, "playlist_update", entries: entries, index: @data[@set].index)
+      @channel.broadcastCode(false, "playlist_update", entries: entries, index: @data[@set].index, keepScroll: opts.keepScroll)
 
   cUpdateIndex: (client) ->
     if client
@@ -106,7 +106,7 @@ exports.Class = class PlaylistManager
         else
           @data[@set].index = Math.min(@data[@set].index, @data[@set].entries.length - 1)
         
-        @cUpdateList()
+        @cUpdateList(null, keepScroll: true)
       else
         throw "no such dstIndex"
     else
@@ -146,7 +146,7 @@ exports.Class = class PlaylistManager
       @channel.setDefaultDesired()
 
     @cPlayI(@data[@set].index) if !wasAtEnd && @data[@set].index != -1 && wasActive
-    @cUpdateList()
+    @cUpdateList(null, keepScroll: !wasActive)
 
   handlePlay: ->
     #return if @channel.desired?.state == "play"

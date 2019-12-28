@@ -42,7 +42,7 @@ window.SyncTubeClient_ControlCodes =
     @CMD_ui_clear(component: "clients")
     @CMD_ui_clear(component: "playlist")
     @CMD_video_action(action: "destroy")
-    @playlist.hide()
+    @playlistUI?.hide()
 
   CMD_desired: (data) ->
     if data.ctype != @player?.ctype
@@ -62,7 +62,7 @@ window.SyncTubeClient_ControlCodes =
     switch data.component
       when "chat" then @content.html("")
       when "clients" then @clients.html("")
-      when "playlist" then @playlist.html("")
+      when "playlist" then @playlistUI?.clearEntries()
       when "player" then @CMD_video_action(action: "destroy")
 
   CMD_ui_clipboard_poll: (data) ->
@@ -79,15 +79,6 @@ window.SyncTubeClient_ControlCodes =
       else
         @content.toggle 200, => @content.scrollTop(@content.prop("scrollHeight"))
         @clients.toggle 200, => $(window).resize()
-
-  CMD_ui_playlist: (data) ->
-    switch data.action
-      when "show"
-        @playlist.removeClass("collapsed"); @delay 200, -> $(window).resize()
-      when "hide"
-        @playlist.addClass("collapsed"); @delay 200, -> $(window).resize()
-      else
-        @playlist.toggleClass("collapsed"); @delay 200, -> $(window).resize()
 
   CMD_video_action: (data) ->
     switch data.action
@@ -137,52 +128,6 @@ window.SyncTubeClient_ControlCodes =
       cmd = "/control #{hparams.control}"
       cmd += " #{hparams.password}" if hparams.password?
       @connection.send(cmd)
-
-  CMD_playlist_single_entry: (data) ->
-    el = @playlist.find("[data-pl-id=\"#{data.id}\"]")
-    if !el.length || el.data("plIndex") != data.index
-      _el = $(@buildPlaylistElement(data))
-      _el.attr("data-pl-id", data.id)
-      if el.length then el.replaceWith(_el) else @playlist.append(_el)
-      el = _el
-
-    changeHTML = (el, v) ->
-      return unless el.length
-      el.html(v) unless el.html() == v
-      el
-    changeAttr = (el, a, v) ->
-      return unless el.length
-      el.attr(a, v) unless el.attr(a) == v
-      el
-
-    changeAttr(el.find("[data-attr=thumbnail]"), "src", data.thumbnail) if data.thumbnail
-    if data.author
-      changeAttr(el.find("[data-attr=author]"), "title", data.author[0])
-      changeAttr(el.find("[data-attr=author]"), "href", data.author[1])
-      changeHTML(el.find("[data-attr=author]"), data.author[0])
-    if typeof data.name == "string"
-      changeHTML(el.find("[data-attr=name]"), data.name)
-      changeAttr(el.find("[data-attr=name]"), "title", data.name)
-      el.find("[data-attr=name]").removeAttr("href")
-    else
-      changeAttr(el.find("[data-attr=name]"), "href", data.name[1])
-      changeAttr(el.find("[data-attr=name]"), "title", data.name[0])
-      changeHTML(el.find("[data-attr=name]"), data.name[0])
-    changeHTML(el.find("[data-attr=timestamp]"), data.timestamp)
-    @playlist.toggle(!!@playlist.find("div[data-pl-id]").length)
-    @playlist.scrollTop(@playlist.find("div.active").prop("offsetTop") - 15)
-    $(window).resize()
-
-  CMD_playlist_update: (data) ->
-    if data.entries
-      @CMD_ui_clear(component: "playlist")
-      @CMD_playlist_single_entry(ple) for ple in data.entries
-    if data.index?
-      @playlist.find("div[data-pl-id]").removeClass("active")
-      @playlist.find("div[data-pl-index=#{data.index}]").addClass("active")
-    @playlist.toggle(!!@playlist.find("div[data-pl-id]").length)
-    @playlist.scrollTop(@playlist.find("div.active").prop("offsetTop") - 15)
-    $(window).resize()
 
   CMD_update_single_subscriber: (resp) ->
     data = resp?.data || {}

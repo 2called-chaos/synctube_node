@@ -234,6 +234,7 @@
       return this.host = false;
     },
     CMD_unsubscribe: function() {
+      var ref1;
       this.CMD_ui_clear({
         component: "clients"
       });
@@ -243,7 +244,7 @@
       this.CMD_video_action({
         action: "destroy"
       });
-      return this.playlist.hide();
+      return (ref1 = this.playlistUI) != null ? ref1.hide() : void 0;
     },
     CMD_desired: function(data) {
       var e, klass, ref1, ref2;
@@ -265,13 +266,14 @@
       return (ref2 = this.commandBar) != null ? ref2.updateDesired(data) : void 0;
     },
     CMD_ui_clear: function(data) {
+      var ref1;
       switch (data.component) {
         case "chat":
           return this.content.html("");
         case "clients":
           return this.clients.html("");
         case "playlist":
-          return this.playlist.html("");
+          return (ref1 = this.playlistUI) != null ? ref1.clearEntries() : void 0;
         case "player":
           return this.CMD_video_action({
             action: "destroy"
@@ -302,25 +304,6 @@
             return this.content.scrollTop(this.content.prop("scrollHeight"));
           });
           return this.clients.toggle(200, () => {
-            return $(window).resize();
-          });
-      }
-    },
-    CMD_ui_playlist: function(data) {
-      switch (data.action) {
-        case "show":
-          this.playlist.removeClass("collapsed");
-          return this.delay(200, function() {
-            return $(window).resize();
-          });
-        case "hide":
-          this.playlist.addClass("collapsed");
-          return this.delay(200, function() {
-            return $(window).resize();
-          });
-        default:
-          this.playlist.toggleClass("collapsed");
-          return this.delay(200, function() {
             return $(window).resize();
           });
       }
@@ -401,79 +384,6 @@
         }
         return this.connection.send(cmd);
       }
-    },
-    CMD_playlist_single_entry: function(data) {
-      var _el, changeAttr, changeHTML, el;
-      el = this.playlist.find(`[data-pl-id="${data.id}"]`);
-      if (!el.length || el.data("plIndex") !== data.index) {
-        _el = $(this.buildPlaylistElement(data));
-        _el.attr("data-pl-id", data.id);
-        if (el.length) {
-          el.replaceWith(_el);
-        } else {
-          this.playlist.append(_el);
-        }
-        el = _el;
-      }
-      changeHTML = function(el, v) {
-        if (!el.length) {
-          return;
-        }
-        if (el.html() !== v) {
-          el.html(v);
-        }
-        return el;
-      };
-      changeAttr = function(el, a, v) {
-        if (!el.length) {
-          return;
-        }
-        if (el.attr(a) !== v) {
-          el.attr(a, v);
-        }
-        return el;
-      };
-      if (data.thumbnail) {
-        changeAttr(el.find("[data-attr=thumbnail]"), "src", data.thumbnail);
-      }
-      if (data.author) {
-        changeAttr(el.find("[data-attr=author]"), "title", data.author[0]);
-        changeAttr(el.find("[data-attr=author]"), "href", data.author[1]);
-        changeHTML(el.find("[data-attr=author]"), data.author[0]);
-      }
-      if (typeof data.name === "string") {
-        changeHTML(el.find("[data-attr=name]"), data.name);
-        changeAttr(el.find("[data-attr=name]"), "title", data.name);
-        el.find("[data-attr=name]").removeAttr("href");
-      } else {
-        changeAttr(el.find("[data-attr=name]"), "href", data.name[1]);
-        changeAttr(el.find("[data-attr=name]"), "title", data.name[0]);
-        changeHTML(el.find("[data-attr=name]"), data.name[0]);
-      }
-      changeHTML(el.find("[data-attr=timestamp]"), data.timestamp);
-      this.playlist.toggle(!!this.playlist.find("div[data-pl-id]").length);
-      this.playlist.scrollTop(this.playlist.find("div.active").prop("offsetTop") - 15);
-      return $(window).resize();
-    },
-    CMD_playlist_update: function(data) {
-      var j, len, ple, ref1;
-      if (data.entries) {
-        this.CMD_ui_clear({
-          component: "playlist"
-        });
-        ref1 = data.entries;
-        for (j = 0, len = ref1.length; j < len; j++) {
-          ple = ref1[j];
-          this.CMD_playlist_single_entry(ple);
-        }
-      }
-      if (data.index != null) {
-        this.playlist.find("div[data-pl-id]").removeClass("active");
-        this.playlist.find(`div[data-pl-index=${data.index}]`).addClass("active");
-      }
-      this.playlist.toggle(!!this.playlist.find("div[data-pl-id]").length);
-      this.playlist.scrollTop(this.playlist.find("div.active").prop("offsetTop") - 15);
-      return $(window).resize();
     },
     CMD_update_single_subscriber: function(resp) {
       var _el, changeAttr, changeHTML, data, el, k, ref1, v;
@@ -578,6 +488,9 @@
       this.opts = opts;
       this.playlist = $("#playlist");
       this.initSortable();
+      this.client.CMD_ui_playlist = this.CMD_ui_playlist.bind(this);
+      this.client.CMD_playlist_update = this.CMD_playlist_update.bind(this);
+      this.client.CMD_playlist_single_entry = this.CMD_playlist_single_entry.bind(this);
     }
 
     initSortable() {
@@ -599,6 +512,36 @@
       return this.sortable.options.disabled = true;
     }
 
+    scrollToActive(ensure) {
+      this.playlist.scrollTop(this.playlist.find("div.active").prop("offsetTop") - 15);
+      if (ensure != null) {
+        return this.client.delay(ensure, () => {
+          return this.scrollToActive();
+        });
+      }
+    }
+
+    getScroll() {
+      return this.playlist.scrollTop();
+    }
+
+    setScroll(i, ensure) {
+      this.playlist.scrollTop(i);
+      if (ensure != null) {
+        return this.client.delay(ensure, () => {
+          return this.setScroll(i);
+        });
+      }
+    }
+
+    clearEntries() {
+      return this.playlist.html("");
+    }
+
+    isEmpty() {
+      return !this.playlist.find("div[data-pl-id]").length;
+    }
+
     show() {
       return this.playlist.show(1, function() {
         return $(window).resize();
@@ -609,6 +552,130 @@
       return this.playlist.hide(1, function() {
         return $(window).resize();
       });
+    }
+
+    toggle(toToggle) {
+      return this.playlist.toggle(toToggle, 1, function() {
+        return $(window).resize();
+      });
+    }
+
+    toggleEmpty() {
+      return this.toggle(!this.isEmpty());
+    }
+
+    toggleCollapse(toggleTo) {
+      if (toggleTo != null) {
+        this.playlist.toggleClass("collapsed", toggleTo);
+      } else {
+        this.playlist.toggleClass("collapsed");
+      }
+      return this.client.delay(200, function() {
+        return $(window).resize();
+      });
+    }
+
+    buildPlaylistElement(data) {
+      return $(`<div data-pl-id="${data.id}" data-pl-index="${data.index}">\n  <span class="first">\n    <img src="" data-attr="thumbnail" data-command="pl play ${data.index}" title="play">\n  </span>\n  <span class="second">\n    <a data-attr="name" target="_blank"></a>\n    <a data-attr="author" target="_blank"></a>\n    <span class="active_indicator text-danger"><i class="fa fa-circle"></i> now playing</span>\n    <span class="btn-group">\n      <span class="btn btn-success btn-xs" data-command="pl play ${data.index}"><i class="fa fa-play"></i></span>\n      <span class="btn btn-danger btn-xs" data-command="pl remove ${data.index}"><i class="fa fa-times"></i></span>\n    </span>\n  </span>\n</div>`);
+    }
+
+    changeHTML(el, v) {
+      if (!el.length) {
+        return;
+      }
+      if (el.html() !== v) {
+        el.html(v);
+      }
+      return el;
+    }
+
+    changeAttr(el, a, v) {
+      if (!el.length) {
+        return;
+      }
+      if (el.attr(a) !== v) {
+        el.attr(a, v);
+      }
+      return el;
+    }
+
+    CMD_playlist_single_entry(data) {
+      var _el, el;
+      el = this.playlist.find(`[data-pl-id="${data.id}"]`);
+      if (!el.length || el.data("plIndex") !== data.index) {
+        _el = $(this.buildPlaylistElement(data));
+        _el.attr("data-pl-id", data.id);
+        if (el.length) {
+          el.replaceWith(_el);
+        } else {
+          this.playlist.append(_el);
+        }
+        el = _el;
+      }
+      if (data.thumbnail) {
+        this.changeAttr(el.find("[data-attr=thumbnail]"), "src", data.thumbnail);
+      }
+      if (data.author) {
+        this.changeAttr(el.find("[data-attr=author]"), "title", data.author[0]);
+        this.changeAttr(el.find("[data-attr=author]"), "href", data.author[1]);
+        this.changeHTML(el.find("[data-attr=author]"), data.author[0]);
+      }
+      if (typeof data.name === "string") {
+        this.changeHTML(el.find("[data-attr=name]"), data.name);
+        this.changeAttr(el.find("[data-attr=name]"), "title", data.name);
+        el.find("[data-attr=name]").removeAttr("href");
+      } else {
+        this.changeAttr(el.find("[data-attr=name]"), "href", data.name[1]);
+        this.changeAttr(el.find("[data-attr=name]"), "title", data.name[0]);
+        this.changeHTML(el.find("[data-attr=name]"), data.name[0]);
+      }
+      this.changeHTML(el.find("[data-attr=timestamp]"), data.timestamp);
+      this.toggleEmpty();
+      this.scrollToActive(5);
+      return $(window).resize();
+    }
+
+    CMD_playlist_update(data) {
+      var cscroll, j, len, ple, ref1;
+      if (data.keepScroll) {
+        // remember scroll
+        cscroll = this.getScroll();
+      }
+      // update entries
+      if (data.entries) {
+        this.client.CMD_ui_clear({
+          component: "playlist"
+        });
+        ref1 = data.entries;
+        for (j = 0, len = ref1.length; j < len; j++) {
+          ple = ref1[j];
+          this.client.CMD_playlist_single_entry(ple);
+        }
+      }
+      // update index
+      if (data.index != null) {
+        this.playlist.find("div[data-pl-id]").removeClass("active");
+        this.playlist.find(`div[data-pl-index=${data.index}]`).addClass("active");
+      }
+      // post
+      this.toggleEmpty();
+      if (cscroll) {
+        return this.setScroll(cscroll, 5);
+      } else {
+        this.scrollToActive(5);
+        return $(window).resize();
+      }
+    }
+
+    CMD_ui_playlist(data) {
+      switch (data.action) {
+        case "show":
+          return this.toggleCollapse(false);
+        case "hide":
+          return this.toggleCollapse(true);
+        default:
+          return this.toggleCollapse();
+      }
     }
 
   };
@@ -1877,7 +1944,7 @@
     },
     handleWindowResize: function() {
       $(window).resize((ev) => {
-        var height_both, height_first, height_second, height_third, plrc, plre, width_second;
+        var height_both, height_first, height_second, height_third, plrc, plre, ref1, width_second;
         // playlist rattach
         if ($("#first_row").width() >= 800) {
           if ($("#playlist").parent().attr("id") !== "playlist_rattach_ctn") {
@@ -1922,7 +1989,7 @@
           });
         }
         // post scroll
-        return this.playlist.scrollTop(this.playlist.find("div.active").prop("offsetTop") - 15);
+        return (ref1 = this.playlistUI) != null ? ref1.scrollToActive() : void 0;
       });
       return $(window).resize();
     },
@@ -2020,9 +2087,6 @@
       tagname = data.author === "system" ? "strong" : "span";
       this.content.append(`<p>\n  <${tagname} style="color:${data.author_color}">${data.author}</${tagname}>\n  @ ${`0${dt.getHours()}`.slice(-2)}:${`0${dt.getMinutes()}`.slice(-2)}\n  <span style="color: ${data.text_color}">${data.text}</span>\n</p>`);
       return this.content.scrollTop(this.content.prop("scrollHeight"));
-    },
-    buildPlaylistElement: function(data) {
-      return $(`<div data-pl-id="${data.id}" data-pl-index="${data.index}">\n  <span class="first">\n    <img src="" data-attr="thumbnail" data-command="pl play ${data.index}" title="play">\n  </span>\n  <span class="second">\n    <a data-attr="name" target="_blank"></a>\n    <a data-attr="author" target="_blank"></a>\n    <span class="active_indicator text-danger"><i class="fa fa-circle"></i> now playing</span>\n    <span class="btn-group">\n      <span class="btn btn-success btn-xs" data-command="pl play ${data.index}"><i class="fa fa-play"></i></span>\n      <span class="btn btn-danger btn-xs" data-command="pl remove ${data.index}"><i class="fa fa-times"></i></span>\n    </span>\n  </span>\n</div>`);
     },
     buildSubscriberElement: function() {
       return $("<div data-client-index=\"\">\n  <div class=\"first\">\n    <span data-attr=\"admin-ctn\"><i></i></span>\n    <span data-attr=\"name\"></span>\n  </div>\n  <div class=\"second\">\n    <span data-attr=\"icon-ctn\"><i><span data-attr=\"progress\"></span> <span data-attr=\"timestamp\"></span></i></span>\n    <span data-attr=\"drift-ctn\" style=\"float:right\"><i><span data-attr=\"drift\"></span></i></span>\n    <div data-attr=\"progress-bar\"><div data-attr=\"progress-bar-buffered\"></div><div data-attr=\"progress-bar-position\"></div></div>\n  </div>\n</div>");

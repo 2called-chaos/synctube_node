@@ -47,7 +47,7 @@ window.SyncTubeClient_PlaylistUI = class SyncTubeClient_PlaylistUI
     $ """
       <div data-pl-id="#{data.id}" data-pl-index="#{data.index}">
         <span class="first">
-          <img src="" data-attr="thumbnail" data-command="pl play #{data.index}" title="play">
+          <img src="https://statics.bmonkeys.net/img/rpcico/error.png" data-attr="thumbnail" data-command="pl play #{data.index}" title="play">
         </span>
         <span class="second">
           <a data-attr="name" target="_blank"></a>

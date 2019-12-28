@@ -1944,9 +1944,11 @@
     },
     handleWindowResize: function() {
       $(window).resize((ev) => {
-        var height_both, height_first, height_second, height_third, plrc, plre, ref1, width_second;
+        var height_both, height_first, height_second, height_third, hparams, layout, plrc, plre, ref1, width_second;
+        hparams = this.getHashParams();
+        layout = hparams.l || hparams.layout;
         // playlist rattach
-        if ($("#first_row").width() >= 800) {
+        if (((layout != null) && layout === "quad") || ((layout == null) && $("#first_row").width() >= 800)) {
           if ($("#playlist").parent().attr("id") !== "playlist_rattach_ctn") {
             this.debug("RATTACH playlist");
             $("#playlist").detach().appendTo("#playlist_rattach_ctn");

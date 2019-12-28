@@ -17,9 +17,11 @@ window.SyncTubeClient_UI =
 
   handleWindowResize: ->
     $(window).resize (ev) =>
+      hparams = @getHashParams()
+      layout = hparams.l || hparams.layout
 
       # playlist rattach
-      if $("#first_row").width() >= 800
+      if (layout? && layout == "quad") || (!layout? && $("#first_row").width() >= 800)
         unless $("#playlist").parent().attr("id") == "playlist_rattach_ctn"
           @debug "RATTACH playlist"
           $("#playlist").detach().appendTo("#playlist_rattach_ctn")

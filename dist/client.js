@@ -1934,7 +1934,31 @@
     start: function() {
       this.adjustMaxWidth();
       this.captureInput();
-      return this.handleWindowResize();
+      this.handleWindowResize();
+      return this.initDropzones();
+    },
+    initDropzones: function() {
+      $(document).on("dragover", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        return $("body").addClass('dragover');
+      });
+      $(document).on("dragleave", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        return $("body").removeClass('dragover');
+      });
+      return $(document).on("drop", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        $("body").removeClass('dragover');
+        return ev.originalEvent.dataTransfer.items[0].getAsString((str) => {
+          this.input.val("/play " + str);
+          return this.input.trigger($.Event("keydown", {
+            keyCode: 13
+          }));
+        });
+      });
     },
     adjustMaxWidth: function(i) {
       var hparams, maxWidth;

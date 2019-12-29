@@ -9,7 +9,7 @@ window.SyncTubeClient_PlaylistUI = class SyncTubeClient_PlaylistUI
   initSortable: ->
     @sortable = new Sortable @playlist.get(0),
       disabled: true
-      onEnd: (ev) => @client.connection.send("/playlist swap #{ev.oldIndex} #{ev.newIndex}")
+      onSort: (ev) => @client.connection.send("/playlist swap #{ev.oldIndex} #{ev.newIndex}")
 
   enableSorting: ->
     @client.debug "Playlist sorting enabled"
@@ -113,7 +113,7 @@ window.SyncTubeClient_PlaylistUI = class SyncTubeClient_PlaylistUI
 
     # post
     @toggleEmpty()
-    if cscroll
+    if cscroll?
       @setScroll(cscroll, 5)
     else
       @scrollToActive(5)

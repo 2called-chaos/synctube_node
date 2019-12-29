@@ -496,7 +496,7 @@
     initSortable() {
       return this.sortable = new Sortable(this.playlist.get(0), {
         disabled: true,
-        onEnd: (ev) => {
+        onSort: (ev) => {
           return this.client.connection.send(`/playlist swap ${ev.oldIndex} ${ev.newIndex}`);
         }
       });
@@ -659,7 +659,7 @@
       }
       // post
       this.toggleEmpty();
-      if (cscroll) {
+      if (cscroll != null) {
         return this.setScroll(cscroll, 5);
       } else {
         this.scrollToActive(5);

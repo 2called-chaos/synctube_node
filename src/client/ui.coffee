@@ -78,6 +78,19 @@ window.SyncTubeClient_UI =
     $(window).resize()
     #setTimeout((-> $(window).resize()), 100)
 
+  sendCommand: (cmdargs...) ->
+    cmd = cmdargs.join(" ")
+    cmd = "/#{cmd}" unless cmd[0] == "/"
+    ibuf = @input.val()
+    @input.data("restoreBuffer", ibuf) if ibuf? && ibuf != ""
+    @input.val(cmd)
+    @input.trigger $.Event("keydown", keyCode: 13)
+
+  silentCommand: (cmdargs...) ->
+    cmd = cmdargs.join(" ")
+    cmd = "/#{cmd}" unless cmd[0] == "/"
+    @connection.send(cmd)
+
   captureInput: ->
     @input.keydown (event) =>
       return true unless event.keyCode == 13
@@ -106,7 +119,7 @@ window.SyncTubeClient_UI =
       cmd = el.data("command")
       cmd = el.data("altCommand") if event.altKey && el.data("altCommand")
       el.closest(".dropdown-menu").prev().dropdown("toggle") if el.hasClass("dropdown-item")
-      @connection.send("/" + cmd)
+      @silentCommand(cmd)
       return false
 
     $(document).on "click", "[data-suggest-command]",  (event) =>
@@ -118,7 +131,13 @@ window.SyncTubeClient_UI =
       return false
 
   enableInput: (focus = true, clear = true) ->
-    @input.val("") if clear && @input.is(":disabled")
+    if clear && @input.is(":disabled")
+      r = @input.data("restoreBuffer")
+      if r?
+        @input.val(r)
+        @input.data("restoreBuffer", null)
+      else
+        @input.val("")
     @input.removeAttr("disabled")
     @input.focus() if @refocus && focus
     @input

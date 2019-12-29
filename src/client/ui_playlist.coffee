@@ -9,7 +9,7 @@ window.SyncTubeClient_PlaylistUI = class SyncTubeClient_PlaylistUI
   initSortable: ->
     @sortable = new Sortable @playlist.get(0),
       disabled: true
-      onSort: (ev) => @client.connection.send("/playlist swap #{ev.oldIndex} #{ev.newIndex}")
+      onSort: (ev) => @client.silentCommand("/playlist swap #{ev.oldIndex} #{ev.newIndex}")
 
   enableSorting: ->
     @client.debug "Playlist sorting enabled"

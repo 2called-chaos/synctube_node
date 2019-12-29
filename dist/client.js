@@ -375,14 +375,14 @@
       // check hash params
       hparams = this.getHashParams();
       if (ch = hparams.channel || hparams.join) {
-        this.connection.send(`/join ${ch}`);
+        this.connection.silentCommand("join", ch);
       }
       if (hparams.control) {
         cmd = `/control ${hparams.control}`;
         if (hparams.password != null) {
           cmd += ` ${hparams.password}`;
         }
-        return this.connection.send(cmd);
+        return this.silentCommand(cmd);
       }
     },
     CMD_update_single_subscriber: function(resp) {
@@ -497,7 +497,7 @@
       return this.sortable = new Sortable(this.playlist.get(0), {
         disabled: true,
         onSort: (ev) => {
-          return this.client.connection.send(`/playlist swap ${ev.oldIndex} ${ev.newIndex}`);
+          return this.client.silentCommand(`/playlist swap ${ev.oldIndex} ${ev.newIndex}`);
         }
       });
     }
@@ -2020,6 +2020,29 @@
       return $(window).resize();
     },
     //setTimeout((-> $(window).resize()), 100)
+    sendCommand: function(...cmdargs) {
+      var cmd, ibuf;
+      cmd = cmdargs.join(" ");
+      if (cmd[0] !== "/") {
+        cmd = `/${cmd}`;
+      }
+      ibuf = this.input.val();
+      if ((ibuf != null) && ibuf !== "") {
+        this.input.data("restoreBuffer", ibuf);
+      }
+      this.input.val(cmd);
+      return this.input.trigger($.Event("keydown", {
+        keyCode: 13
+      }));
+    },
+    silentCommand: function(...cmdargs) {
+      var cmd;
+      cmd = cmdargs.join(" ");
+      if (cmd[0] !== "/") {
+        cmd = `/${cmd}`;
+      }
+      return this.connection.send(cmd);
+    },
     captureInput: function() {
       this.input.keydown((event) => {
         var i, m, msg, ref1;
@@ -2069,7 +2092,7 @@
         if (el.hasClass("dropdown-item")) {
           el.closest(".dropdown-menu").prev().dropdown("toggle");
         }
-        this.connection.send("/" + cmd);
+        this.silentCommand(cmd);
         return false;
       });
       return $(document).on("click", "[data-suggest-command]", (event) => {
@@ -2087,8 +2110,15 @@
       });
     },
     enableInput: function(focus = true, clear = true) {
+      var r;
       if (clear && this.input.is(":disabled")) {
-        this.input.val("");
+        r = this.input.data("restoreBuffer");
+        if (r != null) {
+          this.input.val(r);
+          this.input.data("restoreBuffer", null);
+        } else {
+          this.input.val("");
+        }
       }
       this.input.removeAttr("disabled");
       if (this.refocus && focus) {

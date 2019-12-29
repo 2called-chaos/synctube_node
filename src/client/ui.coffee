@@ -9,26 +9,6 @@ window.SyncTubeClient_UI =
     @adjustMaxWidth()
     @captureInput()
     @handleWindowResize()
-    @initDropzones()
-
-  initDropzones: ->
-    $(document).on "dragover", (ev) =>
-      ev.preventDefault()  
-      ev.stopPropagation()
-      $("body").addClass('dragover')
-
-    $(document).on "dragleave", (ev) =>
-      ev.preventDefault()  
-      ev.stopPropagation()
-      $("body").removeClass('dragover')
-
-    $(document).on "drop", (ev) =>
-      ev.preventDefault()  
-      ev.stopPropagation()
-      $("body").removeClass('dragover')
-      ev.originalEvent.dataTransfer.items[0].getAsString (str) =>
-        @input.val("/play " + str)
-        @input.trigger $.Event("keydown", keyCode: 13)
 
   adjustMaxWidth: (i) ->
     hparams = @getHashParams()

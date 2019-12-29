@@ -2,10 +2,6 @@ body {
   background: #121212;
   font-family: tahoma;
   font-size: 12px;
-  transition: background 250ms ease-in-out;
-}
-body.dragover {
-  background: #400000;
 }
 
 /* scrollbars */

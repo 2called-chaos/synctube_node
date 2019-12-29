@@ -32,6 +32,7 @@ window.SyncTubeClient = class SyncTubeClient
     @include SyncTubeClient_ControlCodes
     @include SyncTubeClient_Network
     @include SyncTubeClient_UI
+    @include SyncTubeClient_InputFilterUI
     @include SyncTubeClient_PlaylistUI
     @include SyncTubeClient_DropletUI
     @include SyncTubeClient_CommandBar

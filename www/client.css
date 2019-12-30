@@ -22,6 +22,21 @@ body {
 }
 
 /* loader animation */
+img.longload {
+  position: absolute;
+  left: -7px;
+  top: 15px;
+  opacity: 0;
+  transition: opacity 500ms ease-out;
+}
+#welcome.longload img.longload.unknown {
+  opacity: 0.8;
+}
+
+#welcome.error img.longload.error {
+  opacity: 0.8;
+}
+
 .loader {
   display: block;
   position: relative;
@@ -36,6 +51,9 @@ body {
   animation: spin 2s linear infinite;
   z-index: 1001;
 }
+#welcome.error .loader {
+  animation-play-state: paused;
+}
 
 .loader:before {
   content: "";
@@ -49,6 +67,9 @@ body {
   border-top-color: #e74c3c;
   animation: spin 3s linear infinite;
 }
+#welcome.error .loader:before {
+  animation-play-state: paused;
+}
 
 .loader:after {
   content: "";
@@ -61,6 +82,10 @@ body {
   border: 3px solid transparent;
   border-top-color: #f9c922;
   animation: spin 1.5s linear infinite;
+}
+
+#welcome.error .loader:after {
+  animation-play-state: paused;
 }
 
 @keyframes spin {

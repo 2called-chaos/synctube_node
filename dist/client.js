@@ -1684,7 +1684,7 @@
       }
 
       welcome(done) {
-        $("#page").hide();
+        $("#page").addClass("initialized").hide();
         return typeof done === "function" ? done() : void 0;
       }
 

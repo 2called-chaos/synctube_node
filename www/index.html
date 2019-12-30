@@ -16,11 +16,25 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js" integrity="sha384-xrRywqdh3PHs8keKZN+8zzc5TX0GRTLCcmivcbNJWm2rs5C8PRhcEn3czEjhAO9o" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.10.1/Sortable.min.js" integrity="sha256-9D6DlNlpDfh0C8buQ6NXxrOdLo/wqFUwEB1s70obwfE=" crossorigin="anonymous"></script>
     <script src="./client.js" defer="defer"></script>
+    <script>
+      setTimeout(function () {
+        if (document.getElementById("page").classList.contains("initialized")) return;
+        document.getElementById("welcome").classList.add("longload");
+      }, 5000);
+      setTimeout(function () {
+        if (document.getElementById("page").classList.contains("initialized")) return;
+        document.getElementById("welcome").classList.remove("longload");
+        document.getElementById("welcome").classList.add("error");
+        setTimeout(function() { window.location.reload() }, 3000);
+      }, 15000);
+    </script>
   </head>
   <body>
     <div id="welcome" class="flexcentered">
       <div class="row">
         <div class="col-12 text-center" style="height: 150px">
+          <img src="https://statics.bmonkeys.net/img/rpcico/unknown.png" width="120" class="longload unknown">
+          <img src="https://statics.bmonkeys.net/img/rpcico/error.png" width="120" class="longload error">
           <div class="loader"></div>
         </div>
       </div>

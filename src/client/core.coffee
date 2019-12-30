@@ -46,7 +46,7 @@ window.SyncTubeClient = class SyncTubeClient
     inc.init?.apply(this) for inc in @included
 
   welcome: (done) ->
-    $("#page").hide()
+    $("#page").addClass("initialized").hide()
     done?()
 
   start: ->

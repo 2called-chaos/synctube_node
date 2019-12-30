@@ -17,6 +17,25 @@
       }
       return result;
     },
+    updateHashParams: function(toMerge = {}) {
+      return this.setHashParams(Object.assign({}, this.getHashParams(), toMerge));
+    },
+    setHashParams: function(hparams = {}) {
+      var hsh, k, v;
+      hsh = [];
+      for (k in hparams) {
+        v = hparams[k];
+        if (v === void 0) {
+          continue;
+        }
+        if (v === null) {
+          hsh.push(`${k}`);
+        } else {
+          hsh.push(`${k}=${v}`);
+        }
+      }
+      return window.location.hash = `#${hsh.join("&")}`;
+    },
     delay: function(ms, func) {
       return setTimeout(func, ms);
     }
@@ -381,6 +400,12 @@
         cmd = `/control ${hparams.control}`;
         if (hparams.password != null) {
           cmd += ` ${hparams.password}`;
+          if (hparams.clearSecret != null) {
+            this.updateHashParams({
+              password: void 0,
+              clearSecret: void 0
+            });
+          }
         }
         return this.silentCommand(cmd);
       }

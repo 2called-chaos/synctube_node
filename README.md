@@ -223,10 +223,12 @@ These are recognized parameters that can be used in the URL hash
 
     user|username|name    Username, otherwise required as first message
     mw|width|maxWidth     (default: 12) max side width (bootstrap columns, 1-12)
+    l|layout              (default: auto) auto|quad|row (force layout)
     join|channel          Join given channel after name is provided
     control               Join and control given channel after name is provided.
                           Will be created if it doesn't exist (with or without provided password)
     password              Optional control password if control is provided
+    clearSecret           Remove password from URL after login
 
     Example: localhost:3000#name=foo&control=bar&password=baz&mw=6
 

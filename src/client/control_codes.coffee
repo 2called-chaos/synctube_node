@@ -126,7 +126,9 @@ window.SyncTubeClient_ControlCodes =
     @connection.silentCommand("join", ch) if ch = hparams.channel || hparams.join
     if hparams.control
       cmd = "/control #{hparams.control}"
-      cmd += " #{hparams.password}" if hparams.password?
+      if hparams.password?
+        cmd += " #{hparams.password}"
+        @updateHashParams(password: undefined, clearSecret: undefined) if hparams.clearSecret?
       @silentCommand(cmd)
 
   CMD_update_single_subscriber: (resp) ->

@@ -9,4 +9,17 @@ window.SyncTubeClient_Util =
         result[key] = kvp.join("=")
     result
 
+  updateHashParams: (toMerge = {}) ->
+    @setHashParams Object.assign({}, @getHashParams(), toMerge)
+
+  setHashParams: (hparams = {}) ->
+    hsh = []
+    for k, v of hparams
+      continue if v == undefined
+      if v == null
+        hsh.push("#{k}")
+      else
+        hsh.push("#{k}=#{v}")
+    window.location.hash = "##{hsh.join("&")}"
+
   delay: (ms, func) -> setTimeout(func, ms)

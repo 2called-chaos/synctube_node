@@ -2281,6 +2281,15 @@
         this.silentCommand(cmd);
         return false;
       });
+      $(document).on("click", "[data-invoke-cc]", (event) => {
+        var cc, ccdata, el;
+        el = $(event.currentTarget);
+        cc = el.data("invokeCc");
+        ccdata = el.data("ccData");
+        ccdata = ccdata != null ? JSON.parse(ccdata) : {};
+        this[`CMD_${cc}`](ccdata);
+        return false;
+      });
       return $(document).on("click", "[data-suggest-command]", (event) => {
         var cmd, el;
         el = $(event.currentTarget);

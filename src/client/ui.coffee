@@ -102,6 +102,14 @@ window.SyncTubeClient_UI =
       @silentCommand(cmd)
       return false
 
+    $(document).on "click", "[data-invoke-cc]",  (event) =>
+      el = $(event.currentTarget)
+      cc = el.data("invokeCc")
+      ccdata = el.data("ccData")
+      ccdata = if ccdata? then JSON.parse(ccdata) else {}
+      @["CMD_#{cc}"](ccdata)
+      return false
+
     $(document).on "click", "[data-suggest-command]",  (event) =>
       el = $(event.currentTarget)
       cmd = el.data("suggestCommand")

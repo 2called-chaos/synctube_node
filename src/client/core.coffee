@@ -42,6 +42,8 @@ window.SyncTubeClient = class SyncTubeClient
     @include SyncTubeClient_Player_HtmlVideo
     @include SyncTubeClient_History
     @include SyncTubeClient_ClipboardPoll
+    if @getHashParams().keylock?
+      @include SyncTubeClient_KeyControls
 
     inc.init?.apply(this) for inc in @included
 

@@ -81,9 +81,14 @@ window.SyncTubeClient_PlaylistUI = class SyncTubeClient_PlaylistUI
 
     @changeAttr(el.find("[data-attr=thumbnail]"), "src", data.thumbnail) if data.thumbnail
     if data.author
-      @changeAttr(el.find("[data-attr=author]"), "title", data.author[0])
-      @changeAttr(el.find("[data-attr=author]"), "href", data.author[1])
-      @changeHTML(el.find("[data-attr=author]"), data.author[0])
+      if typeof data.author == "string"
+        @changeAttr(el.find("[data-attr=author]"), "title", data.author)
+        el.find("[data-attr=author]").removeAttr("href")
+        @changeHTML(el.find("[data-attr=author]"), data.author)
+      else
+        @changeAttr(el.find("[data-attr=author]"), "title", data.author[0])
+        @changeAttr(el.find("[data-attr=author]"), "href", data.author[1])
+        @changeHTML(el.find("[data-attr=author]"), data.author[0])
     if typeof data.name == "string"
       @changeHTML(el.find("[data-attr=name]"), data.name)
       @changeAttr(el.find("[data-attr=name]"), "title", data.name)

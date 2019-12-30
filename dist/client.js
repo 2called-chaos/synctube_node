@@ -616,9 +616,15 @@
         this.changeAttr(el.find("[data-attr=thumbnail]"), "src", data.thumbnail);
       }
       if (data.author) {
-        this.changeAttr(el.find("[data-attr=author]"), "title", data.author[0]);
-        this.changeAttr(el.find("[data-attr=author]"), "href", data.author[1]);
-        this.changeHTML(el.find("[data-attr=author]"), data.author[0]);
+        if (typeof data.author === "string") {
+          this.changeAttr(el.find("[data-attr=author]"), "title", data.author);
+          el.find("[data-attr=author]").removeAttr("href");
+          this.changeHTML(el.find("[data-attr=author]"), data.author);
+        } else {
+          this.changeAttr(el.find("[data-attr=author]"), "title", data.author[0]);
+          this.changeAttr(el.find("[data-attr=author]"), "href", data.author[1]);
+          this.changeHTML(el.find("[data-attr=author]"), data.author[0]);
+        }
       }
       if (typeof data.name === "string") {
         this.changeHTML(el.find("[data-attr=name]"), data.name);

@@ -576,7 +576,7 @@
     }
 
     buildPlaylistElement(data) {
-      return $(`<div data-pl-id="${data.id}" data-pl-index="${data.index}">\n  <span class="first">\n    <img src="https://statics.bmonkeys.net/img/rpcico/error.png" data-attr="thumbnail" data-command="pl play ${data.index}" title="play">\n  </span>\n  <span class="second">\n    <a data-attr="name" target="_blank"></a>\n    <a data-attr="author" target="_blank"></a>\n    <span class="active_indicator text-danger"><i class="fa fa-circle"></i> now playing</span>\n    <span class="btn-group">\n      <span class="btn btn-success btn-xs" data-command="pl play ${data.index}"><i class="fa fa-play"></i></span>\n      <span class="btn btn-danger btn-xs" data-command="pl remove ${data.index}"><i class="fa fa-times"></i></span>\n    </span>\n  </span>\n</div>`);
+      return $(`<div data-pl-id="${data.id}" data-pl-index="${data.index}">\n  <span class="first">\n    <img src="https://statics.bmonkeys.net/img/rpcico/unknown.png" data-attr="thumbnail" data-command="pl play ${data.index}" title="play">\n  </span>\n  <span class="second">\n    <a data-attr="name" target="_blank"></a>\n    <a data-attr="author" target="_blank"></a>\n    <span class="active_indicator text-danger"><i class="fa fa-circle"></i> now playing</span>\n    <span class="btn-group">\n      <span class="btn btn-success btn-xs" data-command="pl play ${data.index}"><i class="fa fa-play"></i></span>\n      <span class="btn btn-danger btn-xs" data-command="pl remove ${data.index}"><i class="fa fa-times"></i></span>\n    </span>\n  </span>\n</div>`);
     }
 
     changeHTML(el, v) {

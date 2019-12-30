@@ -34,19 +34,20 @@ window.SyncTubeClient_CommandBar = class SyncTubeClient_CommandBar
     $("#second_row").prepend """
     <div class="col col-12" id="command_bar" style="margin-top: 10px; margin-bottom: -5px; opacity: 0.8; display: none; z-index: 999">
       <div class="btn-group btn-group-sm">
-        <button type="button" data-command="seek 0" title="start from 0" class="btn btn-secondary"><i class="fa fa-step-backward"></i></button>
-        <button type="button" data-command="seek -60" data-alt-command="seek --slowmo -60" title="go back(+alt=slowmo) 60 seconds" class="btn btn-secondary"><i class="fa fa-fw fa-backward" data-alt-class="fa fa-fw fa-history"></i> <small>60</small></button>
-        <button type="button" data-command="seek -30" data-alt-command="seek --slowmo -30" title="go back(+alt=slowmo) 30 seconds" class="btn btn-secondary"><i class="fa fa-fw fa-backward" data-alt-class="fa fa-fw fa-history"></i> <small>30</small></button>
-        <button type="button" data-command="seek -10" data-alt-command="seek --slowmo -10" title="go back(+alt=slowmo) 10 seconds" class="btn btn-secondary"><i class="fa fa-fw fa-backward" data-alt-class="fa fa-fw fa-history"></i> <small>10</small></button>
+        <button type="button" data-command="pl prev" title="previous in playlist" class="btn btn-secondary"><i class="fa fa-step-backward"></i></button>
+        <button type="button" data-command="seek 0" title="start from 0" class="btn btn-secondary"><i class="fa fa-fast-backward"></i></button>
+        <button type="button" data-command="seek -60" data-alt-command="seek --slowmo -60" title="go back(+alt=slowmo) 60 seconds" class="btn btn-secondary d-none d-sm-block"><i class="fa fa-fw fa-backward" data-alt-class="fa fa-fw fa-history"></i> <small>60</small></button>
+        <button type="button" data-command="seek -30" data-alt-command="seek --slowmo -30" title="go back(+alt=slowmo) 30 seconds" class="btn btn-secondary d-none d-md-block"><i class="fa fa-fw fa-backward" data-alt-class="fa fa-fw fa-history"></i> <small>30</small></button>
+        <button type="button" data-command="seek -10" data-alt-command="seek --slowmo -10" title="go back(+alt=slowmo) 10 seconds" class="btn btn-secondary"><i class="fa fa-fw fa-backward" data-alt-class="fa fa-fw fa-history"></i> <small d-none d-sm-block>10</small></button>
       </div>
 
       <button type="button" data-command="toggle" class="btn btn-sm btn-success" style="padding-left: 15px; padding-right: 15px"><i class="fa fa-fw fa-play"></i></button>
 
       <div class="btn-group btn-group-sm">
-        <button type="button" data-command="seek +10" title="go forward 60 seconds" class="btn btn-secondary"><i class="fa fa-forward"></i> <small>10</small></button>
-        <button type="button" data-command="next" title="next in playlist" class="btn btn-info" style="display: none"><i class="fa fa-step-forward"></i></button>
-        <button type="button" data-command="seek +30" title="go forward 30 seconds" class="btn btn-secondary"><i class="fa fa-forward"></i> <small>30</small></button>
-        <button type="button" data-command="seek +60" title="go forward 10 seconds" class="btn btn-secondary"><i class="fa fa-forward"></i> <small>60</small></button>
+        <button type="button" data-command="seek +10" title="go forward 60 seconds" class="btn btn-secondary d-none d-sm-block"><i class="fa fa-forward"></i> <small>10</small></button>
+        <button type="button" data-command="seek +30" title="go forward 30 seconds" class="btn btn-secondary d-none d-md-block"><i class="fa fa-forward"></i> <small>30</small></button>
+        <button type="button" data-command="seek +60" title="go forward 10 seconds" class="btn btn-secondary"><i class="fa fa-forward"></i> <small d-none d-sm-block>60</small></button>
+        <button type="button" data-command="pl next" title="next in playlist" class="btn btn-secondary"><i class="fa fa-step-forward"></i></button>
       </div>
 
       <button title="toggle loop" type="button" data-command="loop toggle" class="btn btn-secondary btn-sm"><i class="fa fa-refresh"></i> <i class="fa fa-toggle-on"></i></button>

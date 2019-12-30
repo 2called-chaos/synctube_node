@@ -400,6 +400,14 @@
           client.sendSystemMessage("The channel could not be found!");
         }
         break;
+      case "chcontrol":
+        channel = args.shift();
+        if (ch = this.channels[channel] || client.subscribed) {
+          ch.grantControl(client);
+        } else {
+          client.sendSystemMessage("The channel could not be found!");
+        }
+        break;
       case "chkill":
         channel = args.shift();
         if (ch = this.channels[channel]) {
@@ -525,6 +533,7 @@
         client.sendSystemMessage("/system restart [reason]");
         client.sendSystemMessage("/system gracefulRestart <cancel|duration> [reason]");
         client.sendSystemMessage("/system message &lt;message&gt;");
+        client.sendSystemMessage("/system chcontrol &lt;channel&gt;");
         client.sendSystemMessage("/system chmessage &lt;channel&gt; &lt;message&gt;");
         client.sendSystemMessage("/system chkill &lt;channel&gt; [reason]");
         client.sendSystemMessage("/system chfixsessions &lt;channel&gt;");

@@ -270,6 +270,12 @@ x.addCommand "Server", "system", (client, subaction, args...) ->
         ch.broadcast({name: "system"}, UTIL.argsToStr(args), COLORS.red, COLORS.red)
       else
         client.sendSystemMessage "The channel could not be found!"
+    when "chcontrol"
+      channel = args.shift()
+      if ch = @channels[channel] || client.subscribed
+        ch.grantControl(client)
+      else
+        client.sendSystemMessage "The channel could not be found!"
     when "chkill"
       channel = args.shift()
       if ch = @channels[channel]
@@ -361,6 +367,7 @@ x.addCommand "Server", "system", (client, subaction, args...) ->
       client.sendSystemMessage("/system restart [reason]")
       client.sendSystemMessage("/system gracefulRestart <cancel|duration> [reason]")
       client.sendSystemMessage("/system message &lt;message&gt;")
+      client.sendSystemMessage("/system chcontrol &lt;channel&gt;")
       client.sendSystemMessage("/system chmessage &lt;channel&gt; &lt;message&gt;")
       client.sendSystemMessage("/system chkill &lt;channel&gt; [reason]")
       client.sendSystemMessage("/system chfixsessions &lt;channel&gt;")

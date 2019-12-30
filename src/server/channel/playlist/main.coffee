@@ -163,3 +163,4 @@ exports.registerPlaylist = (klass, COLORS, UTIL) ->
         client.sendSystemMessage("Usage: /playlist swap &lt;srcIndex&gt; &lt;dstIndex&gt;")
 
     client.ack()
+  .describe("playlist management").controlCommand()

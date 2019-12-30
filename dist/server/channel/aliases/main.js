@@ -143,7 +143,7 @@
         client.sendSystemMessage("alias not currently set");
       }
       return client.ack();
-    });
+    }).describe("alias management").controlCommand();
   };
 
 }).call(this);

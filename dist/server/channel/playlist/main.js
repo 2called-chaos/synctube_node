@@ -198,7 +198,7 @@
           client.sendSystemMessage("Usage: /playlist swap &lt;srcIndex&gt; &lt;dstIndex&gt;");
       }
       return client.ack();
-    });
+    }).describe("playlist management").controlCommand();
   };
 
 }).call(this);

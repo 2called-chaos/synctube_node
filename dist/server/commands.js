@@ -43,51 +43,124 @@
       }
     },
     addCommand: function(parent, ...cmds) {
-      var cmd, i, len, proc, ref, results;
+      var cmd, elements, j, len, proc, ref;
       ref = cmds, [...cmds] = ref, [proc] = splice.call(cmds, -1);
-      results = [];
-      for (i = 0, len = cmds.length; i < len; i++) {
-        cmd = cmds[i];
-        results.push(((cmd) => {
+      elements = [];
+      for (j = 0, len = cmds.length; j < len; j++) {
+        cmd = cmds[j];
+        ((cmd) => {
           if (x[parent][cmd]) {
             console.warn("[ST-WARN] ", new Date, `Overwriting handler for existing command ${parent}.${cmd}`);
           }
-          return x[parent][cmd] = proc;
-        })(cmd));
+          x[parent][cmd] = function(...a) {
+            return proc.call(this, ...a);
+          };
+          elements.push(x[parent][cmd]);
+          if (cmds[0] === cmd) {
+            return x[parent][cmd].aliases = [];
+          } else {
+            x[parent][cmd].aliasOf = cmds[0];
+            return x[parent][cmds[0]].aliases.push(cmd);
+          }
+        })(cmd);
       }
-      return results;
+      elements.describe = function(desc) {
+        this[0].description = desc;
+        return this;
+      };
+      elements.hiddenCommand = function() {
+        this.forEach((el) => {
+          return el.hidden = true;
+        });
+        return this;
+      };
+      elements.controlCommand = function() {
+        this.forEach((el) => {
+          return el.control = true;
+        });
+        return this;
+      };
+      return elements;
     },
     Server: {},
     Channel: {}
   };
+
+  x.addCommand("Server", "help", function(client, ...args) {
+    var aliases, all, col, commands, desc, hidden, i, ico, j, k, len, len1, msg, name, proc, r, ref, ref1;
+    all = UTIL.extractArg(args, ["-a", "--all"]);
+    hidden = UTIL.extractArg(args, ["--hidden"]);
+    aliases = UTIL.extractArg(args, ["--aliases"]);
+    commands = [];
+    ref = [x.Server, x.Channel];
+    for (i = j = 0, len = ref.length; j < len; i = ++j) {
+      col = ref[i];
+      for (name in col) {
+        proc = col[name];
+        if ((hidden || (!proc.hidden && !proc.aliasOf)) && (all || (proc.description != null))) {
+          if (i > 0) {
+            ico = proc.control ? "C+" : "C";
+          } else {
+            ico = "*";
+          }
+          commands.push([`[${ico}] /${name}`, proc.description, proc]);
+        }
+      }
+    }
+    commands.sort(function(a, b) {
+      if (a[0] < b[0]) {
+        return -1;
+      }
+      if (a[0] > b[0]) {
+        return 1;
+      }
+      return 0;
+    });
+    msg = [`Listing ${commands.length} commands:`];
+    for (k = 0, len1 = commands.length; k < len1; k++) {
+      [name, desc, proc] = commands[k];
+      r = `<span style="color: ${COLORS.magenta}">${name}</span>`;
+      if (aliases && ((ref1 = proc.aliases) != null ? ref1.length : void 0)) {
+        r += ` (alias: ${proc.aliases.join(" ")}) `;
+      }
+      if (desc) {
+        r += ` => <span style="color: ${COLORS.info}">${desc}</span>`;
+      } else {
+        r += " => undocumented, try calling it?";
+      }
+      msg.push(r);
+    }
+    client.sendSystemMessage(msg.join("<br>"), COLORS.muted);
+    return client.ack();
+  }).describe("lists described (or --all) commands");
 
   x.addCommand("Server", "clip", function(client) {
     client.sendCode("ui_clipboard_poll", {
       action: "permission"
     });
     return client.ack();
-  });
+  }).describe("[experimental] watch clipboard for playable URLs").hiddenCommand();
 
   x.addCommand("Server", "clear", function(client) {
     client.sendCode("ui_clear", {
       component: "chat"
     });
     return client.ack();
-  });
+  }).describe("clear chat window");
 
-  x.addCommand("Server", "tc", "togglechat", function(client) {
+  x.addCommand("Server", "togglechat", "tc", function(client) {
     client.sendCode("ui_chat", {
       action: "toggle"
     });
     return client.ack();
-  });
+  }).describe("toggle chat window display");
 
-  x.addCommand("Server", "tpl", "togglepl", "toggleplaylist", function(client) {
+  x.addCommand("Server", "toggleplaylist", "tpl", "togglepl", function(client) {
     client.sendCode("ui_playlist", {
       action: "toggle"
     });
     return client.ack();
-  });
+  }).describe("toggle playlist display");
 
   x.addCommand("Server", "packet", function(client, jdata) {
     var ch, error, json, ref, seek_was;
@@ -130,7 +203,7 @@
       }
     }
     return true;
-  });
+  }).hiddenCommand();
 
   x.addCommand("Server", "rpc", function(client, ...args) {
     var action, channel, cobj, err, key, ref, ref1;
@@ -204,7 +277,7 @@
       });
     }
     return client.ack();
-  });
+  }).hiddenCommand();
 
   x.addCommand("Server", "join", function(client, chname) {
     var channel;
@@ -217,7 +290,7 @@
       client.sendSystemMessage("Usage: /join &lt;channel&gt;");
     }
     return client.ack();
-  });
+  }).describe("join an existing channel");
 
   x.addCommand("Server", "control", function(client, name, password) {
     var channel, chname, ref;
@@ -245,13 +318,13 @@
       this.channels[chname].grantControl(client);
     }
     return client.ack();
-  });
+  }).describe("(create&)control a channel");
 
-  x.addCommand("Server", "dc", "disconnect", function(client) {
+  x.addCommand("Server", "disconnect", "dc", function(client) {
     client.sendSystemMessage("disconnecting...");
     client.sendCode("disconnected");
     return client.connection.close();
-  });
+  }).describe("disconnect from server");
 
   x.addCommand("Server", "rename", function(client, ...name_parts) {
     var new_name;
@@ -262,10 +335,10 @@
       client.sendSystemMessage("Usage: /rename &lt;new_name&gt;");
     }
     return client.ack();
-  });
+  }).describe("rename yourself");
 
   x.addCommand("Server", "system", function(client, subaction, ...args) {
-    var amsg, b, c, ch, channel, detail, dur, e, i, iargs, ip, j, len, len1, m, msg, nulled, reason, ref, ref1, seconds, stamp, success, target, time, what, which, who;
+    var amsg, b, c, ch, channel, detail, dur, e, iargs, ip, j, k, len, len1, m, msg, nulled, reason, ref, ref1, seconds, stamp, success, target, time, what, which, who;
     if (!client.isSystemAdmin) {
       if (subaction === "auth") {
         if (UTIL.argsToStr(args) === this.opts.systemPassword) {
@@ -349,8 +422,8 @@
         client.sendSystemMessage("======================");
         nulled = 0;
         ref = this.clients;
-        for (i = 0, len = ref.length; i < len; i++) {
-          c = ref[i];
+        for (j = 0, len = ref.length; j < len; j++) {
+          c = ref[j];
           if (c === null) {
             nulled += 1;
           }
@@ -364,8 +437,8 @@
       case "clients":
         client.sendSystemMessage("======================");
         ref1 = this.clients;
-        for (j = 0, len1 = ref1.length; j < len1; j++) {
-          c = ref1[j];
+        for (k = 0, len1 = ref1.length; k < len1; k++) {
+          c = ref1[k];
           if (c != null) {
             client.sendSystemMessage(`<span class="soft_elli" style="min-width: 45px">[#${c.index}]</span>\n<span class="elli" style="width: 100px; margin-bottom: -4px">${c.name || "<em>unnamed</em>"}</span>\n<span>${c.ip}</span>`);
           }
@@ -447,9 +520,24 @@
         } else if (what === "commands") {
           console.log(module.exports);
         }
+        break;
+      default:
+        client.sendSystemMessage("/system restart [reason]");
+        client.sendSystemMessage("/system gracefulRestart <cancel|duration> [reason]");
+        client.sendSystemMessage("/system message &lt;message&gt;");
+        client.sendSystemMessage("/system chmessage &lt;channel&gt; &lt;message&gt;");
+        client.sendSystemMessage("/system chkill &lt;channel&gt; [reason]");
+        client.sendSystemMessage("/system chfixsessions &lt;channel&gt;");
+        client.sendSystemMessage("/system status");
+        client.sendSystemMessage("/system clients");
+        client.sendSystemMessage("/system banip &lt;ip&gt; [duration] [reason]");
+        client.sendSystemMessage("/system unbanip &lt;ip&gt;");
+        client.sendSystemMessage("/system invoke [-t --target TARGET] &lt;action&gt; [JSON data]");
+        client.sendSystemMessage("/system kick &lt;client&gt; [reason]");
+        client.sendSystemMessage("/system dump &lt;client|channel|commands&gt; [clientID/channelName]");
     }
     return client.ack();
-  });
+  }).describe("admin command").hiddenCommand();
 
   x.addCommand("Channel", "retry", function(client) {
     var ch;
@@ -460,36 +548,36 @@
     ch.unsubscribe(client);
     ch.subscribe(client);
     return client.ack();
-  });
+  }).describe("rejoin a channel");
 
-  x.addCommand("Channel", "p", "pause", function(client) {
+  x.addCommand("Channel", "pause", "p", function(client) {
     if (!(this.control.indexOf(client) > -1)) {
       return client.permissionDenied("pause");
     }
     this.desired.state = "pause";
     this.broadcastCode(false, "desired", this.desired);
     return client.ack();
-  });
+  }).describe("pause playback").controlCommand();
 
-  x.addCommand("Channel", "r", "resume", function(client) {
+  x.addCommand("Channel", "resume", "r", function(client) {
     if (!(this.control.indexOf(client) > -1)) {
       return client.permissionDenied("resume");
     }
     this.desired.state = "play";
     this.broadcastCode(false, "desired", this.desired);
     return client.ack();
-  });
+  }).describe("resume playback").controlCommand();
 
-  x.addCommand("Channel", "t", "toggle", function(client) {
+  x.addCommand("Channel", "toggle", "t", function(client) {
     if (!(this.control.indexOf(client) > -1)) {
       return client.permissionDenied("toggle");
     }
     this.desired.state = this.desired.state === "play" ? "pause" : "play";
     this.broadcastCode(false, "desired", this.desired);
     return client.ack();
-  });
+  }).describe("toggle playback").controlCommand();
 
-  x.addCommand("Channel", "s", "seek", function(client, to) {
+  x.addCommand("Channel", "seek", "s", function(client, to) {
     if (!(this.control.indexOf(client) > -1)) {
       return client.permissionDenied("seek");
     }
@@ -511,10 +599,29 @@
       force: true
     }));
     return client.ack();
-  });
+  }).describe("seek to given position (relative with +/- or absolute)").controlCommand();
+
+  x.addCommand("Channel", "loop", function(client, what) {
+    if (what || this.control.indexOf(client) > -1) {
+      if (!(this.control.indexOf(client) > -1)) {
+        return client.permissionDenied("loop");
+      }
+      what = UTIL.strbool(what, !this.desired.loop);
+      if (this.desired.loop === what) {
+        client.sendSystemMessage(`Loop is already ${(this.desired.loop ? "enabled" : "disabled")}!`);
+      } else {
+        this.desired.loop = what;
+        this.broadcastCode(false, "desired", this.desired);
+        this.broadcast(client, `<strong>${(this.desired.loop ? "enabled" : "disabled")} loop!</strong>`, COLORS.warning, this.clientColor(client));
+      }
+    } else {
+      client.sendSystemMessage(`Loop is currently ${(this.desired.loop ? "enabled" : "disabled")}`, this.desired.loop ? COLORS.green : COLORS.red);
+    }
+    return client.ack();
+  }).describe("get and set loop mode").controlCommand();
 
   x.addCommand("Channel", "sync", "resync", function(client, ...args) {
-    var found, i, instant, len, t, target;
+    var found, instant, j, len, t, target;
     target = [client];
     instant = UTIL.extractArg(args, ["-i", "--instant"]);
     if (x = UTIL.extractArg(args, ["-t", "--target"], 1)) {
@@ -532,8 +639,8 @@
       target = this.subscribers;
     }
     if (target && target.length) {
-      for (i = 0, len = target.length; i < len; i++) {
-        t = target[i];
+      for (j = 0, len = target.length; j < len; j++) {
+        t = target[j];
         if (instant) {
           if (t != null) {
             t.sendCode("desired", Object.assign({}, this.desired, {
@@ -552,7 +659,7 @@
       client.sendSystemMessage("Found no targets");
     }
     return client.ack();
-  });
+  }).describe("force resync for you, -t(arget) or -a(ll)");
 
   x.addCommand("Channel", "ready", function(client) {
     if (!this.ready) {
@@ -572,7 +679,7 @@
       });
     }
     return client.ack();
-  });
+  }).describe("internal signal").hiddenCommand();
 
   x.addCommand("Channel", "play", "yt", "youtube", function(client, ...args) {
     var intermission, m, playNext, url;
@@ -597,26 +704,7 @@
       client.sendSystemMessage("I don't recognize this URL/YTID format, sorry");
     }
     return client.ack();
-  });
-
-  x.addCommand("Channel", "loop", function(client, what) {
-    if (what || this.control.indexOf(client) > -1) {
-      if (!(this.control.indexOf(client) > -1)) {
-        return client.permissionDenied("loop");
-      }
-      what = UTIL.strbool(what, !this.desired.loop);
-      if (this.desired.loop === what) {
-        client.sendSystemMessage(`Loop is already ${(this.desired.loop ? "enabled" : "disabled")}!`);
-      } else {
-        this.desired.loop = what;
-        this.broadcastCode(false, "desired", this.desired);
-        this.broadcast(client, `<strong>${(this.desired.loop ? "enabled" : "disabled")} loop!</strong>`, COLORS.warning, this.clientColor(client));
-      }
-    } else {
-      client.sendSystemMessage(`Loop is currently ${(this.desired.loop ? "enabled" : "disabled")}`, this.desired.loop ? COLORS.green : COLORS.red);
-    }
-    return client.ack();
-  });
+  }).describe("add (YouTube) item to playlist").controlCommand();
 
   x.addCommand("Channel", "url", "browse", function(client, ...args) {
     var ctype, intermission, playNext, url;
@@ -641,15 +729,15 @@
     }
     this.play(ctype, url, playNext, intermission);
     return client.ack();
-  });
+  }).describe("add URL to playlist").controlCommand();
 
-  x.addCommand("Channel", "img", "image", "pic", "picture", "gif", "png", "jpg", function(client, ...args) {
+  x.addCommand("Channel", "image", "img", "pic", "picture", "gif", "png", "jpg", function(client, ...args) {
     return module.exports.Channel.browse.call(this, client, ...args, "--x-HtmlImage");
-  });
+  }).describe("add image to playlist").controlCommand();
 
-  x.addCommand("Channel", "vid", "video", "mp4", "webp", function(client, ...args) {
+  x.addCommand("Channel", "video", "vid", "mp4", "webp", function(client, ...args) {
     return module.exports.Channel.browse.call(this, client, ...args, "--x-HtmlVideo");
-  });
+  }).describe("add video to playlist").controlCommand();
 
   x.addCommand("Channel", "leave", "quit", function(client) {
     var ch;
@@ -662,10 +750,10 @@
       client.sendSystemMessage("You are not in any channel!");
     }
     return client.ack();
-  });
+  }).describe("leave channel");
 
   x.addCommand("Channel", "password", function(client, new_password, revoke) {
-    var ch, cu, i, len, ref;
+    var ch, cu, j, len, ref;
     if (ch = client.subscribed) {
       if (ch.control.indexOf(client) > -1) {
         if (typeof new_password === "string") {
@@ -674,8 +762,8 @@
           client.sendSystemMessage(`Password changed${(revoke ? ", revoked all but you" : "")}!`);
           if (revoke) {
             ref = ch.control;
-            for (i = 0, len = ref.length; i < len; i++) {
-              cu = ref[i];
+            for (j = 0, len = ref.length; j < len; j++) {
+              cu = ref[j];
               if (cu === client) {
                 continue;
               }
@@ -692,7 +780,7 @@
       client.sendSystemMessage("You are not in any channel!");
     }
     return client.ack();
-  });
+  }).describe("change channel password").controlCommand();
 
   x.addCommand("Channel", "kick", function(client, who, ...args) {
     var amsg, ch, m, msg, target;
@@ -722,7 +810,7 @@
       client.sendSystemMessage("You are not in any channel!");
     }
     return client.ack();
-  });
+  }).describe("kick client from channel").controlCommand();
 
   x.addCommand("Channel", "host", function(client, who) {
     var newHost, newHostI, wasHost, wasHostI;
@@ -753,7 +841,7 @@
       client.sendSystemMessage(`${(who != null ? who.name : void 0) || "Target"} is not in control and thereby can't be host`);
     }
     return client.ack();
-  });
+  }).describe("change host").controlCommand();
 
   x.addCommand("Channel", "grant", function(client, who) {
     if (!(this.control.indexOf(client) > -1)) {
@@ -769,7 +857,7 @@
       client.sendSystemMessage(`${(who != null ? who.name : void 0) || "Target"} is now in control!`, COLORS.green);
     }
     return client.ack();
-  });
+  }).describe("grant client control privileges").controlCommand();
 
   x.addCommand("Channel", "revoke", function(client, who) {
     if (!(this.control.indexOf(client) > -1)) {
@@ -785,7 +873,7 @@
       client.sendSystemMessage(`${(who != null ? who.name : void 0) || "Target"} was not in control`);
     }
     return client.ack();
-  });
+  }).describe("revoke client control privileges").controlCommand();
 
   x.addCommand("Channel", "rpckey", function(client) {
     if (!(this.control.indexOf(client) > -1)) {
@@ -794,7 +882,7 @@
     client.sendSystemMessage(`RPC-Key for this channel: ${this.getRPCKey()}`);
     client.sendSystemMessage("The key will change with the channel password!", COLORS.warning);
     return client.ack();
-  });
+  }).describe("get RPC key for channel").controlCommand();
 
   x.addCommand("Channel", "bookmarklet", function(client, ...args) {
     var desiredAction, label, ref, ref1, script, showHelp, withNotification, wsurl;
@@ -828,10 +916,10 @@
     script = script.replace("%action%", desiredAction);
     client.sendSystemMessage(`The embedded key will change with the channel password!<br>\n<span style="color: ${COLORS.info}">Drag the following button to your bookmark bar:</span>\n<a href="javascript:${encodeURIComponent(script)}" class="btn btn-primary btn-xs" style="font-size: 10px">${label}</a>`, COLORS.warning);
     return client.ack();
-  });
+  }).describe("add videos to channel via bookmark").controlCommand();
 
   x.addCommand("Channel", "copt", function(client, opt, value) {
-    var c, cols, err, i, len, nv, ok, ot, ov, ref, ref1, who;
+    var c, cols, err, j, len, nv, ok, ot, ov, ref, ref1, who;
     if (!(this.control.indexOf(client) > -1)) {
       return client.permissionDenied("copt");
     }
@@ -872,8 +960,8 @@
             this.options[opt] = nv;
             this.sendSettings();
             ref = this.control;
-            for (i = 0, len = ref.length; i < len; i++) {
-              c = ref[i];
+            for (j = 0, len = ref.length; j < len; j++) {
+              c = ref[j];
               c.sendSystemMessage(`<span style="color: ${COLORS.warning}">CHANGED</span> channel option\n<span style="color: ${COLORS.info}">${ok}</span>\nfrom <span style="color: ${COLORS.magenta}">${ov}</span>\nto <span style="color: ${COLORS.magenta}">${nv}</span>`, COLORS.white);
             }
           } catch (error1) {
@@ -896,6 +984,6 @@
       client.sendSystemMessage(cols.join("<br>"), COLORS.white);
     }
     return client.ack();
-  });
+  }).describe("show and change channel options").controlCommand();
 
 }).call(this);

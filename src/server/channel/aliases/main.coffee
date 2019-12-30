@@ -97,3 +97,4 @@ exports.registerAlias = (klass, COLORS, UTIL) ->
       client.sendSystemMessage("alias not currently set")
 
     client.ack()
+  .describe("alias management").controlCommand()

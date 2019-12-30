@@ -26,29 +26,78 @@ x = module.exports =
       return client.ack()
 
   addCommand: (parent, cmds..., proc) ->
+    elements = []
     for cmd in cmds
       do (cmd) =>
         console.warn("[ST-WARN] ", new Date, "Overwriting handler for existing command #{parent}.#{cmd}") if x[parent][cmd]
-        x[parent][cmd] = proc
+        x[parent][cmd] = (a...) -> proc.call(this, a...)
+        elements.push(x[parent][cmd])
+        if cmds[0] == cmd
+          x[parent][cmd].aliases = []
+        else
+          x[parent][cmd].aliasOf = cmds[0]
+          x[parent][cmds[0]].aliases.push(cmd)
+    elements.describe = (desc) -> this[0].description = desc; this
+    elements.hiddenCommand = -> this.forEach((el) => el.hidden = true); this
+    elements.controlCommand = -> this.forEach((el) => el.control = true); this
+    elements
 
   Server: {}
   Channel: {}
 
+x.addCommand "Server", "help", (client, args...) ->
+  all = UTIL.extractArg(args, ["-a", "--all"])
+  hidden = UTIL.extractArg(args, ["--hidden"])
+  aliases = UTIL.extractArg(args, ["--aliases"])
+  commands = []
+
+  for col, i in [x.Server, x.Channel]
+    for name, proc of col
+      if (hidden || (!proc.hidden && !proc.aliasOf)) && (all || proc.description?)
+        if i > 0
+          ico = if proc.control then "C+" else "C"
+        else
+          ico = "*"
+        commands.push(["[#{ico}] /#{name}", proc.description, proc])
+  
+  commands.sort (a, b) ->
+    if a[0] < b[0] then return -1
+    if a[0] > b[0] then return 1
+    return 0
+
+  msg = ["Listing #{commands.length} commands:"]
+  for [name, desc, proc] in commands
+    r = """<span style="color: #{COLORS.magenta}">#{name}</span>"""
+    if aliases && proc.aliases?.length
+      r += """ (alias: #{proc.aliases.join(" ")}) """
+    if desc
+      r += """ => <span style="color: #{COLORS.info}">#{desc}</span>"""
+    else
+      r += """ => undocumented, try calling it?"""
+    msg.push(r)
+  client.sendSystemMessage(msg.join("<br>"), COLORS.muted)
+  client.ack()
+.describe("lists described (or --all) commands")
+
 x.addCommand "Server", "clip", (client) ->
   client.sendCode("ui_clipboard_poll", action: "permission")
   client.ack()
+.describe("[experimental] watch clipboard for playable URLs").hiddenCommand()
 
 x.addCommand "Server", "clear", (client) ->
   client.sendCode("ui_clear", component: "chat")
   client.ack()
+.describe("clear chat window")
 
-x.addCommand "Server", "tc", "togglechat", (client) ->
+x.addCommand "Server", "togglechat", "tc", (client) ->
   client.sendCode("ui_chat", action: "toggle")
   client.ack()
+.describe("toggle chat window display")
 
-x.addCommand "Server", "tpl", "togglepl", "toggleplaylist", (client) ->
+x.addCommand "Server", "toggleplaylist", "tpl", "togglepl", (client) ->
   client.sendCode("ui_playlist", action: "toggle")
   client.ack()
+.describe("toggle playlist display")
 
 x.addCommand "Server", "packet", (client, jdata) ->
   try
@@ -76,6 +125,7 @@ x.addCommand "Server", "packet", (client, jdata) ->
   else
     client.sendCode("desired", ch.desired) if ch
   return true
+.hiddenCommand()
 
 x.addCommand "Server", "rpc", (client, args...) ->
   key = UTIL.extractArg(args, ["-k", "--key"], 1)?[0]
@@ -118,6 +168,7 @@ x.addCommand "Server", "rpc", (client, args...) ->
     client.sendRPCResponse error: "Unknown RPC error"
 
   return client.ack()
+.hiddenCommand()
 
 x.addCommand "Server", "join", (client, chname) ->
   if channel = @channels[chname]
@@ -129,6 +180,7 @@ x.addCommand "Server", "join", (client, chname) ->
     client.sendSystemMessage("Usage: /join &lt;channel&gt;")
 
   return client.ack()
+.describe("join an existing channel")
 
 x.addCommand "Server", "control", (client, name, password) ->
   chname = UTIL.htmlEntities(name || client.subscribed?.name || "")
@@ -153,11 +205,13 @@ x.addCommand "Server", "control", (client, name, password) ->
     @channels[chname].grantControl(client)
 
   return client.ack()
+.describe("(create&)control a channel")
 
-x.addCommand "Server", "dc", "disconnect", (client) ->
+x.addCommand "Server", "disconnect", "dc", (client) ->
   client.sendSystemMessage("disconnecting...")
   client.sendCode("disconnected")
   client.connection.close()
+.describe("disconnect from server")
 
 x.addCommand "Server", "rename", (client, name_parts...) ->
   if new_name = name_parts.join(" ")
@@ -166,6 +220,7 @@ x.addCommand "Server", "rename", (client, name_parts...) ->
   else
     client.sendSystemMessage "Usage: /rename &lt;new_name&gt;"
   return client.ack()
+.describe("rename yourself")
 
 x.addCommand "Server", "system", (client, subaction, args...) ->
   unless client.isSystemAdmin
@@ -302,7 +357,22 @@ x.addCommand "Server", "system", (client, subaction, args...) ->
         console.log if detail then @channels[detail] else if client.subscribed then client.subscribed else @channels
       else if what == "commands"
         console.log module.exports
+    else
+      client.sendSystemMessage("/system restart [reason]")
+      client.sendSystemMessage("/system gracefulRestart <cancel|duration> [reason]")
+      client.sendSystemMessage("/system message &lt;message&gt;")
+      client.sendSystemMessage("/system chmessage &lt;channel&gt; &lt;message&gt;")
+      client.sendSystemMessage("/system chkill &lt;channel&gt; [reason]")
+      client.sendSystemMessage("/system chfixsessions &lt;channel&gt;")
+      client.sendSystemMessage("/system status")
+      client.sendSystemMessage("/system clients")
+      client.sendSystemMessage("/system banip &lt;ip&gt; [duration] [reason]")
+      client.sendSystemMessage("/system unbanip &lt;ip&gt;")
+      client.sendSystemMessage("/system invoke [-t --target TARGET] &lt;action&gt; [JSON data]")
+      client.sendSystemMessage("/system kick &lt;client&gt; [reason]")
+      client.sendSystemMessage("/system dump &lt;client|channel|commands&gt; [clientID/channelName]")
   return client.ack()
+.describe("admin command").hiddenCommand()
 
 x.addCommand "Channel", "retry", (client) ->
   return unless ch = client.subscribed
@@ -310,26 +380,30 @@ x.addCommand "Channel", "retry", (client) ->
   ch.unsubscribe(client)
   ch.subscribe(client)
   return client.ack()
+.describe("rejoin a channel")
 
-x.addCommand "Channel", "p", "pause", (client) ->
+x.addCommand "Channel", "pause", "p", (client) ->
   return client.permissionDenied("pause") unless @control.indexOf(client) > -1
   @desired.state = "pause"
   @broadcastCode(false, "desired", @desired)
   return client.ack()
+.describe("pause playback").controlCommand()
 
-x.addCommand "Channel", "r", "resume", (client) ->
+x.addCommand "Channel", "resume", "r", (client) ->
   return client.permissionDenied("resume") unless @control.indexOf(client) > -1
   @desired.state = "play"
   @broadcastCode(false, "desired", @desired)
   return client.ack()
+.describe("resume playback").controlCommand()
 
-x.addCommand "Channel", "t", "toggle", (client) ->
+x.addCommand "Channel", "toggle", "t", (client) ->
   return client.permissionDenied("toggle") unless @control.indexOf(client) > -1
   @desired.state = if @desired.state == "play" then "pause" else "play"
   @broadcastCode(false, "desired", @desired)
   return client.ack()
+.describe("toggle playback").controlCommand()
 
-x.addCommand "Channel", "s", "seek", (client, to) ->
+x.addCommand "Channel", "seek", "s", (client, to) ->
   return client.permissionDenied("seek") unless @control.indexOf(client) > -1
   if to?.charAt(0) == "-"
     to = @desired.seek - UTIL.timestamp2Seconds(to.slice(1))
@@ -345,6 +419,23 @@ x.addCommand "Channel", "s", "seek", (client, to) ->
   @desired.state = "play" if @desired.state == "ended"
   @broadcastCode(false, "desired", Object.assign({}, @desired, { force: true }))
   return client.ack()
+.describe("seek to given position (relative with +/- or absolute)").controlCommand()
+
+x.addCommand "Channel", "loop", (client, what) ->
+  if what || @control.indexOf(client) > -1
+    return client.permissionDenied("loop") unless @control.indexOf(client) > -1
+    what = UTIL.strbool(what, !@desired.loop)
+    if @desired.loop == what
+      client.sendSystemMessage("Loop is already #{if @desired.loop then "enabled" else "disabled"}!")
+    else
+      @desired.loop = what
+      @broadcastCode(false, "desired", @desired)
+      @broadcast(client, "<strong>#{if @desired.loop then "enabled" else "disabled"} loop!</strong>", COLORS.warning, @clientColor(client))
+  else
+    client.sendSystemMessage("Loop is currently #{if @desired.loop then "enabled" else "disabled"}", if @desired.loop then COLORS.green else COLORS.red)
+
+  return client.ack()
+.describe("get and set loop mode").controlCommand()
 
 x.addCommand "Channel", "sync", "resync", (client, args...) ->
   target = [client]
@@ -370,6 +461,7 @@ x.addCommand "Channel", "sync", "resync", (client, args...) ->
     client.sendSystemMessage("Found no targets")
 
   return client.ack()
+.describe("force resync for you, -t(arget) or -a(ll)")
 
 x.addCommand "Channel", "ready", (client) ->
   return client.ack() unless @ready
@@ -380,6 +472,7 @@ x.addCommand "Channel", "ready", (client) ->
     @desired.state = "play"
     @broadcastCode(false, "video_action", action: "resume", reason: "allReady", cancelPauseEnsured: true)
   return client.ack()
+.describe("internal signal").hiddenCommand()
 
 x.addCommand "Channel", "play", "yt", "youtube", (client, args...) ->
   return client.permissionDenied("play") unless @control.indexOf(client) > -1
@@ -396,21 +489,7 @@ x.addCommand "Channel", "play", "yt", "youtube", (client, args...) ->
     client.sendSystemMessage("I don't recognize this URL/YTID format, sorry")
 
   return client.ack()
-
-x.addCommand "Channel", "loop", (client, what) ->
-  if what || @control.indexOf(client) > -1
-    return client.permissionDenied("loop") unless @control.indexOf(client) > -1
-    what = UTIL.strbool(what, !@desired.loop)
-    if @desired.loop == what
-      client.sendSystemMessage("Loop is already #{if @desired.loop then "enabled" else "disabled"}!")
-    else
-      @desired.loop = what
-      @broadcastCode(false, "desired", @desired)
-      @broadcast(client, "<strong>#{if @desired.loop then "enabled" else "disabled"} loop!</strong>", COLORS.warning, @clientColor(client))
-  else
-    client.sendSystemMessage("Loop is currently #{if @desired.loop then "enabled" else "disabled"}", if @desired.loop then COLORS.green else COLORS.red)
-
-  return client.ack()
+.describe("add (YouTube) item to playlist").controlCommand()
 
 x.addCommand "Channel", "url", "browse", (client, args...) ->
   return client.permissionDenied("browse-#{ctype}") unless @control.indexOf(client) > -1
@@ -426,12 +505,15 @@ x.addCommand "Channel", "url", "browse", (client, args...) ->
   url = "https://#{url}" unless UTIL.startsWith(url, "http://", "https://")
   @play(ctype, url, playNext, intermission)
   return client.ack()
+.describe("add URL to playlist").controlCommand()
 
-x.addCommand "Channel", "img", "image", "pic", "picture", "gif", "png", "jpg", (client, args...) ->
+x.addCommand "Channel", "image", "img", "pic", "picture", "gif", "png", "jpg", (client, args...) ->
   module.exports.Channel.browse.call(this, client, args..., "--x-HtmlImage")
+.describe("add image to playlist").controlCommand()
 
-x.addCommand "Channel", "vid", "video", "mp4", "webp", (client, args...) ->
+x.addCommand "Channel", "video", "vid", "mp4", "webp", (client, args...) ->
   module.exports.Channel.browse.call(this, client, args..., "--x-HtmlVideo")
+.describe("add video to playlist").controlCommand()
 
 x.addCommand "Channel", "leave", "quit", (client) ->
   if ch = client.subscribed
@@ -441,6 +523,7 @@ x.addCommand "Channel", "leave", "quit", (client) ->
     client.sendSystemMessage("You are not in any channel!")
 
   return client.ack()
+.describe("leave channel")
 
 x.addCommand "Channel", "password", (client, new_password, revoke) ->
   if ch = client.subscribed
@@ -461,6 +544,7 @@ x.addCommand "Channel", "password", (client, new_password, revoke) ->
     client.sendSystemMessage("You are not in any channel!")
 
   return client.ack()
+.describe("change channel password").controlCommand()
 
 x.addCommand "Channel", "kick", (client, who, args...) ->
   if ch = client.subscribed
@@ -483,6 +567,7 @@ x.addCommand "Channel", "kick", (client, who, args...) ->
     client.sendSystemMessage("You are not in any channel!")
 
   return client.ack()
+.describe("kick client from channel").controlCommand()
 
 x.addCommand "Channel", "host", (client, who) ->
   return client.permissionDenied("host") unless @control.indexOf(client) > -1
@@ -505,6 +590,7 @@ x.addCommand "Channel", "host", (client, who) ->
     client.sendSystemMessage("#{who?.name || "Target"} is not in control and thereby can't be host")
 
   return client.ack()
+.describe("change host").controlCommand()
 
 x.addCommand "Channel", "grant", (client, who) ->
   return client.permissionDenied("grantControl") unless @control.indexOf(client) > -1
@@ -517,6 +603,7 @@ x.addCommand "Channel", "grant", (client, who) ->
     client.sendSystemMessage("#{who?.name || "Target"} is now in control!", COLORS.green)
 
   return client.ack()
+.describe("grant client control privileges").controlCommand()
 
 x.addCommand "Channel", "revoke", (client, who) ->
   return client.permissionDenied("revokeControl") unless @control.indexOf(client) > -1
@@ -529,12 +616,14 @@ x.addCommand "Channel", "revoke", (client, who) ->
     client.sendSystemMessage("#{who?.name || "Target"} was not in control")
 
   return client.ack()
+.describe("revoke client control privileges").controlCommand()
 
 x.addCommand "Channel", "rpckey", (client) ->
   return client.permissionDenied("rpckey") unless @control.indexOf(client) > -1
   client.sendSystemMessage("RPC-Key for this channel: #{@getRPCKey()}")
   client.sendSystemMessage("The key will change with the channel password!", COLORS.warning)
   return client.ack()
+.describe("get RPC key for channel").controlCommand()
 
 x.addCommand "Channel", "bookmarklet", (client, args...) ->
   return client.permissionDenied("bookmarklet") unless @control.indexOf(client) > -1
@@ -571,6 +660,7 @@ x.addCommand "Channel", "bookmarklet", (client, args...) ->
     <a href="javascript:#{encodeURIComponent script}" class="btn btn-primary btn-xs" style="font-size: 10px">#{label}</a>
   """, COLORS.warning)
   return client.ack()
+.describe("add videos to channel via bookmark").controlCommand()
 
 x.addCommand "Channel", "copt", (client, opt, value) ->
   return client.permissionDenied("copt") unless @control.indexOf(client) > -1
@@ -622,3 +712,4 @@ x.addCommand "Channel", "copt", (client, opt, value) ->
       """
     client.sendSystemMessage(cols.join("<br>"), COLORS.white)
   return client.ack()
+.describe("show and change channel options").controlCommand()

@@ -2019,7 +2019,7 @@
             this.buffer = this.client.input.val();
           }
           this.index++;
-          this.client.input.val(this.log[this.index]);
+          this.client.input.val(this.log[this.index]).change();
           return false;
         }
         if (event.keyCode === 40) { // ArrowDown
@@ -2032,7 +2032,7 @@
             return false;
           }
           this.index--;
-          this.client.input.val(this.log[this.index]);
+          this.client.input.val(this.log[this.index]).change();
           return false;
         }
         return true;
@@ -2041,7 +2041,7 @@
 
     restoreBuffer() {
       if (this.buffer != null) {
-        this.client.input.val(this.buffer);
+        this.client.input.val(this.buffer).change();
       }
       return this.buffer = null;
     }

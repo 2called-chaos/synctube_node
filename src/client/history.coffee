@@ -21,7 +21,7 @@ window.SyncTubeClient_History = class SyncTubeClient_History
         return false unless @log[@index + 1]?
         @buffer = @client.input.val() if @index == -1
         @index++
-        @client.input.val(@log[@index])
+        @client.input.val(@log[@index]).change()
         return false
 
       if event.keyCode == 40 # ArrowDown
@@ -32,13 +32,13 @@ window.SyncTubeClient_History = class SyncTubeClient_History
 
         return false unless @log[@index - 1]?
         @index--
-        @client.input.val(@log[@index])
+        @client.input.val(@log[@index]).change()
         return false
 
       return true
 
   restoreBuffer: ->
-    @client.input.val(@buffer) if @buffer?
+    @client.input.val(@buffer).change() if @buffer?
     @buffer = null
 
   append: (cmd) ->

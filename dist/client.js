@@ -44,6 +44,40 @@
       p = document.createElement('p');
       p.appendChild(document.createTextNode(html));
       return p.innerHTML;
+    },
+    requireRemoteJS: function(url, opts = {}, callback) {
+      var a, jstag, v;
+      if (typeof opts === "function") {
+        callback = opts;
+        opts = {};
+      }
+      jstag = $("script[src=url]");
+      if (jstag.length) {
+        return typeof callback === "function" ? callback() : void 0;
+      } else {
+        jstag = document.createElement("script");
+        jstag.onload = function() {
+          return typeof callback === "function" ? callback() : void 0;
+        };
+        for (a in opts) {
+          v = opts[a];
+          jstag[a] = v;
+        }
+        document.head.appendChild(jstag);
+        return jstag.src = url;
+      }
+    },
+    css: function(scope, css) {
+      var stag;
+      stag = $("style[data-scope=scope]");
+      if (stag.length) {
+        return stag.html(stag.html() + "\n" + css);
+      } else {
+        stag = $("<style></style>");
+        stag.attr("data-scope", scope);
+        stag.html(css);
+        return stag.appendTo($("head"));
+      }
     }
   };
 
@@ -514,19 +548,21 @@
   };
 
   window.SyncTubeClient_PlaylistUI = SyncTubeClient_PlaylistUI = class SyncTubeClient_PlaylistUI {
-    constructor(client1, opts = {}) {
+    constructor(client1, opts1 = {}) {
       this.client = client1;
-      this.opts = opts;
+      this.opts = opts1;
       this.playlist = $("#playlist");
-      this.initSortable();
       this.client.CMD_ui_playlist = this.CMD_ui_playlist.bind(this);
       this.client.CMD_playlist_update = this.CMD_playlist_update.bind(this);
       this.client.CMD_playlist_single_entry = this.CMD_playlist_single_entry.bind(this);
+      this.client.requireRemoteJS("https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.10.1/Sortable.min.js", () => {
+        return this.initSortable();
+      });
     }
 
     initSortable() {
       return this.sortable = new Sortable(this.playlist.get(0), {
-        disabled: true,
+        disabled: !this.client.control,
         onSort: (ev) => {
           return this.client.silentCommand(`/playlist swap ${ev.oldIndex} ${ev.newIndex}`);
         },
@@ -541,13 +577,15 @@
     }
 
     enableSorting() {
+      var ref1, ref2;
       this.client.debug("Playlist sorting enabled");
-      return this.sortable.options.disabled = false;
+      return (ref1 = this.sortable) != null ? (ref2 = ref1.options) != null ? ref2.disabled = false : void 0 : void 0;
     }
 
     disableSorting() {
+      var ref1, ref2;
       this.client.debug("Playlist sorting DISABLED");
-      return this.sortable.options.disabled = true;
+      return (ref1 = this.sortable) != null ? (ref2 = ref1.options) != null ? ref2.disabled = true : void 0 : void 0;
     }
 
     scrollToActive(ensure) {
@@ -1663,9 +1701,9 @@
         return this.constructor.include(addon, this);
       }
 
-      constructor(opts = {}) {
+      constructor(opts1 = {}) {
         var base, base1, base2, base3, inc, j, len, ref1, ref2;
-        this.opts = opts;
+        this.opts = opts1;
         // options
         if ((base = this.opts).debug == null) {
           base.debug = false;
@@ -1783,9 +1821,9 @@
   }).call(this);
 
   window.SyncTubeClient_CommandBar = SyncTubeClient_CommandBar = class SyncTubeClient_CommandBar {
-    constructor(client1, opts = {}) {
+    constructor(client1, opts1 = {}) {
       this.client = client1;
-      this.opts = opts;
+      this.opts = opts1;
       this.buildDom();
       this.captureInput();
     }
@@ -1846,10 +1884,10 @@
   };
 
   window.SyncTubeClient_InputFilterUI = SyncTubeClient_InputFilterUI = class SyncTubeClient_InputFilterUI {
-    constructor(client1, opts = {}) {
+    constructor(client1, opts1 = {}) {
       var base, base1;
       this.client = client1;
-      this.opts = opts;
+      this.opts = opts1;
       if ((base = this.opts).secrets == null) {
         base.secrets = [];
       }
@@ -1928,9 +1966,9 @@
   };
 
   window.SyncTubeClient_KeyControls = SyncTubeClient_KeyControls = class SyncTubeClient_KeyControls {
-    constructor(client1, opts = {}) {
+    constructor(client1, opts1 = {}) {
       this.client = client1;
-      this.opts = opts;
+      this.opts = opts1;
       this.locked = false;
       this.client.CMD_ui_keylock = this.CMD_ui_keylock.bind(this);
       this.createDOM();
@@ -2078,10 +2116,7 @@
     }
 
     createCSS() {
-      var stag;
-      stag = document.createElement('style');
-      stag.innerHTML = "#key_controls_cage {\n  position: absolute;\n  width: 0px;\n  height: 0px;\n  padding: 0px;\n  border: none;\n  opacity: 0;\n}\n.ui_keylock_btn {\n  transition: background 100ms linear;\n}";
-      return document.head.appendChild(stag);
+      return this.client.css("KeyControls", "#key_controls_cage {\n  position: absolute;\n  width: 0px;\n  height: 0px;\n  padding: 0px;\n  border: none;\n  opacity: 0;\n}\n.ui_keylock_btn {\n  transition: background 100ms linear;\n}");
     }
 
     createDOM() {
@@ -2107,9 +2142,9 @@
   };
 
   window.SyncTubeClient_DropletUI = SyncTubeClient_DropletUI = class SyncTubeClient_DropletUI {
-    constructor(client1, opts = {}) {
+    constructor(client1, opts1 = {}) {
       this.client = client1;
-      this.opts = opts;
+      this.opts = opts1;
       this.disabled = false;
       this.srow = $("#second_row");
       this.createCSS();
@@ -2118,10 +2153,7 @@
     }
 
     createCSS() {
-      var stag;
-      stag = document.createElement('style');
-      stag.innerHTML = "#second_row {\n  position: relative;\n}\n\nbody.dragover #ui_droplet {\n  opacity: 1\n}\n\n#ui_droplet {\n  position: absolute;\n  top: 10px;\n  right: 15px;\n  bottom: 0;\n  left: 15px;\n  background: rgba(33, 33, 33, 0.9);\n  z-index: 999;\n  pointer-events: none;\n  opacity: 0;\n  transition: all 100ms linear;\n  \n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n}\n\n#ui_droplet .drophere {\n  color: #6c757d;\n  text-align: center;\n  border: 2px dotted #6c757d;\n  padding: 15px 20px 19px 20px;\n  border-radius: 12px;\n  transition: all 100ms linear;\n}\n\n#ui_droplet.dragover {\n  background: rgba(33, 50, 33, 0.9);\n}\n\n#ui_droplet.dragover .drophere {\n  border-color: #28a745;\n  color: #28a745;\n}\n\n#ui_droplet .drophere:after {\n  content: \"drop URL\"\n}\n\n#ui_droplet.dragover .drophere:after {\n  content: \"let it go\"\n}";
-      return document.head.appendChild(stag);
+      return this.client.css("DropletUI", "#second_row {\n  position: relative;\n}\n\nbody.dragover #ui_droplet {\n  opacity: 1\n}\n\n#ui_droplet {\n  position: absolute;\n  top: 10px;\n  right: 15px;\n  bottom: 0;\n  left: 15px;\n  background: rgba(33, 33, 33, 0.9);\n  z-index: 999;\n  pointer-events: none;\n  opacity: 0;\n  transition: all 100ms linear;\n  \n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n}\n\n#ui_droplet .drophere {\n  color: #6c757d;\n  text-align: center;\n  border: 2px dotted #6c757d;\n  padding: 15px 20px 19px 20px;\n  border-radius: 12px;\n  transition: all 100ms linear;\n}\n\n#ui_droplet.dragover {\n  background: rgba(33, 50, 33, 0.9);\n}\n\n#ui_droplet.dragover .drophere {\n  border-color: #28a745;\n  color: #28a745;\n}\n\n#ui_droplet .drophere:after {\n  content: \"drop URL\"\n}\n\n#ui_droplet.dragover .drophere:after {\n  content: \"let it go\"\n}");
     }
 
     createDOM() {
@@ -2202,10 +2234,10 @@
   };
 
   window.SyncTubeClient_History = SyncTubeClient_History = class SyncTubeClient_History {
-    constructor(client1, opts = {}) {
+    constructor(client1, opts1 = {}) {
       var base, base1;
       this.client = client1;
-      this.opts = opts;
+      this.opts = opts1;
       if ((base = this.opts).limit == null) {
         base.limit = 100;
       }
@@ -2539,10 +2571,10 @@
   };
 
   window.SyncTubeClient_ClipboardPoll = SyncTubeClient_ClipboardPoll = class SyncTubeClient_ClipboardPoll {
-    constructor(client1, opts = {}) {
+    constructor(client1, opts1 = {}) {
       var base, base1;
       this.client = client1;
-      this.opts = opts;
+      this.opts = opts1;
       if ((base = this.opts).pollrate == null) {
         base.pollrate = 1000;
       }

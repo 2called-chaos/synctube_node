@@ -7,8 +7,7 @@ window.SyncTubeClient_DropletUI = class SyncTubeClient_DropletUI
     @createEventHandlers()
 
   createCSS: ->
-    stag = document.createElement('style')
-    stag.innerHTML = """
+    @client.css "DropletUI", """
     #second_row {
       position: relative;
     }
@@ -61,7 +60,6 @@ window.SyncTubeClient_DropletUI = class SyncTubeClient_DropletUI
       content: "let it go"
     }
     """
-    document.head.appendChild(stag)
 
   createDOM: ->
     @dropMask = $("""<div id="ui_droplet"></div>""").appendTo(@srow)

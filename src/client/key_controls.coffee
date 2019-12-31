@@ -76,8 +76,7 @@ window.SyncTubeClient_KeyControls = class SyncTubeClient_KeyControls
       @enableButton()
 
   createCSS: ->
-    stag = document.createElement('style')
-    stag.innerHTML = """
+    @client.css "KeyControls", """
     #key_controls_cage {
       position: absolute;
       width: 0px;
@@ -90,7 +89,6 @@ window.SyncTubeClient_KeyControls = class SyncTubeClient_KeyControls
       transition: background 100ms linear;
     }
     """
-    document.head.appendChild(stag)
 
   createDOM: ->
     @button = $ """

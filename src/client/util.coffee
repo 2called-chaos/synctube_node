@@ -28,3 +28,27 @@ window.SyncTubeClient_Util =
     p = document.createElement('p')
     p.appendChild(document.createTextNode(html))
     p.innerHTML
+
+  requireRemoteJS: (url, opts = {}, callback) ->
+    if typeof opts == "function"
+      callback = opts
+      opts = {}
+    jstag = $("script[src=url]")
+    if jstag.length
+      callback?()
+    else
+      jstag = document.createElement("script")
+      jstag.onload = -> callback?()
+      jstag[a] = v for a, v of opts
+      document.head.appendChild(jstag)
+      jstag.src = url
+
+  css: (scope, css) ->
+    stag = $("style[data-scope=scope]")
+    if stag.length
+      stag.html(stag.html() + "\n" + css)
+    else
+      stag = $("<style></style>")
+      stag.attr("data-scope", scope)
+      stag.html(css)
+      stag.appendTo($("head"))

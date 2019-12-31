@@ -23,3 +23,8 @@ window.SyncTubeClient_Util =
     window.location.hash = "##{hsh.join("&")}"
 
   delay: (ms, func) -> setTimeout(func, ms)
+
+  escapeHtml: (html) ->
+    p = document.createElement('p')
+    p.appendChild(document.createTextNode(html))
+    p.innerHTML

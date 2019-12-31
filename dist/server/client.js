@@ -193,7 +193,7 @@
       return this;
     }
 
-    sendMessage(message, color, author, author_color) {
+    sendMessage(message, color, author, author_color, escape = false) {
       this.sendUTF(JSON.stringify({
         type: "message",
         data: {
@@ -201,6 +201,7 @@
           author_color: author_color,
           text: message,
           text_color: color,
+          escape: escape,
           time: (new Date()).getTime()
         }
       }));

@@ -127,7 +127,7 @@
       return this.broadcastCode(false, "desired", this.desired);
     }
 
-    broadcast(client, message, color, client_color, sendToAuthor = true) {
+    broadcast(client, message, color, client_color, sendToAuthor = true, escape = false) {
       var c, j, len, ref, results;
       ref = this.subscribers;
       results = [];
@@ -136,16 +136,17 @@
         if (c === client && !sendToAuthor) {
           continue;
         }
-        results.push(c.sendMessage(message, color, client.name, client_color || (client != null ? client.color : void 0)));
+        results.push(c.sendMessage(message, color, client.name, client_color || (client != null ? client.color : void 0), escape));
       }
       return results;
     }
 
     broadcastChat(client, message, color, client_color, sendToAuthor = true) {
+      var escape;
       if (this.options.chatMode === "disabled" || (this.options.chatMode === "admin-only" && this.control.indexOf(client) === -1)) {
         return client.sendSystemMessage(`chat is ${this.options.chatMode}!`, COLORS.muted);
       }
-      return this.broadcast(client, message, color, client_color, sendToAuthor);
+      return this.broadcast(client, message, color, client_color, sendToAuthor, escape = true);
     }
 
     broadcastCode(client, type, data, sendToAuthor = true) {

@@ -77,15 +77,15 @@ exports.Class = class SyncTubeServerChannel
     @persisted.set("desired", @defaultDesired())
     @broadcastCode(false, "desired", @desired)
 
-  broadcast: (client, message, color, client_color, sendToAuthor = true) ->
+  broadcast: (client, message, color, client_color, sendToAuthor = true, escape = false) ->
     for c in @subscribers
       continue if c == client && !sendToAuthor
-      c.sendMessage(message, color, client.name, client_color || client?.color)
+      c.sendMessage(message, color, client.name, client_color || client?.color, escape)
 
   broadcastChat: (client, message, color, client_color, sendToAuthor = true) ->
     if @options.chatMode == "disabled" || (@options.chatMode == "admin-only" && @control.indexOf(client) == -1)
       return client.sendSystemMessage("chat is #{@options.chatMode}!", COLORS.muted)
-    @broadcast(client, message, color, client_color, sendToAuthor)
+    @broadcast(client, message, color, client_color, sendToAuthor, escape = true)
 
   broadcastCode: (client, type, data, sendToAuthor = true) ->
     for c in @subscribers

@@ -153,7 +153,7 @@ window.SyncTubeClient_UI =
       <p>
         <#{tagname} style="color:#{data.author_color}">#{data.author}</#{tagname}>
         @ #{"0#{dt.getHours()}".slice(-2)}:#{"0#{dt.getMinutes()}".slice(-2)}
-        <span style="color: #{data.text_color}">#{data.text}</span>
+        <span style="color: #{data.text_color}">#{if data.escape then @escapeHtml(data.text) else data.text}</span>
       </p>
     """
     @content.scrollTop(@content.prop("scrollHeight"))
@@ -179,7 +179,7 @@ window.SyncTubeClient_UI =
       <p style="color: #7a8288">
         <span><i class="fa fa-terminal"></i></span>
         @ #{"0#{dt.getHours()}".slice(-2)}:#{"0#{dt.getMinutes()}".slice(-2)}
-        <span>#{msg}</span>
+        <span>#{@escapeHtml(msg)}</span>
       </p>
     """
     @content.scrollTop(@content.prop("scrollHeight"))

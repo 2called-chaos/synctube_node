@@ -97,7 +97,7 @@ exports.Class = class SyncTubeServerClient
     @sendUTF JSON.stringify type: "code", data: Object.assign({}, data, { type: type })
     return this
 
-  sendMessage: (message, color, author, author_color) ->
+  sendMessage: (message, color, author, author_color, escape = false) ->
     @sendUTF JSON.stringify
       type: "message"
       data:
@@ -105,6 +105,7 @@ exports.Class = class SyncTubeServerClient
         author_color: author_color
         text: message
         text_color: color
+        escape: escape
         time: (new Date()).getTime()
     return this
 

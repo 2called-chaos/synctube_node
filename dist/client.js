@@ -523,6 +523,13 @@
         disabled: true,
         onSort: (ev) => {
           return this.client.silentCommand(`/playlist swap ${ev.oldIndex} ${ev.newIndex}`);
+        },
+        setData: function(dataTransfer, el) {
+          var href;
+          if (href = $(el).find("[data-attr=name]").attr("href")) {
+            dataTransfer.setData('text/uri-list', href);
+            return dataTransfer.setData('text/plain', href);
+          }
         }
       });
     }

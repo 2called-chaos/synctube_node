@@ -10,6 +10,10 @@ window.SyncTubeClient_PlaylistUI = class SyncTubeClient_PlaylistUI
     @sortable = new Sortable @playlist.get(0),
       disabled: true
       onSort: (ev) => @client.silentCommand("/playlist swap #{ev.oldIndex} #{ev.newIndex}")
+      setData: (dataTransfer, el) ->
+        if href = $(el).find("[data-attr=name]").attr("href")
+          dataTransfer.setData('text/uri-list', href)
+          dataTransfer.setData('text/plain', href)
 
   enableSorting: ->
     @client.debug "Playlist sorting enabled"

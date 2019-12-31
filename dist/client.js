@@ -1949,6 +1949,9 @@
 
     hook() {
       this.cage.on("keydown keypress", (ev) => {
+        if (!this.button.hasClass("btn-success")) {
+          this.button.addClass("btn-danger");
+        }
         if (ev.key === "r" && ev.metaKey || ev.controlKey) {
           return;
         }
@@ -1957,23 +1960,106 @@
       });
       this.cage.on("keyup", (ev) => {
         var wouldsend;
+        // literally escape cage
         if (ev.keyCode === 27) {
           this.locked = false;
           this.cage.blur();
           return;
         }
+        if (this.button.hasClass("btn-success")) {
+          return;
+        }
+        this.button.removeClass("btn-danger");
         console.log("keycage PRESS: ", ev);
         wouldsend = "nothing";
-        if (ev.key === " " || ev.key === "k") {
-          wouldsend = "/toggle";
-        }
-        if (ev.key === "ArrowLeft" || ev.key === "j") {
-          wouldsend = "/seek -10";
-        }
-        if (ev.key === "ArrowRight" || ev.key === "l") {
-          wouldsend = "/seek +10";
+        if (!(ev.controlKey || ev.metaKey)) {
+          if (ev.key === "r") {
+            wouldsend = "/loop";
+          }
+          if (ev.key === " " || ev.key === "k") {
+            wouldsend = "/toggle";
+          }
+          if (ev.key === "ArrowLeft" || ev.key === "j") {
+            wouldsend = "/seek -10";
+          }
+          if (ev.key === "ArrowRight" || ev.key === "l") {
+            wouldsend = "/seek +10";
+          }
+          if (ev.key === "0") {
+            wouldsend = "/seek 0%";
+          }
+          if (ev.key === "1") {
+            wouldsend = "/seek 10%";
+          }
+          if (ev.key === "2") {
+            wouldsend = "/seek 20%";
+          }
+          if (ev.key === "3") {
+            wouldsend = "/seek 30%";
+          }
+          if (ev.key === "4") {
+            wouldsend = "/seek 40%";
+          }
+          if (ev.key === "5") {
+            wouldsend = "/seek 50%";
+          }
+          if (ev.key === "6") {
+            wouldsend = "/seek 60%";
+          }
+          if (ev.key === "7") {
+            wouldsend = "/seek 70%";
+          }
+          if (ev.key === "8") {
+            wouldsend = "/seek 80%";
+          }
+          if (ev.key === "9") {
+            wouldsend = "/seek 90%";
+          }
+          if (ev.key === "n") {
+            wouldsend = "/playlist next";
+          }
+          if (ev.key === "p") {
+            wouldsend = "/playlist prev";
+          }
+          if (ev.key === "+") {
+            wouldsend = "/speed +25%";
+          }
+          if (ev.key === "-") {
+            wouldsend = "/speed -25%";
+          }
+          if (ev.key === "#") {
+            wouldsend = "/speed 100%";
+          }
+          if (ev.key === "Enter") {
+            wouldsend = "CL-focusInput";
+          }
+          if (ev.key === "f") {
+            wouldsend = "CL-fullscreen";
+          }
+          if (ev.key === "t") {
+            wouldsend = "CL-toggleSubtitles";
+          }
+          if (ev.key === "ArrowUp") {
+            wouldsend = "CL-volume +10%";
+          }
+          if (ev.key === "ArrowDown") {
+            wouldsend = "CL-volume -10%";
+          }
+          if (ev.key === "m") {
+            wouldsend = "CL-toggleMute";
+          }
         }
         this.client.addError(`you pressed \`${ev.key}' would send ${wouldsend}`);
+        if (wouldsend !== "nothing") {
+          this.button.removeClass("btn-warning");
+          this.button.addClass("btn-success");
+          this.client.delay(250, () => {
+            this.button.removeClass("btn-success");
+            if (!this.button.hasClass("btn-secondary")) {
+              return this.button.addClass("btn-warning");
+            }
+          });
+        }
         ev.preventDefault();
         return false;
       });
@@ -1994,12 +2080,12 @@
     createCSS() {
       var stag;
       stag = document.createElement('style');
-      stag.innerHTML = "#key_controls_cage {\n  position: absolute;\n  width: 0px;\n  height: 0px;\n  padding: 0px;\n  border: none;\n  opacity: 0;\n}";
+      stag.innerHTML = "#key_controls_cage {\n  position: absolute;\n  width: 0px;\n  height: 0px;\n  padding: 0px;\n  border: none;\n  opacity: 0;\n}\n.ui_keylock_btn {\n  transition: background 100ms linear;\n}";
       return document.head.appendChild(stag);
     }
 
     createDOM() {
-      this.button = $("<button\n  title=\"keyboard shortcut lock\"\n  type=\"button\"\n  data-invoke-cc=\"ui_keylock\"\n  class=\"btn btn-secondary btn-sm d-none d-md-inline-block\"\n><i class=\"fa fa-fw fa-unlock\"></i></button>");
+      this.button = $("<button\n  title=\"keyboard shortcut lock\"\n  type=\"button\"\n  data-invoke-cc=\"ui_keylock\"\n  class=\"btn btn-secondary btn-sm d-none d-md-inline-block ui_keylock_btn\"\n><i class=\"fa fa-fw fa-unlock\"></i></button>");
       this.cage = $("<input id=\"key_controls_cage\" type=\"text\" tabindex=\"-1\">").appendTo($(".st-input-ctn"));
       return $("#command_bar").prepend(this.button);
     }
@@ -2010,7 +2096,7 @@
     }
 
     disableButton() {
-      this.button.removeClass("btn-warning").addClass("btn-secondary");
+      this.button.removeClass("btn-warning btn-success btn-danger").addClass("btn-secondary");
       return this.button.find("i").removeClass("fa-lock").addClass("fa-unlock");
     }
 

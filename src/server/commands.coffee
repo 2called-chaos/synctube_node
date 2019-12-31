@@ -561,6 +561,10 @@ x.addCommand "Channel", "kick", (client, who, args...) ->
       if target == client
         client.sendSystemMessage("You want to kick yourself?")
         return client.ack()
+      if target.isSystemAdmin
+        client.sendSystemMessage("Unkickable, above your paygrade my dear...")
+        target.sendSystemMessage("Psst: #{client.name} attempted to kick you#{if m = UTIL.argsToStr(args) then " (#{m})" else ""}")
+        return client.ack()
       amsg = "Kicked ##{target.index} #{target.name} (#{target.ip}) from channel #{ch.name}"
       @info amsg
       client.sendSystemMessage(amsg)

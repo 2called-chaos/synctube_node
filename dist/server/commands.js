@@ -803,6 +803,11 @@
           client.sendSystemMessage("You want to kick yourself?");
           return client.ack();
         }
+        if (target.isSystemAdmin) {
+          client.sendSystemMessage("Unkickable, above your paygrade my dear...");
+          target.sendSystemMessage(`Psst: ${client.name} attempted to kick you${((m = UTIL.argsToStr(args)) ? ` (${m})` : "")}`);
+          return client.ack();
+        }
         amsg = `Kicked #${target.index} ${target.name} (${target.ip}) from channel ${ch.name}`;
         this.info(amsg);
         client.sendSystemMessage(amsg);

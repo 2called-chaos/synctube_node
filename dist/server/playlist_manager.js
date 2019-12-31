@@ -21,9 +21,10 @@
       return this.channel.error("[PL]", ...a);
     }
 
-    constructor(channel, data1 = {}) {
+    constructor(channel, data1 = {}, opts1 = {}) {
       this.channel = channel;
       this.data = data1;
+      this.opts = opts1;
       this.server = this.channel.server;
       this.set = null;
     }
@@ -65,12 +66,15 @@
       return this.data[this.set];
     }
 
-    rebuildMaps() {
+    rebuildMaps(...only) {
       var data, entry, name, ref, results;
       ref = this.data;
       results = [];
       for (name in ref) {
         data = ref[name];
+        if (only.length && only.indexOf(name) < 0) {
+          continue;
+        }
         delete data["map"];
         data.map = {};
         results.push((function() {
@@ -88,6 +92,9 @@
     }
 
     delete(name = this.set) {
+      if (this.opts.history) {
+        return;
+      }
       if (name === "default") {
         throw "cannot delete default playlist";
       }
@@ -114,6 +121,9 @@
 
     cUpdateList(client, opts = {}) {
       var entries, i, j, len, qel, ref;
+      if (this.opts.history) {
+        return;
+      }
       entries = [];
       ref = this.data[this.set].entries;
       for (i = j = 0, len = ref.length; j < len; i = ++j) {
@@ -137,6 +147,9 @@
     }
 
     cUpdateIndex(client) {
+      if (this.opts.history) {
+        return;
+      }
       if (client) {
         return client.sendCode("playlist_update", {
           index: this.data[this.set].index
@@ -161,6 +174,9 @@
     }
 
     cPlayI(index) {
+      if (this.opts.history) {
+        return;
+      }
       index = parseInt(index);
       if (this.data[this.set].entries[index]) {
         this.data[this.set].index = index;
@@ -173,6 +189,9 @@
 
     cSwap(srcIndex, dstIndex) {
       var _qel, activeElement, dstItem, i, j, len, ref, srcItem;
+      if (this.opts.history) {
+        return;
+      }
       srcIndex = parseInt(srcIndex);
       dstIndex = parseInt(dstIndex);
       if (srcItem = this.data[this.set].entries[srcIndex]) {
@@ -205,6 +224,9 @@
     }
 
     cNext() {
+      if (this.opts.history) {
+        return;
+      }
       if (this.cEmpty()) {
         return false;
       }
@@ -220,10 +242,17 @@
       return this.channel.live(...this.data[this.set].entries[this.data[this.set].index]);
     }
 
-    cPrev() {}
+    cPrev() {
+      if (this.opts.history) {
+
+      }
+    }
 
     removeItemAtIndex(index) {
       var _qel, activeElement, dmap, i, j, len, ref, url, wasActive, wasAtEnd;
+      if (this.opts.history) {
+        return;
+      }
       index = parseInt(index);
       wasAtEnd = this.cAtEnd();
       wasActive = index === this.data[this.set].index;
@@ -260,6 +289,9 @@
 
     handlePlay() {
       var ref;
+      if (this.opts.history) {
+        return;
+      }
       if (!(((ref = this.channel.desired) != null ? ref.state : void 0) === "ended" || (this.data[this.set].entries.length === 1 && this.data[this.set].index === -1))) {
         return;
       }
@@ -269,6 +301,9 @@
     }
 
     handleEnded() {
+      if (this.opts.history) {
+        return;
+      }
       if (this.data[this.set].autoPlayNext) {
         return this.cNext();
       }
@@ -278,25 +313,40 @@
 
     //@data[@set].entries.push([ctype, url, player.getMeta(url)])
     ensurePlaylistQuota(client) {
+      var dmap, url;
       if (this.data[this.set].entries.length >= this.data[this.set].maxListSize) {
-        if (client != null) {
-          client.sendRPCResponse({
-            error: `Playlist entry limit of ${this.data[this.set].maxListSize} exceeded!`
-          });
+        if (this.opts.history) {
+          url = this.data[this.set].entries.shift()[1];
+          dmap = this.data[this.set].map;
+          delete dmap[url];
+          return false;
+        } else {
+          if (client != null) {
+            client.sendRPCResponse({
+              error: `Playlist entry limit of ${this.data[this.set].maxListSize} exceeded!`
+            });
+          }
+          if (client != null) {
+            client.sendSystemMessage(`Playlist entry limit of ${this.data[this.set].maxListSize} exceeded!`);
+          }
+          return true;
         }
-        if (client != null) {
-          client.sendSystemMessage(`Playlist entry limit of ${this.data[this.set].maxListSize} exceeded!`);
-        }
-        return true;
       }
       return false;
     }
 
-    intermission(method, ...args) {}
+    intermission(method, ...args) {
+      if (this.opts.history) {
+
+      }
+    }
 
     // @getMeta: (url) ->
     playNext(ctype, url) {
       var _qel, activeElement, i, j, k, len, len1, qel, ref, ref1;
+      if (this.opts.history) {
+        return;
+      }
       if (this.ensurePlaylistQuota()) {
         return false;
       }
@@ -339,7 +389,9 @@
       if (qel = this.buildQueueElement(ctype, url)) {
         this.data[this.set].entries.push(qel);
         qel[2].index = this.data[this.set].entries.length - 1;
-        this.channel.broadcastCode(false, "playlist_single_entry", qel[2]);
+        if (!this.opts.history) {
+          this.channel.broadcastCode(false, "playlist_single_entry", qel[2]);
+        }
       } else {
         qel = this.data[this.set].map[url];
         this.data[this.set].entries.splice(qel[2].index, 1);

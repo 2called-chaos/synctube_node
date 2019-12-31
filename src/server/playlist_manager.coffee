@@ -6,7 +6,7 @@ exports.Class = class PlaylistManager
   warn: (a...) -> @channel.warn("[PL]", a...)
   error: (a...) -> @channel.error("[PL]", a...)
 
-  constructor: (@channel, @data = {}) ->
+  constructor: (@channel, @data = {}, @opts = {}) ->
     @server = @channel.server
     @set = null
 
@@ -36,13 +36,15 @@ exports.Class = class PlaylistManager
     @_onListChange?(@set)
     @data[@set]
 
-  rebuildMaps: ->
+  rebuildMaps: (only...) ->
     for name, data of @data
+      continue if only.length && only.indexOf(name) < 0
       delete data["map"]
       data.map = {}
       data.map[entry[1]] = entry for entry in data.entries
 
   delete: (name = @set) ->
+    return if @opts.history
     throw "cannot delete default playlist" if name == "default"
     if name == @set
       @load("default")
@@ -60,6 +62,7 @@ exports.Class = class PlaylistManager
     return true
 
   cUpdateList: (client, opts = {}) ->
+    return if @opts.history
     entries = []
     for qel, i in @data[@set].entries
       qel[2].index = i
@@ -70,6 +73,7 @@ exports.Class = class PlaylistManager
       @channel.broadcastCode(false, "playlist_update", entries: entries, index: @data[@set].index, keepScroll: opts.keepScroll)
 
   cUpdateIndex: (client) ->
+    return if @opts.history
     if client
       client.sendCode("playlist_update", index: @data[@set].index)
     else
@@ -80,6 +84,7 @@ exports.Class = class PlaylistManager
   cEmpty: -> @data[@set].entries.length == 0
 
   cPlayI: (index) ->
+    return if @opts.history
     index = parseInt(index)
     if @data[@set].entries[index]
       @data[@set].index = index
@@ -89,6 +94,7 @@ exports.Class = class PlaylistManager
       throw "no such index"
 
   cSwap: (srcIndex, dstIndex) ->
+    return if @opts.history
     srcIndex = parseInt(srcIndex)
     dstIndex = parseInt(dstIndex)
     if srcItem = @data[@set].entries[srcIndex]
@@ -113,6 +119,7 @@ exports.Class = class PlaylistManager
       throw "no such srcIndex"
 
   cNext: ->
+    return if @opts.history
     return false if @cEmpty()
     return false if @cAtEnd()
     if @data[@set].autoRemove && @data[@set].entries[@data[@set].index]
@@ -123,8 +130,10 @@ exports.Class = class PlaylistManager
     @channel.live(@data[@set].entries[@data[@set].index]...)
 
   cPrev: ->
+    return if @opts.history
 
   removeItemAtIndex: (index) ->
+    return if @opts.history
     index = parseInt(index)
     wasAtEnd = @cAtEnd()
     wasActive = index == @data[@set].index
@@ -149,11 +158,13 @@ exports.Class = class PlaylistManager
     @cUpdateList(null, keepScroll: !wasActive)
 
   handlePlay: ->
+    return if @opts.history
     #return if @channel.desired?.state == "play"
     return if !(@channel.desired?.state == "ended" || (@data[@set].entries.length == 1 && @data[@set].index == -1))
     @cNext() if @data[@set].autoPlayNext
 
   handleEnded: ->
+    return if @opts.history
     @cNext() if @data[@set].autoPlayNext
 
   add: (ctype, url) ->
@@ -161,15 +172,23 @@ exports.Class = class PlaylistManager
 
   ensurePlaylistQuota: (client) ->
     if @data[@set].entries.length >= @data[@set].maxListSize
-      client?.sendRPCResponse(error: "Playlist entry limit of #{@data[@set].maxListSize} exceeded!")
-      client?.sendSystemMessage("Playlist entry limit of #{@data[@set].maxListSize} exceeded!")
-      return true
+      if @opts.history
+        url = @data[@set].entries.shift()[1]
+        dmap = @data[@set].map
+        delete dmap[url]
+        return false
+      else
+        client?.sendRPCResponse(error: "Playlist entry limit of #{@data[@set].maxListSize} exceeded!")
+        client?.sendSystemMessage("Playlist entry limit of #{@data[@set].maxListSize} exceeded!")
+        return true
     return false
 
   intermission: (method, args...) ->
+    return if @opts.history
     # @getMeta: (url) ->
 
   playNext: (ctype, url) ->
+    return if @opts.history
     return false if @ensurePlaylistQuota()
     return @append(ctype, url) if @cEmpty()
     activeElement = @data[@set].entries[@data[@set].index]
@@ -195,7 +214,7 @@ exports.Class = class PlaylistManager
     if qel = @buildQueueElement(ctype, url)
       @data[@set].entries.push(qel)
       qel[2].index = @data[@set].entries.length - 1
-      @channel.broadcastCode(false, "playlist_single_entry", qel[2])
+      @channel.broadcastCode(false, "playlist_single_entry", qel[2]) unless @opts.history
     else
       qel = @data[@set].map[url]
       @data[@set].entries.splice(qel[2].index, 1)

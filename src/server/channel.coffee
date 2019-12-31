@@ -50,9 +50,14 @@ exports.Class = class SyncTubeServerChannel
           @playlistActiveSet = @persisted.set("playlistActiveSet", "default") if wasActive
 
     @setDefaultDesired() unless @desired
+    @playHistoryManager = new PlaylistManager(this, @playlists, history: true)
+    @playHistoryManager.load("__channel_history", maxListSize: 1000, autoRemove: false)
+    @playHistoryManager.rebuildMaps("__channel_history")
     @playlistManager = new PlaylistManager(this, @playlists)
     @playlistManager.rebuildMaps()
-    @playlistManager.onListChange (set) => @playlistActiveSet = @persisted.set("playlistActiveSet", set)
+    @playlistManager.onListChange (set) =>
+      @playHistoryManager?.rebuildMaps("__channel_history")
+      @playlistActiveSet = @persisted.set("playlistActiveSet", set)
     @playlistManager.load(@playlistActiveSet)
     @init()
 
@@ -148,6 +153,7 @@ exports.Class = class SyncTubeServerChannel
       @broadcastCode(false, "video_action", action: "resume", reason: "gracePeriod")
 
   play: (ctype, url, playNext = false, intermission = false) ->
+    @playHistoryManager?.append(ctype, url)
     if intermission
       @playlistManager.intermission(ctype, url)
     else if playNext

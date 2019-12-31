@@ -91,9 +91,21 @@
       if (!this.desired) {
         this.setDefaultDesired();
       }
+      this.playHistoryManager = new PlaylistManager(this, this.playlists, {
+        history: true
+      });
+      this.playHistoryManager.load("__channel_history", {
+        maxListSize: 1000,
+        autoRemove: false
+      });
+      this.playHistoryManager.rebuildMaps("__channel_history");
       this.playlistManager = new PlaylistManager(this, this.playlists);
       this.playlistManager.rebuildMaps();
       this.playlistManager.onListChange((set) => {
+        var ref;
+        if ((ref = this.playHistoryManager) != null) {
+          ref.rebuildMaps("__channel_history");
+        }
         return this.playlistActiveSet = this.persisted.set("playlistActiveSet", set);
       });
       this.playlistManager.load(this.playlistActiveSet);
@@ -280,6 +292,10 @@
     }
 
     play(ctype, url, playNext = false, intermission = false) {
+      var ref;
+      if ((ref = this.playHistoryManager) != null) {
+        ref.append(ctype, url);
+      }
       if (intermission) {
         return this.playlistManager.intermission(ctype, url);
       } else if (playNext) {

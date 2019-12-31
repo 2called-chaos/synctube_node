@@ -747,16 +747,9 @@
             return this.video.get(0).volume = vol / 100;
           }
         });
-        this.video.on("click", () => {
-          if (!(this.client.control || !this.everPlayed)) {
-            return;
-          }
-          if (this.getState() === 1) {
-            return this.pause();
-          } else {
-            return this.play();
-          }
-        });
+        // @video.on "click", =>
+        //   return unless @client.control || !@everPlayed
+        //   if @getState() == 1 then @pause() else @play()
         //@video.on "canplay", => console.log "canplay", (new Date).toISOString()
         this.video.on("canplaythrough", () => {
           return this.sendReady();

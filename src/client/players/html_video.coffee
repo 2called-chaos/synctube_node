@@ -14,9 +14,9 @@ window.SyncTubeClient_Player_HtmlVideo = class SyncTubeClient_Player_HtmlVideo
       if vol?
         @client.debug "Restored player volume #{vol / 100}"
         @video.get(0).volume = vol / 100
-    @video.on "click", =>
-      return unless @client.control || !@everPlayed
-      if @getState() == 1 then @pause() else @play()
+    # @video.on "click", =>
+    #   return unless @client.control || !@everPlayed
+    #   if @getState() == 1 then @pause() else @play()
     #@video.on "canplay", => console.log "canplay", (new Date).toISOString()
     @video.on "canplaythrough", => @sendReady()
     @video.on "error", => @error = @video.get(0).error

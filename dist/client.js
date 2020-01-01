@@ -503,6 +503,8 @@
       if (data.icon) {
         changeAttr(el.find("[data-attr=icon-ctn] i"), "class", `fa fa-${data.icon} ${data.icon_class}`);
       }
+      el.toggleClass("hasControl", data.control);
+      el.toggleClass("isHost", data.isHost);
       if (data.control) {
         changeAttr(el.find("[data-attr=admin-ctn] i"), "class", "fa fa-shield text-info");
         changeAttr(el.find("[data-attr=admin-ctn] i"), "title", "admin");

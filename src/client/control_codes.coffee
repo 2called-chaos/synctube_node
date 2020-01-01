@@ -155,6 +155,8 @@ window.SyncTubeClient_ControlCodes =
     el.find("[data-attr=progress-bar-buffered]").css(width: "#{(data.state.loaded_fraction || 0) * 100}%")
     el.find("[data-attr=progress-bar-position]").css(left: "#{if data.state.seek <= 0 then 0 else (data.state.seek / data.state.playtime * 100)}%")
     changeAttr(el.find("[data-attr=icon-ctn] i"), "class", "fa fa-#{data.icon} #{data.icon_class}") if data.icon
+    el.toggleClass("hasControl", data.control)
+    el.toggleClass("isHost", data.isHost)
     if data.control
       changeAttr(el.find("[data-attr=admin-ctn] i"), "class", "fa fa-shield text-info")
       changeAttr(el.find("[data-attr=admin-ctn] i"), "title", "admin")

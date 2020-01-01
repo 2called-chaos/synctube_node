@@ -254,6 +254,9 @@ img.longload {
 }
 #clients div.second {
 }
+#clients div.isHost [data-attr=name] {
+  font-style: italic;
+}
 #clients [data-attr=drift],
 #clients [data-attr=progress] {
   padding-left: 3px;

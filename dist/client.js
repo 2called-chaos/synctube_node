@@ -460,6 +460,61 @@
       if (!el.length || data.state.istate === -666) {
         _el = $(this.buildSubscriberElement());
         _el.attr("data-client-index", data.index);
+        _el.find('[data-attr=name]').popover({
+          trigger: "manual",
+          html: true,
+          container: "body",
+          placement: function(context, source) {
+            setTimeout((function() {
+              return $(context).find(".arrow").css('top', 5);
+            }), 0);
+            return "left";
+          },
+          boundary: "viewport",
+          title: function() {
+            var parent;
+            parent = $(this).closest("[data-client-index]");
+            return `<strong class="text-command">§${parent.data("clientIndex")}</strong> ${this.innerHTML}`;
+          },
+          content: function() {
+            var parent, str;
+            parent = $(this).closest("[data-client-index]");
+            str = "";
+            if (parent.hasClass("isHost") || parent.hasClass("hasControl")) {
+              str += "<div class=\"tt-client-info-attributes\">";
+            }
+            if (parent.hasClass("isHost")) {
+              str += "<strong class=\"text-danger\"><i class=\"fa fa-shield\"></i> is HOST</strong>";
+            }
+            if (parent.hasClass("hasControl")) {
+              str += "<strong class=\"text-info\"><i class=\"fa fa-shield\"></i> has control</strong>";
+            }
+            if (parent.hasClass("isHost") || parent.hasClass("hasControl")) {
+              str += "</div>";
+            }
+            str = `<div class="tt-client-info">${str}</div>`;
+            return str;
+          }
+        }).on("mouseenter", function() {
+          var _ctx;
+          _ctx = $(this);
+          clearTimeout(_ctx.data("popoutTimeout"));
+          return _ctx.data("popinTimeout", setTimeout((function() {
+            _ctx.popover("show");
+            return $(".popover").one("mouseleave", function() {
+              return _ctx.stop(true, true).popover('hide');
+            });
+          }), 750));
+        }).on("mouseleave", function() {
+          var _ctx;
+          _ctx = $(this);
+          clearTimeout(_ctx.data("popinTimeout"));
+          return _ctx.data("popoutTimeout", setTimeout((function() {
+            if (!$(".popover:hover").length) {
+              return _ctx.popover("hide");
+            }
+          }), 300));
+        });
         if (el.length) {
           el.replaceWith(_el);
         } else {

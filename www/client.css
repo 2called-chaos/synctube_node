@@ -20,6 +20,30 @@ body {
     line-height  : .5;
     border-radius : .2rem;
 }
+.nbm { margin-bottom: 0; }
+.text-command {
+  color: #fe8cff;
+}
+
+.popover {
+  background: #1e1e1e;
+  border-color: rgba(190, 190, 190, 0.88);
+} 
+
+.popover .popover-header {
+  font-size: 0.9rem;
+  border-bottom-color: rgba(190, 190, 190, 0.88);
+  background: #121212;
+  color: rgba(255, 255, 255, 0.88);
+} 
+
+.popover .arrow::before {
+  border-left-color: #fff;
+} 
+
+.popover .arrow::after {
+  border-left-color: #121212;
+} 
 
 /* loader animation */
 img.longload {
@@ -295,6 +319,16 @@ img.longload {
   bottom: 0;
   right: 0;
   transition: left 2s linear;
+}
+.tt-client-info {
+  text-align: left;
+}
+.tt-client-info-attributes {
+  font-size: 12px;
+  line-height: 16px;
+}
+.tt-client-info-attributes strong {
+  display: block;
 }
 
 #playlist {

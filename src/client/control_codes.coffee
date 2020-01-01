@@ -138,6 +138,41 @@ window.SyncTubeClient_ControlCodes =
     if !el.length || data.state.istate == -666
       _el = $(@buildSubscriberElement())
       _el.attr("data-client-index", data.index)
+      _el.find('[data-attr=name]').popover
+        trigger: "manual"
+        html: true
+        container: "body"
+        placement: (context, source) ->
+          setTimeout((-> $(context).find(".arrow").css('top', 5) ), 0)
+          "left"
+        boundary: "viewport"
+        title: ->
+          parent = $(this).closest("[data-client-index]")
+          """
+            <strong class="text-command">§#{parent.data("clientIndex")}</strong> #{this.innerHTML}
+          """
+        content: ->
+          parent = $(this).closest("[data-client-index]")
+          str = ""
+          str += """<div class="tt-client-info-attributes">"""if parent.hasClass("isHost") || parent.hasClass("hasControl")
+          if parent.hasClass("isHost")
+            str += """<strong class="text-danger"><i class="fa fa-shield"></i> is HOST</strong>"""
+          if parent.hasClass("hasControl")
+            str += """<strong class="text-info"><i class="fa fa-shield"></i> has control</strong>"""
+          str += """</div>"""if parent.hasClass("isHost") || parent.hasClass("hasControl")
+          str = """<div class="tt-client-info">#{str}</div>"""
+          str
+      .on "mouseenter", ->
+        _ctx = $(this)
+        clearTimeout(_ctx.data("popoutTimeout"))
+        _ctx.data("popinTimeout", setTimeout((->
+          _ctx.popover("show")
+          $(".popover").one "mouseleave", -> _ctx.stop(true, true).popover('hide')
+        ), 750))
+      .on "mouseleave", ->
+        _ctx = $(this)
+        clearTimeout(_ctx.data("popinTimeout"))
+        _ctx.data("popoutTimeout", setTimeout((-> _ctx.popover("hide") unless $(".popover:hover").length), 300))
       if el.length then el.replaceWith(_el) else @clients.append(_el)
       el = _el
 

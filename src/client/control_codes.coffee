@@ -113,7 +113,7 @@ window.SyncTubeClient_ControlCodes =
 
     # check hash params
     hparams = @getHashParams()
-    @connection.send(p) if p = hparams.user || hparams.username || hparams.name
+    @connection.send(decodeURIComponent(p)) if p = hparams.user || hparams.username || hparams.name
 
   CMD_username: (data) ->
     @name = data.username
@@ -149,6 +149,9 @@ window.SyncTubeClient_ControlCodes =
       return unless el.length
       el.attr(a, v) unless el.attr(a) == v
       el
+
+    # encode name
+    data.name = @escapeHtml(data.name) if data.name
 
     changeHTML(el.find("[data-attr=#{k}]"), ""+v) for k, v of data
     changeHTML(el.find("[data-attr=#{k}]"), ""+v) for k, v of data.state

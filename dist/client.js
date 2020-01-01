@@ -418,7 +418,7 @@
       // check hash params
       hparams = this.getHashParams();
       if (p = hparams.user || hparams.username || hparams.name) {
-        return this.connection.send(p);
+        return this.connection.send(decodeURIComponent(p));
       }
     },
     CMD_username: function(data) {
@@ -485,6 +485,10 @@
         }
         return el;
       };
+      if (data.name) {
+        // encode name
+        data.name = this.escapeHtml(data.name);
+      }
       for (k in data) {
         v = data[k];
         changeHTML(el.find(`[data-attr=${k}]`), "" + v);

@@ -266,22 +266,23 @@
     setUsername(name) {
       var _name, nameLength;
       nameLength = UTIL.trim(name).length;
-      this.name = UTIL.htmlEntities(UTIL.trim(name));
+      this.old_name = this.name != null ? this.name : null;
+      this.name = UTIL.trim(name);
       if (UTIL.startsWith(this.name, "!packet:")) {
         // ignore packets
-        this.name = null;
+        this.name = this.old_name;
         return this.ack();
       } else if (nameLength > this.server.opts.nameMaxLength) {
-        this.name = null;
-        this.sendSystemMessage(`Usernames can't be longer than ${this.server.opts.nameMaxLength} characters!`, COLORS.red);
+        this.name = this.old_name;
+        this.sendSystemMessage(`Usernames can't be longer than ${this.server.opts.nameMaxLength} characters! You've got ${nameLength}`, COLORS.red);
         return this.ack();
       } else if (this.isNameProtected(this.name)) {
-        this.name = null;
+        this.name = this.old_name;
         this.sendSystemMessage("This name is not allowed!", COLORS.red);
         return this.ack();
-      } else if (this.name.charAt(0) === "/" || this.name.charAt(0) === "!") {
-        this.name = null;
-        this.sendSystemMessage("Name may not start with a / or ! character", COLORS.red);
+      } else if (this.name.charAt(0) === "/" || this.name.charAt(0) === "!" || this.name.charAt(0) === "§" || this.name.charAt(0) === "$") {
+        this.name = this.old_name;
+        this.sendSystemMessage("Name may not start with a / $ § or ! character", COLORS.red);
         return this.ack();
       } else {
         if (this.old_name) {

@@ -316,7 +316,7 @@
 
   x.addCommand("Server", "control", function(client, name, password) {
     var channel, chname, ref;
-    chname = UTIL.htmlEntities(name || ((ref = client.subscribed) != null ? ref.name : void 0) || "");
+    chname = name || ((ref = client.subscribed) != null ? ref.name : void 0) || "";
     if (!chname) {
       client.sendSystemMessage("Channel name required", COLORS.red);
       return client.ack();
@@ -348,16 +348,16 @@
     return client.connection.close();
   }).describe("disconnect from server");
 
-  x.addCommand("Server", "rename", function(client, ...name_parts) {
+  x.addCommand("Server", "rename", function(client, args, msg) {
     var new_name;
-    if (new_name = name_parts.join(" ")) {
-      client.old_name = client.name;
+    new_name = msg.replace(/^\/rename(\s)?/, '');
+    if (new_name) {
       client.setUsername(new_name);
     } else {
       client.sendSystemMessage("Usage: /rename &lt;new_name&gt;");
     }
     return client.ack();
-  }).describe("rename yourself");
+  }).rawArguments().describe("rename yourself");
 
   x.addCommand("Server", "system", function(client, subaction, ...args) {
     var amsg, b, c, ch, channel, detail, dur, e, iargs, ip, j, k, len, len1, m, msg, nulled, reason, ref, ref1, root, seconds, stamp, success, target, time, what, which, who;

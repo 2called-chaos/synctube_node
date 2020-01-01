@@ -192,7 +192,7 @@ x.addCommand "Server", "join", (client, chname) ->
 .describe("join an existing channel")
 
 x.addCommand "Server", "control", (client, name, password) ->
-  chname = UTIL.htmlEntities(name || client.subscribed?.name || "")
+  chname = name || client.subscribed?.name || ""
   unless chname
     client.sendSystemMessage("Channel name required", COLORS.red)
     return client.ack()
@@ -222,13 +222,14 @@ x.addCommand "Server", "disconnect", "dc", (client) ->
   client.connection.close()
 .describe("disconnect from server")
 
-x.addCommand "Server", "rename", (client, name_parts...) ->
-  if new_name = name_parts.join(" ")
-    client.old_name = client.name
+x.addCommand "Server", "rename", (client, args, msg) ->
+  new_name = msg.replace(/^\/rename(\s)?/, '')
+  if new_name
     client.setUsername(new_name)
   else
     client.sendSystemMessage "Usage: /rename &lt;new_name&gt;"
   return client.ack()
+.rawArguments()
 .describe("rename yourself")
 
 x.addCommand "Server", "system", (client, subaction, args...) ->

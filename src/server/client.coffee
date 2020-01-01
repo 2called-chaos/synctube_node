@@ -147,22 +147,23 @@ exports.Class = class SyncTubeServerClient
 
   setUsername: (name) ->
     nameLength = UTIL.trim(name).length
-    @name = UTIL.htmlEntities(UTIL.trim(name))
+    @old_name = if @name? then @name else null
+    @name = UTIL.trim(name)
     if UTIL.startsWith(@name, "!packet:")
       # ignore packets
-      @name = null
+      @name = @old_name
       return @ack()
     else if nameLength > @server.opts.nameMaxLength
-      @name = null
-      @sendSystemMessage "Usernames can't be longer than #{@server.opts.nameMaxLength} characters!", COLORS.red
+      @name = @old_name
+      @sendSystemMessage "Usernames can't be longer than #{@server.opts.nameMaxLength} characters! You've got #{nameLength}", COLORS.red
       return @ack()
     else if @isNameProtected(@name)
-      @name = null
+      @name = @old_name
       @sendSystemMessage "This name is not allowed!", COLORS.red
       return @ack()
-    else if @name.charAt(0) == "/" || @name.charAt(0) == "!"
-      @name = null
-      @sendSystemMessage "Name may not start with a / or ! character", COLORS.red
+    else if @name.charAt(0) == "/" || @name.charAt(0) == "!" || @name.charAt(0) == "§" || @name.charAt(0) == "$"
+      @name = @old_name
+      @sendSystemMessage "Name may not start with a / $ § or ! character", COLORS.red
       return @ack()
     else
       if @old_name

@@ -338,7 +338,7 @@
   }).describe("rename yourself");
 
   x.addCommand("Server", "system", function(client, subaction, ...args) {
-    var amsg, b, c, ch, channel, detail, dur, e, iargs, ip, j, k, len, len1, m, msg, nulled, reason, ref, ref1, seconds, stamp, success, target, time, what, which, who;
+    var amsg, b, c, ch, channel, detail, dur, e, iargs, ip, j, k, len, len1, m, msg, nulled, reason, ref, ref1, root, seconds, stamp, success, target, time, what, which, who;
     if (!client.isSystemAdmin) {
       if (subaction === "auth") {
         if (UTIL.argsToStr(args) === this.opts.systemPassword) {
@@ -528,6 +528,23 @@
         } else if (what === "commands") {
           console.log(module.exports);
         }
+        break;
+      case "version":
+        root = require("path").resolve(`${__dirname}/../..`);
+        UTIL.spawnShellCommandP("git", ["-C", root, "rev-parse", "--abbrev-ref", "HEAD"]).then(([c, l, d]) => {
+          var branch;
+          branch = UTIL.trim(d);
+          return Promise.all([UTIL.spawnShellCommandP("git", ["-C", root, "rev-parse", "HEAD"]), UTIL.spawnShellCommandP("git", ["-C", root, "rev-parse", `origin/${branch}`])]).then((data) => {
+            msg = [""];
+            msg.push("======================");
+            msg.push(`Node: ${process.version}`);
+            msg.push(`Sync(git-branch): ${branch}`);
+            msg.push(`Sync(git-local): ${data[0][2].trim()}`);
+            msg.push(`Sync(git-remote): ${data[1][2].trim()}`);
+            msg.push("======================");
+            return client.sendSystemMessage(msg.join("<br>"));
+          });
+        });
         break;
       default:
         client.sendSystemMessage("/system restart [reason]");

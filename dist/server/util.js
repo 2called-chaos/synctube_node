@@ -253,6 +253,50 @@
     });
   };
 
+  exports.spawnShellCommand = function(cmd, args = [], opts = {}) {
+    var dbuffer, lbuffer, prc, spawn;
+    if (opts.encoding == null) {
+      opts.encoding = "utf8";
+    }
+    dbuffer = "";
+    lbuffer = [];
+    spawn = require('child_process').spawn;
+    prc = spawn(cmd, args);
+    if (opts.encoding != null) {
+      prc.stdout.setEncoding(opts.encoding);
+    }
+    prc.on('close', function(code) {
+      return typeof opts.onEnd === "function" ? opts.onEnd(code, lbuffer, dbuffer) : void 0;
+    });
+    prc.stdout.on('data', function(data) {
+      var j, len, line, lines, results, str;
+      str = data.toString();
+      lines = str.split(/[\r?\n]/g);
+      dbuffer += str;
+      Array.prototype.push.apply(lbuffer, lines);
+      if (typeof opts.onData === "function") {
+        opts.onData(data);
+      }
+      results = [];
+      for (j = 0, len = lines.length; j < len; j++) {
+        line = lines[j];
+        results.push(typeof opts.onLine === "function" ? opts.onLine(line) : void 0);
+      }
+      return results;
+    });
+    return prc;
+  };
+
+  exports.spawnShellCommandP = function(cmd, args = []) {
+    return new Promise(function(resolve, reject) {
+      return exports.spawnShellCommand(cmd, args, {
+        onEnd: function(c, l, b) {
+          return resolve([c, l, b]);
+        }
+      });
+    });
+  };
+
   exports.sha1 = function(input) {
     return require("crypto").createHash("sha1").update(input).digest("hex");
   };

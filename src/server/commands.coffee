@@ -363,6 +363,22 @@ x.addCommand "Server", "system", (client, subaction, args...) ->
         console.log if detail then @channels[detail] else if client.subscribed then client.subscribed else @channels
       else if what == "commands"
         console.log module.exports
+    when "version"
+      root = require("path").resolve("#{__dirname}/../..")
+      UTIL.spawnShellCommandP("git", ["-C", root, "rev-parse", "--abbrev-ref", "HEAD"]).then ([c, l, d]) =>
+        branch = UTIL.trim(d)
+        Promise.all([
+          UTIL.spawnShellCommandP("git", ["-C", root, "rev-parse", "HEAD"])
+          UTIL.spawnShellCommandP("git", ["-C", root, "rev-parse", "origin/#{branch}"])
+        ]).then (data) =>
+          msg = [""]
+          msg.push "======================"
+          msg.push "Node: #{process.version}"
+          msg.push "Sync(git-branch): #{branch}"
+          msg.push "Sync(git-local): #{data[0][2].trim()}"
+          msg.push "Sync(git-remote): #{data[1][2].trim()}"
+          msg.push "======================"
+          client.sendSystemMessage(msg.join("<br>"))
     else
       client.sendSystemMessage("/system restart [reason]")
       client.sendSystemMessage("/system gracefulRestart <cancel|duration> [reason]")

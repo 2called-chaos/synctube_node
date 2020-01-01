@@ -148,5 +148,27 @@ exports.jsonGetHttps = (url, cb) ->
         console.error "Failed to load meta information: #{e}"
         console.trace(e)
 
+exports.spawnShellCommand = (cmd, args = [], opts = {}) ->
+  opts.encoding ?= "utf8"
+
+  dbuffer = ""
+  lbuffer = []
+  spawn = require('child_process').spawn
+  prc = spawn(cmd, args)
+  prc.stdout.setEncoding(opts.encoding) if opts.encoding?
+  prc.on 'close', (code) -> opts.onEnd?(code, lbuffer, dbuffer)
+  prc.stdout.on 'data', (data) ->
+    str = data.toString()
+    lines = str.split(/[\r?\n]/g)
+    dbuffer += str
+    Array::push.apply(lbuffer, lines)
+    opts.onData?(data)
+    opts.onLine?(line) for line in lines
+  prc
+
+exports.spawnShellCommandP = (cmd, args = []) ->
+  new Promise (resolve, reject) ->
+    exports.spawnShellCommand cmd, args, onEnd: (c, l, b) -> resolve([c, l, b])
+
 exports.sha1 = (input) ->
   require("crypto").createHash("sha1").update(input).digest("hex")

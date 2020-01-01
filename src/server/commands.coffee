@@ -13,9 +13,17 @@ x = module.exports =
         chunks = UTIL.shellSplit(msg.substr(1))
         cmd = chunks.shift()
 
-      return if cmd && @Server[cmd]?.call(server, client, chunks...)
+      if cmd && xproc = @Server[cmd]
+        if xproc.takesRawArguments
+          return if xproc.call(server, client, chunks, msg)
+        else
+          return if xproc.call(server, client, chunks...)
       if ch = client.subscribed
-        return if cmd && @Channel[cmd]?.call(ch, client, chunks...)
+        if cmd && xproc = @Channel[cmd]
+          if xproc.takesRawArguments
+            return if xproc.call(ch, client, chunks, msg)
+          else
+            return if xproc.call(ch, client, chunks...)
         ch.broadcastChat(client, msg, null, ch.clientColor(client))
         return client.ack()
 
@@ -40,6 +48,7 @@ x = module.exports =
     elements.describe = (desc) -> this[0].description = desc; this
     elements.hiddenCommand = -> this.forEach((el) => el.hidden = true); this
     elements.controlCommand = -> this.forEach((el) => el.control = true); this
+    elements.rawArguments = -> this.forEach((el) => el.takesRawArguments = true); this
     elements
 
   Server: {}

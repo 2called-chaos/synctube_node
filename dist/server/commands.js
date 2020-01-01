@@ -13,7 +13,7 @@
 
   x = module.exports = {
     handleMessage: function(server, client, message, msg) {
-      var ch, chunks, cmd, err, m, ref, ref1;
+      var ch, chunks, cmd, err, m, xproc;
       try {
         if (m = msg.match(/^!packet:(.+)$/i)) {
           return this.Server["packet"].call(server, client, m[1]);
@@ -24,12 +24,28 @@
           chunks = UTIL.shellSplit(msg.substr(1));
           cmd = chunks.shift();
         }
-        if (cmd && ((ref = this.Server[cmd]) != null ? ref.call(server, client, ...chunks) : void 0)) {
-          return;
+        if (cmd && (xproc = this.Server[cmd])) {
+          if (xproc.takesRawArguments) {
+            if (xproc.call(server, client, chunks, msg)) {
+              return;
+            }
+          } else {
+            if (xproc.call(server, client, ...chunks)) {
+              return;
+            }
+          }
         }
         if (ch = client.subscribed) {
-          if (cmd && ((ref1 = this.Channel[cmd]) != null ? ref1.call(ch, client, ...chunks) : void 0)) {
-            return;
+          if (cmd && (xproc = this.Channel[cmd])) {
+            if (xproc.takesRawArguments) {
+              if (xproc.call(ch, client, chunks, msg)) {
+                return;
+              }
+            } else {
+              if (xproc.call(ch, client, ...chunks)) {
+                return;
+              }
+            }
           }
           ch.broadcastChat(client, msg, null, ch.clientColor(client));
           return client.ack();
@@ -77,6 +93,12 @@
       elements.controlCommand = function() {
         this.forEach((el) => {
           return el.control = true;
+        });
+        return this;
+      };
+      elements.rawArguments = function() {
+        this.forEach((el) => {
+          return el.takesRawArguments = true;
         });
         return this;
       };

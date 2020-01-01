@@ -224,7 +224,9 @@ x.addCommand "Server", "disconnect", "dc", (client) ->
 
 x.addCommand "Server", "rename", (client, args, msg) ->
   new_name = msg.replace(/^\/rename(\s)?/, '')
-  if new_name
+  if new_name == client.name
+    client.sendSystemMessage "This is already your name ಠ_ಠ"
+  else if new_name
     client.setUsername(new_name)
   else
     client.sendSystemMessage "Usage: /rename &lt;new_name&gt;"

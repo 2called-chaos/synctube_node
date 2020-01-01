@@ -272,40 +272,48 @@
       return false;
     }
 
-    setUsername(name) {
-      var _name, nameLength;
-      nameLength = UTIL.trim(name).length;
-      this.old_name = this.name != null ? this.name : null;
-      this.name = UTIL.trim(name);
-      if (UTIL.startsWith(this.name, "!packet:")) {
+    setUsername(name, origin = "client") {
+      var _name, nameLength, tempname, tempname2;
+      if (UTIL.startsWith(name, "!packet:")) {
         // ignore packets
-        this.name = this.old_name;
         return this.ack();
-      } else if (nameLength > this.server.opts.nameMaxLength) {
+      }
+      this.old_name = this.name != null ? this.name : null;
+      tempname = tempname2 = UTIL.trim(name);
+      if (this.subscribed != null) {
+        tempname = this.subscribed.uniqueUsername(tempname);
+      }
+      nameLength = tempname.length;
+      this.name = tempname + "";
+      if (origin !== "system" && nameLength > this.server.opts.nameMaxLength) {
         this.name = this.old_name;
         this.sendSystemMessage(`Usernames can't be longer than ${this.server.opts.nameMaxLength} characters! You've got ${nameLength}`, COLORS.red);
         return this.ack();
-      } else if (this.isNameProtected(this.name)) {
+      } else if (origin !== "system" && this.isNameProtected(this.name)) {
         this.name = this.old_name;
         this.sendSystemMessage("This name is not allowed!", COLORS.red);
         return this.ack();
-      } else if (this.name.charAt(0) === "/" || this.name.charAt(0) === "!" || this.name.charAt(0) === "§" || this.name.charAt(0) === "$") {
+      } else if (origin !== "system" && (this.name.charAt(0) === "/" || this.name.charAt(0) === "!" || this.name.charAt(0) === "§" || this.name.charAt(0) === "$")) {
         this.name = this.old_name;
         this.sendSystemMessage("Name may not start with a / $ § or ! character", COLORS.red);
         return this.ack();
       } else {
         if (this.old_name) {
+          if (origin === "client") {
+            this.sendSystemMessage(`You changed your name from <span class='text-command'>${UTIL.htmlEntities(this.old_name)}</span> to <span class='text-command'>${UTIL.htmlEntities(tempname2)}</span>!`, COLORS.info);
+          }
+          if (origin === "system" || origin === "server" || tempname2 !== tempname) {
+            this.sendSystemMessage(`The server changed your name from <span class='text-command'>${UTIL.htmlEntities(this.old_name)}</span> to <span class='text-command'>${UTIL.htmlEntities(this.name)}</span>!`, COLORS.warning);
+          }
           if (this.subscribed) {
             _name = this.name;
             this.name = this.old_name;
-            this.subscribed.broadcast(this, `<i>changed his name to ${_name}</i>`, COLORS.info, COLORS.muted);
+            this.subscribed.broadcast(this, `<i>changed his name to <span class='text-command'>${UTIL.htmlEntities(_name)}</span></i>`, COLORS.info, COLORS.muted);
             this.name = _name;
             this.subscribed.broadcastCode(this, "update_single_subscriber", {
               channel: this.subscribed.name,
               data: this.subscribed.getSubscriberData(this, this, this.index)
             });
-          } else {
-            this.sendSystemMessage(`You changed your name from ${this.old_name} to ${this.name}!`, COLORS.info);
           }
           this.old_name = null;
         } else {

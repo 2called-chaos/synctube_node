@@ -27,9 +27,9 @@
       return this.server.error(`[${this.name}]`, ...a);
     }
 
-    constructor(server, name, password) {
+    constructor(server, name1, password) {
       this.server = server;
-      this.name = name;
+      this.name = name1;
       this.password = password;
       this.control = [];
       this.host = 0;
@@ -267,6 +267,54 @@
       return data;
     }
 
+    uniqueUsername(name, list) {
+      var c, i, iname, j, l, len, m, ref, rname;
+      if (!list) {
+        list = [];
+        ref = this.subscribers;
+        for (i = j = 0, len = ref.length; j < len; i = ++j) {
+          c = ref[i];
+          if (c.name.slice(0, name.length) === name) {
+            list.push(c.name);
+          }
+        }
+      }
+      if (list.indexOf(name) < 0) {
+        return name;
+      }
+      for (i = l = 1; l <= 100; i = ++l) {
+        iname = `${name} (${i})`;
+        if (!(list.indexOf(iname) > -1)) {
+          return iname;
+        }
+      }
+      for (var m = 1; m <= 10; m++) {
+        rname = `${name} (${Math.random().toString(36).substring(2, 15)})`;
+        if (!(list.indexOf(rname) > -1)) {
+          return rname;
+        }
+      }
+      return "fuckyou";
+    }
+
+    ensureUniqueUsername(client, list) {
+      var c, i, j, len, ref;
+      if (!list) {
+        list = [];
+        ref = this.subscribers;
+        for (i = j = 0, len = ref.length; j < len; i = ++j) {
+          c = ref[i];
+          if (c.name.slice(0, client.name.length) === client.name) {
+            list.push(c.name);
+          }
+        }
+      }
+      if (list.indexOf(client.name) < 0) {
+        return true;
+      }
+      return client.setUsername(this.uniqueUsername(client.name, list), "system");
+    }
+
     live(ctype, url) {
       this.persisted.set("desired", {
         ctype: ctype,
@@ -384,6 +432,7 @@
           ref.unsubscribe(client);
         }
       }
+      this.ensureUniqueUsername(client);
       this.subscribers.push(client);
       client.subscribed = this;
       client.state = {};

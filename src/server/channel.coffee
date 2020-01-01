@@ -141,6 +141,33 @@ exports.Class = class SyncTubeServerChannel
 
     data
 
+  uniqueUsername: (name, list) ->
+    unless list
+      list = []
+      for c, i in @subscribers
+        list.push(c.name) if c.name.slice(0, name.length) == name
+    
+    return name if list.indexOf(name) < 0
+
+    for i in [1..100]
+      iname = "#{name} (#{i})"
+      return iname unless list.indexOf(iname) > -1
+
+    for [1..10]
+      rname = "#{name} (#{Math.random().toString(36).substring(2, 15)})"
+      return rname unless list.indexOf(rname) > -1
+
+    "fuckyou"
+
+  ensureUniqueUsername: (client, list) ->
+    unless list
+      list = []
+      for c, i in @subscribers
+        list.push(c.name) if c.name.slice(0, client.name.length) == client.name
+    
+    return true if list.indexOf(client.name) < 0
+    client.setUsername(@uniqueUsername(client.name, list), "system")
+
   live: (ctype, url) ->
     @persisted.set("desired", { ctype: ctype, url: url, state: "pause", seek: 0, loop: false, seek_update: new Date})
     @ready = []
@@ -193,6 +220,7 @@ exports.Class = class SyncTubeServerChannel
   subscribe: (client, sendMessage = true) ->
     return if @subscribers.indexOf(client) > -1
     client.subscribed?.unsubscribe?(client)
+    @ensureUniqueUsername(client)
     @subscribers.push(client)
     client.subscribed = this
     client.state = {}

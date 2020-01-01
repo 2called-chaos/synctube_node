@@ -150,36 +150,44 @@ exports.Class = class SyncTubeServerClient
         cname.indexOf(cname) > -1
     return false
 
-  setUsername: (name) ->
-    nameLength = UTIL.trim(name).length
-    @old_name = if @name? then @name else null
-    @name = UTIL.trim(name)
-    if UTIL.startsWith(@name, "!packet:")
+  setUsername: (name, origin = "client") ->
+    if UTIL.startsWith(name, "!packet:")
       # ignore packets
-      @name = @old_name
       return @ack()
-    else if nameLength > @server.opts.nameMaxLength
+
+    @old_name = if @name? then @name else null
+    tempname = tempname2 = UTIL.trim(name)
+    tempname = @subscribed.uniqueUsername(tempname) if @subscribed?
+    nameLength = tempname.length
+    @name = tempname + ""
+
+    if origin != "system" && nameLength > @server.opts.nameMaxLength
       @name = @old_name
       @sendSystemMessage "Usernames can't be longer than #{@server.opts.nameMaxLength} characters! You've got #{nameLength}", COLORS.red
       return @ack()
-    else if @isNameProtected(@name)
+    else if origin != "system" && @isNameProtected(@name)
       @name = @old_name
       @sendSystemMessage "This name is not allowed!", COLORS.red
       return @ack()
-    else if @name.charAt(0) == "/" || @name.charAt(0) == "!" || @name.charAt(0) == "§" || @name.charAt(0) == "$"
+    else if origin != "system" && (@name.charAt(0) == "/" || @name.charAt(0) == "!" || @name.charAt(0) == "§" || @name.charAt(0) == "$")
       @name = @old_name
       @sendSystemMessage "Name may not start with a / $ § or ! character", COLORS.red
       return @ack()
     else
       if @old_name
+        if origin == "client"
+          @sendSystemMessage "You changed your name from <span class='text-command'>#{UTIL.htmlEntities(@old_name)}</span> to <span class='text-command'>#{UTIL.htmlEntities(tempname2)}</span>!", COLORS.info
+
+        if origin == "system" || origin == "server" || tempname2 != tempname
+          @sendSystemMessage "The server changed your name from <span class='text-command'>#{UTIL.htmlEntities(@old_name)}</span> to <span class='text-command'>#{UTIL.htmlEntities(@name)}</span>!", COLORS.warning
+
         if @subscribed
           _name = @name
           @name = @old_name
-          @subscribed.broadcast(this, "<i>changed his name to #{_name}</i>", COLORS.info, COLORS.muted)
+          @subscribed.broadcast(this, "<i>changed his name to <span class='text-command'>#{UTIL.htmlEntities(_name)}</span></i>", COLORS.info, COLORS.muted)
           @name = _name
           @subscribed.broadcastCode(this, "update_single_subscriber", channel: @subscribed.name, data: @subscribed.getSubscriberData(this, this, @index))
-        else
-          @sendSystemMessage "You changed your name from #{@old_name} to #{@name}!", COLORS.info
+        
         @old_name = null
       else
         @hello()

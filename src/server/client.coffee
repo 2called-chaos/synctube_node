@@ -6,6 +6,11 @@ exports.Class = class SyncTubeServerClient
   @find: (client, who, collection = @server.clients, context) ->
     return client unless who
 
+    # session index?
+    if who[0] == "§" && (sindex = parseInt(who.substring(1))) != NaN
+      for sub in collection
+        return sub if sub && sub.index == sindex
+
     # exact match?
     for sub in collection
       return sub if sub && sub.name.toLowerCase?() == who.toLowerCase?()

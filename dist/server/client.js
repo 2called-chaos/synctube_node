@@ -10,13 +10,22 @@
 
   exports.Class = SyncTubeServerClient = class SyncTubeServerClient {
     static find(client, who, collection = this.server.clients, context) {
-      var base, e, i, j, len, len1, sub;
+      var base, e, i, j, k, len, len1, len2, sindex, sub;
       if (!who) {
         return client;
       }
+      // session index?
+      if (who[0] === "§" && (sindex = parseInt(who.substring(1))) !== (0/0)) {
+        for (i = 0, len = collection.length; i < len; i++) {
+          sub = collection[i];
+          if (sub && sub.index === sindex) {
+            return sub;
+          }
+        }
+      }
 // exact match?
-      for (i = 0, len = collection.length; i < len; i++) {
-        sub = collection[i];
+      for (j = 0, len1 = collection.length; j < len1; j++) {
+        sub = collection[j];
         if (sub && (typeof (base = sub.name).toLowerCase === "function" ? base.toLowerCase() : void 0) === (typeof who.toLowerCase === "function" ? who.toLowerCase() : void 0)) {
           return sub;
         }
@@ -26,8 +35,8 @@
         who = `^${who}`;
       }
       try {
-        for (j = 0, len1 = collection.length; j < len1; j++) {
-          sub = collection[j];
+        for (k = 0, len2 = collection.length; k < len2; k++) {
+          sub = collection[k];
           if (sub && sub.name.match(new RegExp(who, "i"))) {
             return sub;
           }

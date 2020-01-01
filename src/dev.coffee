@@ -65,14 +65,19 @@ DEV =
       console.log ">>>>>> #{sf}  >>  #{dd}"
       cmd = "coffee -o #{dd} -c #{sf}"
       console.log ">>>>>> #{cmd}"
-      DEV.exec cmd, -> server_process?.kill('SIGTERM')
+      DEV.exec cmd, (o, e) ->
+        if e
+          child_process.exec "which say && say server error"
+        else
+          server_process?.kill('SIGTERM')
     else
       DEV.exec "coffee -o dist -c src/server.coffee"
       DEV.exec "coffee -o dist/server -c src/server"
 
   compileClient: (ev, f) ->
     console.log ">>>> compile client (#{if f then "#{f} changed" else "init"})"
-    DEV.exec "cat $(find ./src/client -type f -name '*.coffee' -not -path '*/example.coffee' -print0 | xargs -0 echo) src/client.coffee | coffee -c --stdio > ./dist/client.js"
+    DEV.exec "cat $(find ./src/client -type f -name '*.coffee' -not -path '*/example.coffee' -print0 | xargs -0 echo) src/client.coffee | coffee -c --stdio > ./dist/client.js", (o, e) ->
+      child_process.exec "which say && say client error" if e
 
   runServer: (f) ->
     pargs = ["./dist/server.js"]
@@ -90,6 +95,6 @@ DEV =
     child_process.exec cmd, {}, (e, stdout, stderr) ->
       process.stdout.write(stdout.toString())
       process.stderr.write(stderr.toString())
-      cb?()
+      cb?(stdout, stderr)
 
 DEV.run(process.argv...)

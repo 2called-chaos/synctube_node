@@ -2058,7 +2058,7 @@
         return false;
       });
       this.cage.on("keyup", (ev) => {
-        var wouldsend;
+        var i, j, wouldsend;
         // literally escape cage
         if (ev.keyCode === 27) {
           this.locked = false;
@@ -2084,35 +2084,10 @@
           if (ev.key === "ArrowRight" || ev.key === "l") {
             wouldsend = "/seek +10";
           }
-          if (ev.key === "0") {
-            wouldsend = "/seek 0%";
-          }
-          if (ev.key === "1") {
-            wouldsend = "/seek 10%";
-          }
-          if (ev.key === "2") {
-            wouldsend = "/seek 20%";
-          }
-          if (ev.key === "3") {
-            wouldsend = "/seek 30%";
-          }
-          if (ev.key === "4") {
-            wouldsend = "/seek 40%";
-          }
-          if (ev.key === "5") {
-            wouldsend = "/seek 50%";
-          }
-          if (ev.key === "6") {
-            wouldsend = "/seek 60%";
-          }
-          if (ev.key === "7") {
-            wouldsend = "/seek 70%";
-          }
-          if (ev.key === "8") {
-            wouldsend = "/seek 80%";
-          }
-          if (ev.key === "9") {
-            wouldsend = "/seek 90%";
+          for (i = j = 0; j < 10; i = ++j) {
+            if (ev.key === `${i}`) {
+              wouldsend = `CL-pseek ${i * 10}%`;
+            }
           }
           if (ev.key === "n") {
             wouldsend = "/playlist next";
@@ -2132,8 +2107,14 @@
           if (ev.key === "Enter") {
             wouldsend = "CL-focusInput";
           }
+          if (ev.key === "/") {
+            wouldsend = "CL-focusInputCmd";
+          }
+          if (ev.key === "?") {
+            wouldsend = "CL-showKeyHelp";
+          }
           if (ev.key === "f") {
-            wouldsend = "CL-fullscreen";
+            wouldsend = "CL-toggleFullscreen";
           }
           if (ev.key === "t") {
             wouldsend = "CL-toggleSubtitles";

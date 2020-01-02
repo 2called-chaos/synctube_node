@@ -169,9 +169,9 @@ exports.Class = class SyncTubeServerClient
       @name = @old_name
       @sendSystemMessage "This name is not allowed!", COLORS.red
       return @ack()
-    else if origin != "system" && (@name.charAt(0) == "/" || @name.charAt(0) == "!" || @name.charAt(0) == "§" || @name.charAt(0) == "$")
+    else if origin != "system" && (@name.charAt(0) == "/" || @name.charAt(0) == "!" || @name.charAt(0) == "§" || @name.charAt(0) == "$" || @name.charAt(0) == "`")
       @name = @old_name
-      @sendSystemMessage "Name may not start with a / $ § or ! character", COLORS.red
+      @sendSystemMessage "Name may not start with a / $ § ` or ! character", COLORS.red
       return @ack()
     else
       if @old_name

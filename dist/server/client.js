@@ -293,9 +293,9 @@
         this.name = this.old_name;
         this.sendSystemMessage("This name is not allowed!", COLORS.red);
         return this.ack();
-      } else if (origin !== "system" && (this.name.charAt(0) === "/" || this.name.charAt(0) === "!" || this.name.charAt(0) === "§" || this.name.charAt(0) === "$")) {
+      } else if (origin !== "system" && (this.name.charAt(0) === "/" || this.name.charAt(0) === "!" || this.name.charAt(0) === "§" || this.name.charAt(0) === "$" || this.name.charAt(0) === "`")) {
         this.name = this.old_name;
-        this.sendSystemMessage("Name may not start with a / $ § or ! character", COLORS.red);
+        this.sendSystemMessage("Name may not start with a / $ § ` or ! character", COLORS.red);
         return this.ack();
       } else {
         if (this.old_name) {

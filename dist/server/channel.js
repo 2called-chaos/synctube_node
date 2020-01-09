@@ -520,9 +520,11 @@
       if (oldHost.control !== this) {
         oldHost = null;
       }
-      oldHost.sendCode("lost_host", {
-        channel: this.name
-      });
+      if (oldHost != null) {
+        oldHost.sendCode("lost_host", {
+          channel: this.name
+        });
+      }
       // reindex
       newControl = [];
       if (oldHost) {

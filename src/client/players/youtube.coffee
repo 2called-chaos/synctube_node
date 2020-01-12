@@ -51,7 +51,14 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
       # seekTo on a cued video will start playback delayed
       @ensurePause(data)
 
+    if !@client.host && @getState() > 1 && data.seek != @getCurrentTime()
+      @client.debug "fine seeking in non playing state", data.seek, data.seek - @getCurrentTime()
+      @pauseEnsured("fineseek")
+      @seekTo(data.seek, true)
+
+
   seekTo: (time, paused = false) ->
+    @client.debug "seeking", time, "paused", paused, "was", @getCurrentTime(), "delta", time - @getCurrentTime()
     @api?.seekTo?(time, true)
     if paused
       @player?.pause()
@@ -123,7 +130,7 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
                 console.log "send resume", @lastPlayerState, newState
                 @client.sendControl("/resume")
               else if !@client.dontBroadcast && @lastPlayerState? && ([1, 3].indexOf(@lastPlayerState) > -1 && [2].indexOf(newState) > -1)
-                console.log "send pause"
+                console.log "send pause", @getCurrentTime()
                 @client.sendControl("/pause")
               console.log "state", "was", @lastPlayerState, "is", newState
 

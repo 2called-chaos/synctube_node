@@ -1414,12 +1414,18 @@
           }
           // ensure paused player at correct position when it was cued
           // seekTo on a cued video will start playback delayed
-          return this.ensurePause(data);
+          this.ensurePause(data);
+        }
+        if (!this.client.host && this.getState() > 1 && data.seek !== this.getCurrentTime()) {
+          this.client.debug("fine seeking in non playing state", data.seek, data.seek - this.getCurrentTime());
+          this.pauseEnsured("fineseek");
+          return this.seekTo(data.seek, true);
         }
       }
 
       seekTo(time, paused = false) {
         var ref1, ref2, ref3;
+        this.client.debug("seeking", time, "paused", paused, "was", this.getCurrentTime(), "delta", time - this.getCurrentTime());
         if ((ref1 = this.api) != null) {
           if (typeof ref1.seekTo === "function") {
             ref1.seekTo(time, true);
@@ -1554,7 +1560,7 @@
                     console.log("send resume", this.lastPlayerState, newState);
                     this.client.sendControl("/resume");
                   } else if (!this.client.dontBroadcast && (this.lastPlayerState != null) && ([1, 3].indexOf(this.lastPlayerState) > -1 && [2].indexOf(newState) > -1)) {
-                    console.log("send pause");
+                    console.log("send pause", this.getCurrentTime());
                     this.client.sendControl("/pause");
                   }
                   console.log("state", "was", this.lastPlayerState, "is", newState);

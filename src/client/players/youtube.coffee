@@ -9,6 +9,12 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
     @api = null
     @pauseEnsured("player destroy")
 
+  sendSeek: (time = @getCurrentTime()) ->
+    @client.sendControl("/seek #{time}") unless @client.dontBroadcast
+
+  sendReady: ->
+    @client.sendControl("/ready")
+
   updateDesired: (data) ->
     @desired = data
     @rememberVolume()
@@ -41,6 +47,13 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
         @pauseEnsured "starting playback"
         @play()
       return
+
+    if @getHashParams().controlSeek
+      if (@getState() == 1 || @getState() == 2) && !@client.host && @client.control
+        if Math.abs(data.seek - @getCurrentTime()) * 1000 >= @client.opts.synced.maxDrift * 2
+          @client.debug "control client wants to seek?", data.seek, data.seek - @getCurrentTime()
+          @sendSeek()
+          return
 
     if Math.abs(@client.drift * 1000) > @client.opts.synced.maxDrift || @force_resync || data.force
       @force_resync = false
@@ -164,7 +177,7 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
     @client.debug "YT pause ensured (#{reason})"
     clearInterval(@ensurePauseInterval)
     @client.dontBroadcast = false
-    @client.sendControl("/ready")
+    @sendReady()
 
   rememberVolume: ->
     return unless @client.history?

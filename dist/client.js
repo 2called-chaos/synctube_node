@@ -1367,6 +1367,16 @@
         return this.pauseEnsured("player destroy");
       }
 
+      sendSeek(time = this.getCurrentTime()) {
+        if (!this.client.dontBroadcast) {
+          return this.client.sendControl(`/seek ${time}`);
+        }
+      }
+
+      sendReady() {
+        return this.client.sendControl("/ready");
+      }
+
       updateDesired(data) {
         var current_ytid, lastPacketDiff, ref1, ref2;
         this.desired = data;
@@ -1405,6 +1415,15 @@
             this.play();
           }
           return;
+        }
+        if (this.getHashParams().controlSeek) {
+          if ((this.getState() === 1 || this.getState() === 2) && !this.client.host && this.client.control) {
+            if (Math.abs(data.seek - this.getCurrentTime()) * 1000 >= this.client.opts.synced.maxDrift * 2) {
+              this.client.debug("control client wants to seek?", data.seek, data.seek - this.getCurrentTime());
+              this.sendSeek();
+              return;
+            }
+          }
         }
         if (Math.abs(this.client.drift * 1000) > this.client.opts.synced.maxDrift || this.force_resync || data.force) {
           this.force_resync = false;
@@ -1609,7 +1628,7 @@
         this.client.debug(`YT pause ensured (${reason})`);
         clearInterval(this.ensurePauseInterval);
         this.client.dontBroadcast = false;
-        return this.client.sendControl("/ready");
+        return this.sendReady();
       }
 
       rememberVolume() {

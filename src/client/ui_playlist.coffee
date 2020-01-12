@@ -4,24 +4,31 @@ window.SyncTubeClient_PlaylistUI = class SyncTubeClient_PlaylistUI
     @client.CMD_ui_playlist = @CMD_ui_playlist.bind(this)
     @client.CMD_playlist_update = @CMD_playlist_update.bind(this)
     @client.CMD_playlist_single_entry = @CMD_playlist_single_entry.bind(this)
-    @client.requireRemoteJS "https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.10.1/Sortable.min.js", => @initSortable()
-
-  initSortable: ->
-    @sortable = new Sortable @playlist.get(0),
+    @sortableOptions =
       disabled: !@client.control
       onSort: (ev) => @client.silentCommand("/playlist swap #{ev.oldIndex} #{ev.newIndex}")
       setData: (dataTransfer, el) ->
         if href = $(el).find("[data-attr=name]").attr("href")
           dataTransfer.setData('text/uri-list', href)
           dataTransfer.setData('text/plain', href)
+    @client.requireRemoteJS "https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.10.1/Sortable.min.js", => @initSortable()
+
+  initSortable: ->
+    @sortable = new Sortable @playlist.get(0), @sortableOptions
+
+  getSortableOptions: ->
+    if @sortable?
+      @sortable.options
+    else
+      @sortableOptions
 
   enableSorting: ->
     @client.debug "Playlist sorting enabled"
-    @sortable?.options?.disabled = false
+    @getSortableOptions().disabled = false
 
   disableSorting: ->
     @client.debug "Playlist sorting DISABLED"
-    @sortable?.options?.disabled = true
+    @getSortableOptions().disabled = true
 
   scrollToActive: (ensure) ->
     @playlist.scrollTop(@playlist.find("div.active").prop("offsetTop") - 15)

@@ -67,8 +67,8 @@ window.SyncTubeClient_DropletUI = class SyncTubeClient_DropletUI
 
   createEventHandlers: ->
     # patch sortable playlist
-    if @client.playlistUI?.sortable?
-      so = @client.playlistUI.sortable.options
+    if @client.playlistUI?
+      so = @client.playlistUI.getSortableOptions()
       oldOnStart = so.onStart
       oldOnEnd = so.onEnd
       so.onStart = (ev) => @disable(); oldOnStart?.apply(so)

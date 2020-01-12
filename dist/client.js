@@ -616,13 +616,7 @@
       this.client.CMD_ui_playlist = this.CMD_ui_playlist.bind(this);
       this.client.CMD_playlist_update = this.CMD_playlist_update.bind(this);
       this.client.CMD_playlist_single_entry = this.CMD_playlist_single_entry.bind(this);
-      this.client.requireRemoteJS("https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.10.1/Sortable.min.js", () => {
-        return this.initSortable();
-      });
-    }
-
-    initSortable() {
-      return this.sortable = new Sortable(this.playlist.get(0), {
+      this.sortableOptions = {
         disabled: !this.client.control,
         onSort: (ev) => {
           return this.client.silentCommand(`/playlist swap ${ev.oldIndex} ${ev.newIndex}`);
@@ -634,19 +628,32 @@
             return dataTransfer.setData('text/plain', href);
           }
         }
+      };
+      this.client.requireRemoteJS("https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.10.1/Sortable.min.js", () => {
+        return this.initSortable();
       });
     }
 
+    initSortable() {
+      return this.sortable = new Sortable(this.playlist.get(0), this.sortableOptions);
+    }
+
+    getSortableOptions() {
+      if (this.sortable != null) {
+        return this.sortable.options;
+      } else {
+        return this.sortableOptions;
+      }
+    }
+
     enableSorting() {
-      var ref1, ref2;
       this.client.debug("Playlist sorting enabled");
-      return (ref1 = this.sortable) != null ? (ref2 = ref1.options) != null ? ref2.disabled = false : void 0 : void 0;
+      return this.getSortableOptions().disabled = false;
     }
 
     disableSorting() {
-      var ref1, ref2;
       this.client.debug("Playlist sorting DISABLED");
-      return (ref1 = this.sortable) != null ? (ref2 = ref1.options) != null ? ref2.disabled = true : void 0 : void 0;
+      return this.getSortableOptions().disabled = true;
     }
 
     scrollToActive(ensure) {
@@ -2204,10 +2211,10 @@
     }
 
     createEventHandlers() {
-      var oldOnEnd, oldOnStart, ref1, so;
+      var oldOnEnd, oldOnStart, so;
       // patch sortable playlist
-      if (((ref1 = this.client.playlistUI) != null ? ref1.sortable : void 0) != null) {
-        so = this.client.playlistUI.sortable.options;
+      if (this.client.playlistUI != null) {
+        so = this.client.playlistUI.getSortableOptions();
         oldOnStart = so.onStart;
         oldOnEnd = so.onEnd;
         so.onStart = (ev) => {

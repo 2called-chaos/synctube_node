@@ -2218,10 +2218,12 @@
         oldOnStart = so.onStart;
         oldOnEnd = so.onEnd;
         so.onStart = (ev) => {
+          console.log("disableDrop");
           this.disable();
           return oldOnStart != null ? oldOnStart.apply(so) : void 0;
         };
         so.onEnd = (ev) => {
+          console.log("enableDrop");
           this.enable();
           return oldOnEnd != null ? oldOnEnd.apply(so) : void 0;
         };

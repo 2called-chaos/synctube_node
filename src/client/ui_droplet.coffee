@@ -71,8 +71,8 @@ window.SyncTubeClient_DropletUI = class SyncTubeClient_DropletUI
       so = @client.playlistUI.getSortableOptions()
       oldOnStart = so.onStart
       oldOnEnd = so.onEnd
-      so.onStart = (ev) => @disable(); oldOnStart?.apply(so)
-      so.onEnd = (ev) => @enable(); oldOnEnd?.apply(so)
+      so.onStart = (ev) => console.log "disableDrop"; @disable(); oldOnStart?.apply(so)
+      so.onEnd = (ev) => console.log "enableDrop"; @enable(); oldOnEnd?.apply(so)
 
     $(document).on "dragover", "#second_row", (ev) =>
       return if @disabled

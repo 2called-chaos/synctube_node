@@ -402,10 +402,12 @@
     }
 
     revokeControl(client, sendMessage = true, reason = null) {
+      var ref, wasHost;
       if (this.control.indexOf(client) === -1) {
         return;
       }
-      if (this.host === this.control.indexOf(client)) {
+      wasHost = this.host === this.control.indexOf(client);
+      if (wasHost) {
         client.sendCode("lost_host", {
           channel: this.name
         });
@@ -418,6 +420,13 @@
       }
       this.control.splice(this.control.indexOf(client), 1);
       client.control = null;
+      if (wasHost) {
+        if ((ref = this.control[this.host]) != null) {
+          ref.sendCode("taken_host", {
+            channel: this.name
+          });
+        }
+      }
       this.updateSubscriberList(client);
       return this.debug(`revoked control from client #${client.index}(${client.ip})`);
     }

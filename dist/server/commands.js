@@ -555,18 +555,20 @@
         break;
       case "version":
         root = require("path").resolve(`${__dirname}/../..`);
-        UTIL.spawnShellCommandP("git", ["-C", root, "rev-parse", "--abbrev-ref", "HEAD"]).then(([c, l, d]) => {
-          var branch;
-          branch = UTIL.trim(d);
-          return Promise.all([UTIL.spawnShellCommandP("git", ["-C", root, "rev-parse", "HEAD"]), UTIL.spawnShellCommandP("git", ["-C", root, "rev-parse", `origin/${branch}`])]).then((data) => {
-            msg = [""];
-            msg.push("======================");
-            msg.push(`Node: ${process.version}`);
-            msg.push(`Sync(git-branch): ${branch}`);
-            msg.push(`Sync(git-local): ${data[0][2].trim()}`);
-            msg.push(`Sync(git-remote): ${data[1][2].trim()}`);
-            msg.push("======================");
-            return client.sendSystemMessage(msg.join("<br>"));
+        UTIL.spawnShellCommandP("git", ["-C", root, "fetch"]).then(([_c, _l, _d]) => {
+          return UTIL.spawnShellCommandP("git", ["-C", root, "rev-parse", "--abbrev-ref", "HEAD"]).then(([c, l, d]) => {
+            var branch;
+            branch = UTIL.trim(d);
+            return Promise.all([UTIL.spawnShellCommandP("git", ["-C", root, "rev-parse", "HEAD"]), UTIL.spawnShellCommandP("git", ["-C", root, "rev-parse", `origin/${branch}`])]).then((data) => {
+              msg = [""];
+              msg.push("======================");
+              msg.push(`Node: ${process.version}`);
+              msg.push(`Sync(git-branch): ${branch}`);
+              msg.push(`Sync(git-local): ${data[0][2].trim()}`);
+              msg.push(`Sync(git-remote): ${data[1][2].trim()}`);
+              msg.push("======================");
+              return client.sendSystemMessage(msg.join("<br>"));
+            });
           });
         });
         break;
@@ -579,6 +581,7 @@
         client.sendSystemMessage("/system chkill &lt;channel&gt; [reason]");
         client.sendSystemMessage("/system chfixsessions &lt;channel&gt;");
         client.sendSystemMessage("/system status");
+        client.sendSystemMessage("/system version");
         client.sendSystemMessage("/system clients");
         client.sendSystemMessage("/system banip &lt;ip&gt; [duration] [reason]");
         client.sendSystemMessage("/system unbanip &lt;ip&gt;");

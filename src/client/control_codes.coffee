@@ -123,7 +123,7 @@ window.SyncTubeClient_ControlCodes =
 
     # check hash params
     hparams = @getHashParams()
-    @connection.silentCommand("join", ch) if ch = hparams.channel || hparams.join
+    @silentCommand("join", ch) if ch = hparams.channel || hparams.join
     if hparams.control
       cmd = "/control #{hparams.control}"
       if hparams.password?
@@ -213,5 +213,3 @@ window.SyncTubeClient_ControlCodes =
     subs = subs.sort (a, b) -> if a.control && !b.control then -1 else 1
 
     @CMD_update_single_subscriber(data: sub) for sub in data.subscribers
-
-

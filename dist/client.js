@@ -434,7 +434,7 @@
       // check hash params
       hparams = this.getHashParams();
       if (ch = hparams.channel || hparams.join) {
-        this.connection.silentCommand("join", ch);
+        this.silentCommand("join", ch);
       }
       if (hparams.control) {
         cmd = `/control ${hparams.control}`;

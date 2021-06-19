@@ -1416,7 +1416,7 @@
           }
           return;
         }
-        if (this.getHashParams().controlSeek) {
+        if (this.client.getHashParams().controlSeek) {
           if ((this.getState() === 1 || this.getState() === 2) && !this.client.host && this.client.control) {
             if (Math.abs(data.seek - this.getCurrentTime()) * 1000 >= this.client.opts.synced.maxDrift * 2) {
               this.client.debug("control client wants to seek?", data.seek, data.seek - this.getCurrentTime());

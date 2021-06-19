@@ -48,7 +48,7 @@ window.SyncTubeClient_Player_Youtube = class SyncTubeClient_Player_Youtube
         @play()
       return
 
-    if @getHashParams().controlSeek
+    if @client.getHashParams().controlSeek
       if (@getState() == 1 || @getState() == 2) && !@client.host && @client.control
         if Math.abs(data.seek - @getCurrentTime()) * 1000 >= @client.opts.synced.maxDrift * 2
           @client.debug "control client wants to seek?", data.seek, data.seek - @getCurrentTime()
